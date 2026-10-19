@@ -10,6 +10,8 @@
    The developer as a variable type family: wdth 50–150 × wght 100–900.
    B0 calibration · B1 title page · B2 strings · B3 text setting · B4 in use ·
    B5 threshold · B6/B7 instances + flood · B8 colophon.
+   D1 modes: VOL (one bias over every display line), PROOF, the Key sheet,
+   Contents, footnotes and the reader/developer layer.
    ========================================================================== */
 
 /* ── Tokens ───────────────────────────────────────────────────────────────── */
@@ -33,10 +35,22 @@
   --ease: cubic-bezier(.76, 0, .24, 1);
   --ease-out: cubic-bezier(.16, 1, .3, 1);
 
-  /* stacking: content < riso card < pigment < grain < nav < case sheet < title flight < phone menu < cursor < toast */
-  --z-plate: 60; --z-pigment: 70; --z-grain: 75; --z-nav: 80; --z-case: 100; --z-flight: 105; --z-menu: 110; --z-cursor: 120; --z-toast: 130;
+  /* stacking: content < riso card < pigment < proof overlay < grain < nav < telemetry < popovers < case sheet
+     < title flight < key sheet < phone menu < stamp < cursor < selection chip < toast */
+  --z-plate: 60; --z-pigment: 70; --z-proof: 72; --z-grain: 75; --z-nav: 80; --z-tele: 84; --z-pop: 90; --z-case: 100;
+  --z-flight: 105; --z-sheet: 108; --z-menu: 110; --z-stamp: 115; --z-cursor: 120; --z-sel: 125; --z-toast: 130;
+  /* VOL: the one bias every display line reads (--vp pulls toward 150/900, --vn toward 50/100) */
+  --vp: 0; --vn: 0;
   color-scheme: light;
 }
+/* the shared remap: a display element sets its own instance as --w/--g and prints the biased one */
+.sw, .r-btn, .ld-t, .thr-a, .thr-b, .thr-t.thin .fl, .email, .st-w, .ml-t, .m4b > span, .fader.big .fd-n {
+  --W: calc(var(--w, 100) + var(--vp) * (150 - var(--w, 100)) + var(--vn) * (var(--w, 100) - 50));
+  --G: calc(var(--g, 500) + var(--vp) * (900 - var(--g, 500)) + var(--vn) * (var(--g, 500) - 100));
+  font-variation-settings: 'wdth' var(--W), 'wght' var(--G);
+}
+@property --mw { syntax: '<number>'; inherits: false; initial-value: 150; }
+@property --mg { syntax: '<number>'; inherits: false; initial-value: 900; }
 @media (min-width: 761px) {
   :root {
     --gut-l: max(clamp(16px, 2.6vw, 40px), env(safe-area-inset-left, 0px));
@@ -145,7 +159,7 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
 /* ── Nav ──────────────────────────────────────────────────────────────────── */
 .nav {
   position: fixed; inset: 0 0 auto 0; z-index: var(--z-nav);
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 16px); padding-bottom: 14px;
   color: #fff; mix-blend-mode: difference;
 }
@@ -155,9 +169,11 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
 .brand { justify-self: start; display: inline-flex; align-items: center; gap: 12px; text-decoration: none; min-width: 0; }
 .m4b {
   font-family: var(--f-display); font-variation-settings: 'wdth' 150, 'wght' 900;
-  font-size: 20px; line-height: 1; letter-spacing: -.02em; text-transform: uppercase;
+  font-size: 20px; line-height: 1; letter-spacing: -.02em; text-transform: uppercase; white-space: nowrap;
 }
-.nav-links { display: flex; gap: clamp(16px, 2.4vw, 34px); }
+/* masthead meter: the monogram's instance tracks the current section (offset by VOL) */
+.m4b > span { --w: var(--mw); --g: var(--mg); transition: --mw .6s var(--ease-out), --mg .6s var(--ease-out); }
+.nav-links { justify-self: center; display: flex; gap: clamp(16px, 2.4vw, 34px); }
 .nav-links a { position: relative; text-decoration: none; }
 .nav-links a::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px; background: currentColor;
@@ -165,9 +181,42 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
 }
 .nav-links a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
 @media (hover: hover) { .nav-links a:hover::after { transform: scaleX(1); transform-origin: left; } }
-.nav-r { justify-self: end; display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); min-width: 0; }
-.folio-n { display: inline-flex; gap: .55em; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.folio-t { display: inline-block; min-width: 6.4em; }
+.nav-r { justify-self: end; display: flex; align-items: center; gap: clamp(14px, 1.7vw, 26px); min-width: 0; }
+/* the folio is the Contents button; its 6-segment level meter lights up to the current page */
+.folio-n { display: inline-flex; align-items: center; gap: .55em; padding: 4px 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.folio-t { display: inline-block; min-width: 6.4em; text-align: left; }
+.folio-n[aria-expanded="true"] .folio-t { text-decoration: underline; text-underline-offset: 3px; }
+.meter { display: inline-flex; align-items: flex-end; gap: 2px; height: 9px; }
+.meter i { display: block; width: 3px; background: currentColor; opacity: .22; transition: opacity .12s; }
+.meter i:nth-child(1) { height: 34%; } .meter i:nth-child(2) { height: 47%; } .meter i:nth-child(3) { height: 60%; }
+.meter i:nth-child(4) { height: 73%; } .meter i:nth-child(5) { height: 86%; } .meter i:nth-child(6) { height: 100%; }
+.meter i.on { opacity: 1; }
+.meter i.pk { opacity: .58; }
+/* VOL fader: 10 graduated segments plus the overload "11" */
+.fader { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; touch-action: none; -webkit-user-select: none; user-select: none; font-variant-numeric: tabular-nums; }
+.fd-s { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; padding: 3px 0; }
+.fd-s i { display: block; width: 4px; background: currentColor; opacity: .26; }
+.fd-s i:nth-child(n) { height: calc(30% + var(--k, 0) * 7%); }
+.fd-s i.on { opacity: 1; }
+.fd-s i.x { width: 7px; height: 100%; margin-left: 3px; opacity: 1; background: none; box-shadow: inset 0 0 0 1px currentColor; }
+.fd-s i.x.on { background: currentColor; }
+.fd-n { min-width: 2ch; }
+.fader:focus-visible { outline-offset: 6px; }
+.vol-btn, .pf { display: none; align-items: center; gap: .5em; padding: 4px 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pf { display: inline-flex; }
+.pf .o, .md-row .o { width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
+[data-proof][aria-pressed="true"] .o { background: currentColor; }
+.kc {
+  display: inline-grid; place-items: center; width: 19px; height: 19px; box-sizing: border-box; padding: 0;
+  border: 1px solid currentColor; border-bottom-width: 2px; font: 500 11px/1 var(--f-mono);
+}
+@media (max-width: 1099px) {
+  .nav .fader { display: none; }
+  .vol-btn { display: inline-flex; }
+  .nav-r { gap: 14px; }
+  .nav-links { gap: 16px; }
+}
+@media (max-width: 899px) { .brand-t { display: none; } }
 .snd { display: inline-flex; align-items: center; gap: .55em; padding: 4px 0; white-space: nowrap; }
 .snd .o { width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
 .snd[aria-pressed="true"] .o { background: currentColor; }
@@ -191,11 +240,15 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
 }
 .menu-list .ml-b { flex: 1; min-width: 0; display: block; font-family: var(--f-display); text-transform: uppercase; font-size: 15vw; line-height: .86; }
 .menu-list .ml-t { display: inline-block; white-space: nowrap; }
-.menu-list li:nth-child(1) .ml-t { font-variation-settings: 'wdth' 50, 'wght' 300; }
-.menu-list li:nth-child(2) .ml-t { font-variation-settings: 'wdth' 100, 'wght' 600; }
-.menu-list li:nth-child(3) .ml-t { font-variation-settings: 'wdth' 150, 'wght' 900; }
+.menu-list li:nth-child(1) .ml-t { --w: 50; --g: 300; }
+.menu-list li:nth-child(2) .ml-t { --w: 100; --g: 600; }
+.menu-list li:nth-child(3) .ml-t { --w: 150; --g: 900; }
 .menu-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--hair-inv); }
 .menu-foot .snd { padding: 10px 0; }
+/* the phone desk: VOL, proof, key, contents (every D1 control reachable from the menu) */
+.menu-desk { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 18px; }
+.md-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.md-row button { display: inline-flex; align-items: center; gap: .55em; padding: 12px 13px 11px; border: 1px solid var(--hair-inv); }
 
 /* ── Cursor: crop-mark selection rig (fine pointers only) ─────────────────── */
 .rig { display: none; }
@@ -332,7 +385,6 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
 .sw {
   display: inline-flex; align-items: center; gap: .3em; padding-right: .3em; white-space: nowrap;
   font-family: var(--f-display); text-transform: uppercase; line-height: 1;
-  font-variation-settings: 'wdth' var(--w, 100), 'wght' var(--g, 700);
 }
 .sw.it { font-style: italic; }
 .sw i { font-style: normal; font-family: var(--f-mono); font-size: .42em; font-weight: 400; }
@@ -423,8 +475,7 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
 }
 /* each title is set permanently in its client's instance */
 .r-btn {
-  text-align: left; white-space: nowrap;
-  font-variation-settings: 'wdth' var(--w, 100), 'wght' var(--g, 500); letter-spacing: var(--tr, 0em); font-style: var(--st, normal);
+  text-align: left; white-space: nowrap; letter-spacing: var(--tr, 0em); font-style: var(--st, normal);
 }
 .r-btn::after { content: ""; position: absolute; inset: 0; z-index: 1; }
 .r-btn:focus-visible { outline-color: var(--paper); }
@@ -578,10 +629,10 @@ html.has-rig .pc {
 .thr-top { display: flex; justify-content: space-between; gap: 16px; margin-bottom: clamp(20px, 3vw, 40px); color: var(--mute); }
 .thr-h { margin: 0; font-family: var(--f-display); font-weight: 400; text-transform: uppercase; line-height: .8; letter-spacing: 0; }
 .thr-a, .thr-b { display: block; white-space: nowrap; }
-.thr-a { font-variation-settings: 'wdth' 50, 'wght' 100; font-size: clamp(48px, 20vw, 330px); }
-.thr-b { font-variation-settings: 'wdth' 150, 'wght' 900; font-size: clamp(48px, 17vw, 280px); margin-top: .06em; }
+.thr-a { --w: 50; --g: 100; font-size: clamp(48px, 20vw, 330px); }
+.thr-b { --w: 150; --g: 900; font-size: clamp(48px, 17vw, 280px); margin-top: .06em; }
 .thr-t, .thr-b .fl { display: inline-block; }
-.thr-t.thin .fl { font-variation-settings: 'wdth' 50, 'wght' 900; }
+.thr-t.thin .fl { --w: 50; --g: 900; }
 .thr-ink, .thr-zone { display: none; }
 .thresh.live { height: 160svh; }
 .thresh.live .thr-pin {
@@ -608,7 +659,7 @@ html.has-rig .pc {
 .st-n { grid-area: n; color: var(--mute-inv); }
 .st-w {
   grid-area: w; margin: 0; font-family: var(--f-display); font-weight: 400; text-transform: uppercase;
-  font-size: clamp(48px, 10vw, 150px); line-height: .82; font-variation-settings: 'wdth' var(--w), 'wght' var(--g);
+  font-size: clamp(48px, 10vw, 150px); line-height: .82;
 }
 .st-i { grid-area: i; color: var(--mute-inv); }
 .stage p { grid-area: p; margin: 0; }
@@ -697,7 +748,7 @@ html.has-rig .pc {
   font-size: clamp(48px, 16vw, 260px);
 }
 .ld + .ld { margin-top: clamp(8px, 1vw, 16px); }
-.ld-t { display: inline-block; font-variation-settings: 'wdth' var(--w), 'wght' var(--g); }
+.ld-t { display: inline-block; }
 .lg { display: inline-block; }
 .ld-shelf { position: absolute; left: 0; right: 0; top: var(--base, 80%); z-index: -1; height: 1px; background: rgba(230, 231, 227, .34); }
 /* FIG.4 live: every sort is a rigid body; a fixed box per sort, so axis squash never reflows the line */
@@ -750,7 +801,7 @@ html.has-rig .pc {
 .contact { margin-top: clamp(48px, 6vw, 96px); padding-top: 18px; border-top: 1px solid var(--hair-inv); row-gap: 40px; align-items: start; grid-template-rows: auto 1fr; }
 .c-mail { grid-column: 1 / span 8; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; min-width: 0; }
 .email {
-  margin: 0; white-space: nowrap; font-family: var(--f-display); font-variation-settings: 'wdth' 96, 'wght' 640;
+  margin: 0; white-space: nowrap; font-family: var(--f-display); --w: 96; --g: 640;
   font-size: clamp(30px, 4.6vw, 78px); line-height: 1; letter-spacing: -.01em;
 }
 .c-act { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -867,6 +918,179 @@ html.has-rig .pc {
   .row, .row::before, .r-arrow, .r-inst, .case, .case-in > :not(.case-head), .chip, .rewind, .rail i, .ds-n { transition: none !important; }
 }
 
+/* ── D1 · Paper popovers: Contents, the VOL console, footnote slips ───────── */
+.pop {
+  position: fixed; left: 0; top: 0; z-index: var(--z-pop); box-sizing: border-box;
+  background: var(--paper); color: var(--ink); border: 1px solid var(--ink);
+  opacity: 0; transform: translateY(-6px); transition: opacity .22s var(--ease), transform .32s var(--ease-out);
+}
+.pop.open { opacity: 1; transform: none; }
+.pop .lbl, .pop .idx { color: var(--mute); }
+.pop-h { display: flex; justify-content: space-between; gap: 12px; margin: 0 0 6px; padding-bottom: 8px; border-bottom: 1px solid var(--ink); }
+.toc { width: min(380px, calc(100vw - 32px)); padding: 12px 16px 10px; }
+.toc-l { list-style: none; margin: 0; padding: 0; }
+.toc-l a {
+  display: grid; grid-template-columns: .9em 2em auto minmax(16px, 1fr) auto; align-items: baseline; gap: 8px;
+  min-height: 40px; box-sizing: border-box; padding: 9px 0 5px; text-decoration: none; border-bottom: 1px solid var(--hair);
+}
+.toc-l li:last-child a { border-bottom: 0; }
+.toc-cur { color: var(--blue); visibility: hidden; }
+.toc-t {
+  font-family: var(--f-display); text-transform: uppercase; font-size: 25px; line-height: .86; white-space: nowrap;
+  font-variation-settings: 'wdth' var(--w), 'wght' var(--g);
+}
+.toc-l .lead { height: 2px; opacity: .5; background: radial-gradient(circle, currentColor .9px, transparent 1.25px) 0 50% / 6px 2px repeat-x; }
+.toc-l a[aria-current="page"] { color: var(--blue); }
+.toc-l a[aria-current="page"] .toc-cur { visibility: visible; }
+.toc-l a:focus-visible { outline-offset: 2px; }
+@media (hover: hover) { .toc-l a:hover .toc-t { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; } }
+.volpop { width: 320px; padding: 14px 16px 16px; }
+.vp-pre { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.vp-pre button { padding: 9px 11px 8px; border: 1px solid var(--hair); }
+.vp-pre button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.menu .vp-pre button { border-color: var(--hair-inv); }
+.menu .vp-pre button[aria-pressed="true"] { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+/* the big fader (console and phone menu): a crescendo wedge with a live display readout */
+.fader.big { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px 16px; width: 100%; white-space: normal; }
+.fader.big .fd-l { grid-column: 1 / -1; }
+.fader.big .fd-s { height: 46px; gap: 3px; padding: 0; }
+.fader.big .fd-s i { flex: 1; width: auto; }
+.fader.big .fd-s i.x { flex: 1.5; margin-left: 5px; }
+.fader.big .fd-n {
+  --w: 100; --g: 500; min-width: 0; font-family: var(--f-display); font-size: 56px; line-height: .8; letter-spacing: 0;
+}
+.fnpop { width: max-content; max-width: min(42ch, calc(100vw - 32px)); padding: 10px 12px 9px; font-size: 11px; line-height: 1.45; text-transform: none; letter-spacing: .02em; }
+.fnpop button { display: block; margin-top: 8px; color: var(--blue); text-transform: uppercase; letter-spacing: .07em; }
+
+/* ── D1 · Key to the Specimen: one table, rendered as the sheet ────────────── */
+.ks {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: var(--z-sheet); width: min(520px, 100vw); box-sizing: border-box;
+  overflow-y: auto; overscroll-behavior: contain; background: var(--paper); color: var(--ink); border-left: 1px solid var(--ink);
+  transform: translateX(101%); transition: transform .5s var(--ease), visibility 0s .5s; visibility: hidden;
+}
+.ks.open { transform: none; visibility: visible; transition: transform .5s var(--ease); }
+.ks .lbl, .ks .idx { color: var(--mute); }
+.ks-in { padding: calc(env(safe-area-inset-top, 0px) + 16px) var(--gut-r) calc(env(safe-area-inset-bottom, 0px) + 28px) 28px; }
+.ks-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+.ks-x { padding: 6px 0 6px 12px; }
+.ks-h {
+  margin: 26px 0 6px; font-family: var(--f-display); font-weight: 400; text-transform: uppercase;
+  font-variation-settings: 'wdth' 150, 'wght' 900; font-size: 46px; line-height: .84;
+}
+.ks-sub { margin: 0 0 18px; }
+.ks-l, .ks-g { list-style: none; margin: 0; padding: 0; }
+.ks-l li { display: grid; grid-template-columns: 6.2rem minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--hair); }
+.ks-caps { display: flex; flex-wrap: wrap; gap: 5px; }
+.cap {
+  display: inline-grid; place-items: center; min-width: 44px; height: 44px; box-sizing: border-box; padding: 0 8px 2px;
+  border: 1px solid var(--ink); border-bottom-width: 3px; font-family: var(--f-display); text-transform: uppercase;
+  font-size: 21px; line-height: 1; font-variation-settings: 'wdth' var(--w), 'wght' var(--g);
+  transition: transform .09s, border-bottom-width .09s, background-color .2s, color .2s;
+}
+.cap.dn { transform: translateY(2px); border-bottom-width: 1px; background: var(--ink); color: var(--paper); }
+.ks-a { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.ks-a .lead { flex: 1; min-width: 12px; height: 2px; opacity: .5; background: radial-gradient(circle, currentColor .9px, transparent 1.25px) 0 50% / 6px 2px repeat-x; }
+.ks-st { color: var(--blue); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ks-last { margin: 14px 0 0; min-height: 1.45em; }
+.ks-t { margin: 30px 0 8px; padding-top: 10px; border-top: 1px solid var(--ink); }
+.ks-g li { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; border-bottom: 1px solid var(--hair); }
+.ks-g li span:last-child { text-align: right; color: var(--mute); }
+.ks-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; }
+.ks-sw { display: inline-flex; align-items: center; gap: .55em; padding: 9px 11px 8px; border: 1px solid var(--ink); }
+.ks-sw .o { width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
+.ks-sw[aria-pressed="true"] .o { background: currentColor; }
+
+/* ── D1 · The LOUD stamp (and its hairline inverse, WHISPER) ──────────────── */
+.stamp {
+  position: fixed; left: 50%; top: 50%; z-index: var(--z-stamp); pointer-events: none;
+  display: none; flex-direction: column; align-items: center; gap: 10px; padding: .1em .22em .14em;
+  color: var(--blue); border: 3px solid currentColor; border-radius: 14px; transform: translate(-50%, -50%) rotate(-8deg);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3.2 2.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3.2 2.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px;
+}
+.stamp.on { display: flex; }
+.stamp.inv { color: var(--paper); }
+.stamp.on-blue { color: var(--ink); }
+.stamp-w {
+  font-family: var(--f-display); font-weight: 400; text-transform: uppercase; white-space: nowrap;
+  font-variation-settings: 'wdth' 150, 'wght' 900; font-size: clamp(76px, 17vw, 250px); line-height: .8;
+}
+.stamp-s { padding-bottom: 6px; font-size: 11px; white-space: nowrap; }
+.stamp.wh { border-width: 1px; border-radius: 6px; padding: .16em .4em .2em; }
+.stamp.wh .stamp-w { text-transform: none; font-variation-settings: 'wdth' 50, 'wght' 100; font-size: clamp(64px, 13vw, 200px); }
+
+/* ── D1 · PROOF: the specimen shows its working (canvas overlay + keylines) ── */
+.proof-cv { position: fixed; left: 0; top: 0; z-index: var(--z-proof); display: block; width: 100%; height: 100vh; height: 100lvh; pointer-events: none; }
+.proof-cv[hidden], .tele[hidden] { display: none; }
+.tele {
+  position: fixed; left: var(--gut-l); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: var(--z-tele);
+  margin: 0; padding: 8px 10px 7px; background: var(--ink); color: var(--paper); box-shadow: 0 0 0 1px var(--hair-inv);
+  font: 400 9.5px/1.55 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; white-space: pre;
+  pointer-events: none; font-variant-numeric: tabular-nums; max-width: calc(100vw - 32px); overflow: hidden;
+}
+html.proof { --kl: var(--ink); }
+html.proof .inst, html.proof .band, html.proof .row.is-on, html.proof .row.is-kb, html.proof .case { --kl: var(--paper); }
+html.proof :is(.kin .k, .tagline, .manifesto, .manifesto .w, .r-btn, .thr-h, .email, .mk-row, .st-w, .ld-t, .ld-ev .lg, .lf b, .case-title, .sw) {
+  color: transparent !important; -webkit-text-stroke: 1px var(--kl);
+}
+html.proof :is(.tagline em, .manifesto .hl) { -webkit-text-stroke-color: var(--blue); }
+html.proof .sw { -webkit-text-stroke-color: var(--ink); }
+html.proof .sw i { color: var(--blue) !important; -webkit-text-stroke: 0; }
+html.proof .str path { fill: transparent; stroke: var(--ink); stroke-width: 1px; }
+html.proof .lf:not(.blue) { background: transparent; box-shadow: inset 0 0 0 1px var(--hair-inv); }
+html.proof .nav .m4b { color: transparent; -webkit-text-stroke: 1px #fff; }
+html.proof .nav:is([data-tone="ink"], [data-tone="blue"]) .m4b { -webkit-text-stroke-color: var(--paper); }
+
+/* ── D1 · Reader layer: footnote marks, the selection inspector, readouts ─── */
+.fnref { color: inherit; text-decoration: none; padding: 0 .1em; }
+.fnref:focus-visible { outline-offset: 2px; }
+@media (hover: hover) { .fnref:hover sup { color: var(--blue); } }
+.band .fnref:hover sup { color: inherit; }
+.fns li { position: relative; padding: 4px 6px; margin: -4px -6px; transition: background-color .4s var(--ease), color .4s var(--ease); }
+.fns li:focus { outline: none; }
+.fns li.ring { background: var(--paper); color: var(--ink); padding: 11px 18px; margin: -11px -18px; }
+.fns li.ring b { color: var(--blue); }
+/* the proof ellipse sits inside the paper slip: IKB on IKB would vanish */
+.fn-ring { position: absolute; left: 3px; top: 2px; width: calc(100% - 6px); height: calc(100% - 4px); overflow: visible; pointer-events: none; }
+.fn-ring ellipse { fill: none; stroke: var(--blue); stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.fn-back { margin-left: auto; padding-left: 10px; white-space: nowrap; color: var(--blue); text-decoration: none; }
+.fns li.new { animation: fn-in .5s var(--ease-out); }
+@keyframes fn-in { from { transform: perspective(300px) rotateX(-80deg); opacity: .2; } to { transform: none; opacity: 1; } }
+.rig .chip.long { white-space: normal; width: max-content; max-width: 42ch; line-height: 1.35; text-transform: none; letter-spacing: .02em; }
+html.whisper .rig .c { width: 5px; height: 5px; }
+.selchip {
+  position: fixed; left: 0; top: 0; z-index: var(--z-sel); pointer-events: none; box-sizing: border-box; max-width: calc(100vw - 32px);
+  margin: 0; padding: 5px 8px 4px; background: var(--ink); color: var(--paper); box-shadow: 0 0 0 1px var(--hair-inv);
+  font: 500 10px/1.25 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; opacity: 0; visibility: hidden; transition: opacity .18s, visibility 0s .18s;
+}
+.selchip.on { opacity: 1; visibility: visible; transition: opacity .18s; }
+.rsz {
+  position: fixed; right: var(--gut-r); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: var(--z-tele);
+  margin: 0; padding: 6px 9px 5px; background: var(--ink); color: var(--paper); font-size: 10px; white-space: nowrap;
+  max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis;
+  pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s;
+}
+.rsz.on { opacity: 1; visibility: visible; transition: opacity .15s; }
+@media (pointer: coarse) {
+  .selchip.dock { left: var(--gut-l); right: var(--gut-r); top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); transform: none !important; max-width: none; white-space: normal; }
+}
+@media (max-width: 760px) {
+  .toc { width: auto; }
+  .toc-l a { min-height: 46px; }
+  .ks-in { padding-left: var(--gut-l); }
+  .ks-h { font-size: 38px; }
+  .ks-l li { grid-template-columns: 6rem minmax(0, 1fr); }
+  .ks-l .ks-st { grid-column: 2; justify-self: start; }
+  .cap { min-width: 36px; height: 36px; font-size: 18px; }
+  .tele { right: var(--gut-r); white-space: nowrap; text-overflow: ellipsis; font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop, .ks, .cap, .meter i, .fns li, .selchip, .rsz { transition: none; }
+  .m4b > span { transition: none; }
+  .fns li.new { animation: none; }
+}
+
 /* ── Toast ────────────────────────────────────────────────────────────────── */
 .toast {
   position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); z-index: var(--z-toast);
@@ -887,7 +1111,7 @@ html.has-rig .pc {
   }
   .nav[data-tone="ink"] { background: var(--ink); color: var(--paper); border-bottom-color: var(--hair-inv); }
   .nav[data-tone="blue"] { background: var(--blue); color: var(--paper); border-bottom-color: var(--hair-inv); }
-  .brand-t, .nav-links, .nav .snd { display: none; }
+  .brand-t, .nav-links, .nav .snd, .nav .fader, .vol-btn, .pf, .kc { display: none; }
   .nav-r { display: contents; }
   .folio-n { justify-self: start; }
   .menu-btn { display: inline-flex; justify-self: end; padding: 6px 0 6px 12px; }
@@ -932,22 +1156,31 @@ html.has-rig .pc {
 <div class="rig" aria-hidden="true"><i class="c c0"></i><i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="d"></i><span class="chip"></span></div>
 
 <nav class="nav wrap mono" aria-label="Primary" data-tone="paper">
-  <a class="brand" href="#top" data-cursor-label="Top"><span class="m4b" aria-hidden="true">4B</span><span class="brand-t">Specimen No. 02</span><span class="sr">4booser, home</span></a>
+  <a class="brand" href="#top" data-cursor-label="Top"><span class="m4b" aria-hidden="true"><span>4</span><span>B</span></span><span class="brand-t">Specimen No. 02</span><span class="sr">4booser, home</span></a>
   <div class="nav-links"><a href="#work">Work</a><a href="#process">Process</a><a href="#contact">Contact</a></div>
   <div class="nav-r">
-    <span class="folio-n" aria-hidden="true"><span>p.</span><span id="folio-p">01/06</span><span class="folio-t" id="folio-t">Title</span></span>
-    <button class="snd" type="button" data-sound aria-pressed="false" data-cursor-label="Sound on">Sound <i class="o" aria-hidden="true"></i> <span class="st">Off</span></button>
+    <button class="folio-n" id="folio" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="toc" data-key="1–6"><span class="sr">Contents. Now on page</span><span aria-hidden="true">p.</span><span id="folio-p">01/06</span><span class="folio-t" id="folio-t">Title</span><span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button>
+    <div class="fader" data-fader></div>
+    <button class="vol-btn" id="vol-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="volpop" data-key="+ −">Vol <span data-vol-n>05</span></button>
+    <button class="pf" type="button" data-proof aria-pressed="false" data-key="#">Proof <span aria-hidden="true">⊞</span> <i class="o" aria-hidden="true"></i></button>
+    <button class="kc" type="button" data-keys aria-haspopup="dialog" aria-controls="ks" aria-label="Key to the specimen" data-key="?">?</button>
+    <button class="snd" type="button" data-sound aria-pressed="false" data-key="!">Sound <i class="o" aria-hidden="true"></i> <span class="st">Off</span></button>
     <button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
   </div>
 </nav>
 
 <div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menu" hidden data-lenis-prevent>
-  <div class="menu-top mono"><span class="m4b" aria-hidden="true">4B</span><span class="lbl">Specimen No. 02</span><button class="menu-x" id="menu-x" type="button">Close <span aria-hidden="true">✕</span></button></div>
+  <div class="menu-top mono"><span class="m4b" aria-hidden="true"><span>4</span><span>B</span></span><span class="lbl">Specimen No. 02</span><button class="menu-x" id="menu-x" type="button" data-key="Esc">Close <span aria-hidden="true">✕</span></button></div>
   <ol class="menu-list">
     <li><a href="#work"><span class="mono idx">01</span><span class="ml-b"><span class="ml-t">Work</span></span></a></li>
     <li><a href="#process"><span class="mono idx">02</span><span class="ml-b"><span class="ml-t">Process</span></span></a></li>
     <li><a href="#contact"><span class="mono idx">03</span><span class="ml-b"><span class="ml-t">Contact</span></span></a></li>
   </ol>
+  <div class="menu-desk mono">
+    <div class="fader big" data-fader></div>
+    <div class="vp-pre" role="group" aria-label="Volume presets"><button type="button" data-vol="0">Whisper 00</button><button type="button" data-vol="5">As designed 05</button><button type="button" data-vol="11">Loud 11</button></div>
+    <div class="md-row"><button type="button" data-proof aria-pressed="false">Proof ⊞ <i class="o" aria-hidden="true"></i></button><button type="button" data-keys aria-haspopup="dialog" aria-controls="ks">Key ?</button><button type="button" data-toc aria-haspopup="dialog" aria-controls="toc">Contents</button></div>
+  </div>
   <div class="menu-foot mono">
     <button class="snd" type="button" data-sound aria-pressed="false">Sound <i class="o" aria-hidden="true"></i> <span class="st">Off</span></button>
     <span class="lbl" data-clock>--:--:-- UTC</span>
@@ -959,7 +1192,7 @@ html.has-rig .pc {
   <header class="hero wrap" id="top" data-nav="paper" data-folio="01" data-title="Title" data-cursor="paint" tabindex="-1">
     <span class="reg l" aria-hidden="true">+</span><span class="reg r" aria-hidden="true">+</span>
     <div class="rule" aria-hidden="true"><i class="rule-l"></i><span class="ruler"></span></div>
-    <span class="seal" aria-hidden="true">No.02</span>
+    <span class="seal" aria-hidden="true" data-nodrop data-cursor="chip" data-cursor-label="No.02">No.02</span>
     <div class="spec mono">
       <div class="cell"><span class="lbl"><span class="idx">01</span>4Booser Variable</span><span>Creative Developer</span></div>
       <div class="cell"><span class="lbl"><span class="idx">02</span>Axes</span><span class="lc"><span class="nw">wdth 50–150 ·</span> <span class="nw">wght 100–900</span></span></div>
@@ -970,12 +1203,12 @@ html.has-rig .pc {
       <span class="sr">4booser, creative developer</span>
       <span class="nl" aria-hidden="true"><span class="kin"><span class="kl"><span class="k">4</span><span class="k">B</span><span class="k">O</span><span class="k">O</span><span class="k">S</span><span class="k">E</span><span class="k">R</span></span></span></span>
     </h1>
-    <div class="fig1 mono" aria-hidden="true">
+    <div class="fig1 mono">
       <span class="fig1-l">
-        <span class="cal-t">Anybody VF · wdth 50–150 · wght 100–900 · <span id="cal-pct">000</span>%</span>
-        <span class="fig-t">FIG.1 String — 7 nodes · K 220 · <span class="lc">ζ</span> .12 · slnt ±12<sup class="fn">*</sup></span>
+        <span class="cal-t" aria-hidden="true">Anybody VF · wdth 50–150 · wght 100–900 · <span id="cal-pct">000</span>%</span>
+        <span class="fig-t">FIG.1 String — 7 nodes · K 220 · <span class="lc">ζ</span> .12 · slnt ±12<a class="fnref" href="#fn-1" aria-label="Footnote *"><sup class="fn">*</sup></a></span>
       </span>
-      <span class="pl">Pluck ⟷</span>
+      <span class="pl" aria-hidden="true">Pluck ⟷</span>
     </div>
     <div class="tagrow">
       <p class="tagline">I build interfaces that <em>move.</em></p>
@@ -985,8 +1218,8 @@ html.has-rig .pc {
   </header>
 
   <!-- B2 · Strings (4B—02) -->
-  <section class="strings" id="strings" data-nav="paper" data-folio="02" data-title="Strings" aria-labelledby="str-h">
-    <div class="wrap"><div class="rhead mono"><span class="rh-n">4B—02</span><h2 class="rh-t" id="str-h">Strings</h2><i class="lead" aria-hidden="true"></i><span>10 styles<sup class="fn">‡</sup></span></div></div>
+  <section class="strings" id="strings" data-nav="paper" data-folio="02" data-title="Strings" aria-labelledby="str-h" tabindex="-1">
+    <div class="wrap"><div class="rhead mono"><span class="rh-n">4B—02</span><h2 class="rh-t" id="str-h">Strings</h2><i class="lead" aria-hidden="true"></i><span>10 styles<a class="fnref" href="#fn-3" aria-label="Footnote ‡"><sup class="fn">‡</sup></a></span></div></div>
     <ul class="sr"><li>TypeScript</li><li>React</li><li>Next.js</li><li>Three.js</li><li>GLSL</li><li>WebGL</li><li>Node.js</li><li>Figma</li><li>Motion design</li><li>Creative coding</li></ul>
     <div class="str-field" aria-hidden="true" data-nodrop>
       <div class="str str-b" data-geo="1" data-dir="-1" data-oct="1" data-cursor="chip" data-cursor-label="Pluck">
@@ -1002,7 +1235,7 @@ html.has-rig .pc {
   </section>
 
   <!-- B3 · Text setting (4B—03) -->
-  <section class="text wrap" id="text" data-nav="paper" data-folio="03" data-title="Text" data-cursor="paint" aria-labelledby="txt-h">
+  <section class="text wrap" id="text" data-nav="paper" data-folio="03" data-title="Text" data-cursor="paint" aria-labelledby="txt-h" tabindex="-1">
     <div class="rhead mono"><span class="rh-n">4B—03</span><h2 class="rh-t" id="txt-h">Text setting</h2><i class="lead" aria-hidden="true"></i><span><span id="wc">00</span> words</span></div>
     <div class="grid12 txt-grid">
       <div class="marg mono">
@@ -1014,7 +1247,7 @@ html.has-rig .pc {
       <dl class="figs">
         <div><dt class="mono lbl">yrs in the browser</dt><dd>06</dd></div>
         <div><dt class="mono lbl">projects shipped</dt><dd>40</dd></div>
-        <div><dt class="mono lbl">awards &amp; mentions<sup class="fn">†</sup></dt><dd>12</dd></div>
+        <div><dt class="mono lbl">awards &amp; mentions<a class="fnref" href="#fn-2" aria-label="Footnote †"><sup class="fn">†</sup></a></dt><dd>12</dd></div>
       </dl>
     </div>
     <p class="folio mono"><span>Specimen No. 02 — Text setting</span><span>03</span></p>
@@ -1153,7 +1386,7 @@ html.has-rig .pc {
           <span class="mono lbl"><span class="idx">01</span>Email</span>
           <p class="email" id="email" data-cursor="copy" data-cursor-label="Copy">hello@4booser.dev</p>
           <div class="c-act">
-            <button class="btn" id="copy" type="button" data-cursor-label="Copy">Copy email</button>
+            <button class="btn" id="copy" type="button" data-key="@">Copy email</button>
             <a class="btn" id="mailto" href="mailto:hello@4booser.dev?subject=Let%E2%80%99s%20make%20something%20loud" data-cursor-label="Write">Write: make something loud ↗</a>
           </div>
         </div>
@@ -1182,8 +1415,12 @@ html.has-rig .pc {
           <label class="ant-sign mono"><span class="lbl"><span class="idx">05</span>Sign the plate</span><input id="ant-in" type="text" maxlength="24" spellcheck="false" autocomplete="off" placeholder="Your name"></label>
         </figure>
       </div>
-      <ol class="fns mono" id="fns" aria-label="Footnotes"></ol>
-      <button class="rewind mono" id="rewind" type="button" data-cursor-label="Rewind"><span>Rewind ↑</span><i class="lead" aria-hidden="true"></i><span>Play it again</span></button>
+      <ol class="fns mono" id="fns" aria-label="Footnotes">
+        <li id="fn-1" tabindex="-1"><b>*</b><span>slnt is synthetic: Anybody has an ital axis, the lean is a skewX transform.</span></li>
+        <li id="fn-2" tabindex="-1"><b>†</b><span>Demo figures, like every number on this page.</span></li>
+        <li id="fn-3" tabindex="-1"><b>‡</b><span>No glyphs were harmed. Several were stretched.</span></li>
+      </ol>
+      <button class="rewind mono" id="rewind" type="button" data-key="^"><span>Rewind ↑</span><i class="lead" aria-hidden="true"></i><span>Play it again</span></button>
       <div class="foot-bar mono"><span>© 2026 4booser</span><span>Demo content — name, projects, numbers and links are placeholders</span><span>06</span></div>
     </div>
   </footer>
@@ -1196,7 +1433,7 @@ html.has-rig .pc {
       <div class="case-bar mono">
         <span id="case-count">Plate 01 / 05</span>
         <span class="case-inst lbl" id="case-inst"></span>
-        <button class="btn" id="case-close" type="button" data-cursor-label="Close">Close <span aria-hidden="true">✕</span></button>
+        <button class="btn" id="case-close" type="button" data-key="Esc">Close <span aria-hidden="true">✕</span></button>
       </div>
       <div class="case-head"><h2 class="case-title" id="case-title"></h2></div>
       <div class="case-grid">
@@ -1242,6 +1479,40 @@ html.has-rig .pc {
 <div class="flight" aria-hidden="true"></div>
 <div class="pc" aria-hidden="true"><canvas></canvas><span class="pc-m a">+</span><span class="pc-m b">+</span><span class="pc-m c">+</span><span class="pc-m d">+</span><span class="pc-cap mono"></span></div>
 
+<!-- D1 · navigation and reader layer: Contents, VOL console, Key sheet, stamp, proof, inspector -->
+<div class="pop toc mono" id="toc" role="dialog" aria-label="Contents" hidden data-lenis-prevent>
+  <p class="pop-h"><span>Contents</span><span class="lbl">Specimen No. 02 · 6 pp.</span></p>
+  <ol class="toc-l"></ol>
+</div>
+<div class="pop volpop mono" id="volpop" role="dialog" aria-label="Volume" hidden>
+  <div class="fader big" data-fader></div>
+  <div class="vp-pre" role="group" aria-label="Volume presets"><button type="button" data-vol="0">Whisper 00</button><button type="button" data-vol="5">As designed 05</button><button type="button" data-vol="11">Loud 11</button></div>
+</div>
+<div class="pop fnpop mono" id="fnpop" role="dialog" aria-label="Footnote" hidden><span class="fnpop-t"></span><button type="button">Go to the note →</button></div>
+<div class="ks" id="ks" role="dialog" aria-modal="true" aria-labelledby="ks-h" hidden data-lenis-prevent>
+  <div class="ks-in">
+    <div class="ks-top mono"><span class="lbl"><span class="idx">?</span>Key</span><button class="ks-x" id="ks-x" type="button" data-key="Esc">Close <span aria-hidden="true">✕</span></button></div>
+    <h2 class="ks-h" id="ks-h">Key to the Specimen</h2>
+    <p class="ks-sub mono lbl">Punctuation that means its action. Press any key to try it.</p>
+    <ol class="ks-l mono"></ol>
+    <p class="ks-last mono lbl" aria-live="polite">Last key: —</p>
+    <p class="ks-t mono lbl">By hand — every key has a touch route</p>
+    <ul class="ks-g mono">
+      <li><span>Tap a letter of the name</span><span>Strike</span></li>
+      <li><span>Swipe across the name</span><span>Pluck</span></li>
+      <li><span>Drag a tape</span><span>Scrub</span></li>
+      <li><span>Tap the No.02 seal five times</span><span>Volume 11</span></li>
+      <li><span>Menu → Volume</span><span>Whisper to LOUD</span></li>
+      <li><span>Tap the folio</span><span>Contents</span></li>
+    </ul>
+    <div class="ks-foot mono"><button class="ks-sw" id="ks-sw" type="button" aria-pressed="true">Single-key shortcuts <i class="o" aria-hidden="true"></i> <span>On</span></button><span class="lbl">Ignored while you type</span></div>
+  </div>
+</div>
+<div class="stamp mono" aria-hidden="true"><span class="stamp-w"></span><span class="stamp-s"></span></div>
+<canvas class="proof-cv" aria-hidden="true" hidden></canvas>
+<pre class="tele" aria-hidden="true" hidden></pre>
+<p class="selchip" aria-hidden="true"></p>
+<p class="rsz mono" aria-hidden="true"></p>
 <div class="toast mono" id="toast" role="status" aria-live="polite"></div>
 
 <script async id="lenis-js" src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
@@ -1312,19 +1583,25 @@ html.has-rig .pc {
                     setWord/kick run the FIG.4 physics when matter-js is live, else the static typeset
        K2.plate { el, canvas, setStats({ px, drops }), setEmpty(b), print(), number, signature, visible }
        K2.rewind.run() — kick, 2.4s scroll to the top, short calibration replay
+     D1 · modes, director and navigation layer
+       K2.mode      { vol 0–11, proof, brush 'ikb'|'gold', tip 'round'|'chisel'|'type', show, bias, set(patch) → bool, toggle(k) }
+                    mirrored to html[data-vol|data-proof|data-brush|data-tip|data-show] and --vol; 'k2:mode' event on document
+                    { detail: { mode, changed[] } }. vol 11 = the LOUD event (back to the previous VOL ≤ 10 after 10s), 0 = WHISPER
+       K2.vol       { a (bias −1…1), w(wdth), g(wght), fv(w, g), fit(line, box) } — remap any display instance; CSS lines read --vp/--vn
+       K2.director  { run(name, { dur, end(cancelled) }) → bool, end(name), current, quiet(ms) } — one page-scale event at a time;
+                    priority rewind > press-pull > klein = eleven = whisper > snap > demonstration; 'k2:director' events
+       K2.events    { eleven(), whisper(), stamp(word, sub, hairline), shake() }
+       K2.pages     { turn(n 1–6), flap(from, to), current, contents(open) } · K2.keys { table, sheet(open), enabled, fallback(e) }
+       K2.proof     { on, spec(el, fn) } — register a live spec tag · K2.notes { add(mark, text), jump(i) } · K2.help()
      ──────────────────────────────────────────────────────────────────────── */
   const K2 = window.K2 = {
-    version: 'C',
+    version: 'D1',
     env,
     util: { $, $$, clamp, lerp, smooth, pad3, mk, Track },
     lastInput: performance.now(),
     hooks: [],
     onLayout(fn) { this.hooks.push(fn); },
-    footnotes: [
-      ['*', 'slnt is synthetic: Anybody has an ital axis, the lean is a skewX transform.'],
-      ['†', 'Demo figures, like every number on this page.'],
-      ['‡', 'No glyphs were harmed. Several were stretched.']
-    ],
+    footnotes: [],   /* [mark, text] — read from the colophon's #fns at boot; K2.notes.add() appends */
     pigment: { enabled: false, splat() {}, drop() {}, burst() {} },
     fit(line, box, base = 100) {
       box.style.fontSize = base + 'px';
@@ -1339,10 +1616,13 @@ html.has-rig .pc {
   const F = { t: 0, dt: 1 / 60, y: window.scrollY, dy: 0, vel: 0, vw: innerWidth, vh: innerHeight, max: 1, p: 0 };
   const S = (() => {
     const list = [];
+    /* telemetry (PROOF): per-system tick ms, the names that kept the loop awake, an EMA of the frame interval */
+    const stat = { trace: false, awake: [], ms: 16.7, idle: null };
     let raf = 0, last = 0;
     function frame(t) {
       raf = 0;
-      const dt = last ? clamp((t - last) / 1000, 1 / 240, 1 / 20) : 1 / 60;
+      const dt = last ? clamp((t - last) / 1000, 1 / 240, 1 / 20) : 1 / 60, tr = stat.trace;
+      if (tr) { if (last) stat.ms += (Math.min(t - last, 250) - stat.ms) * .08; stat.awake.length = 0; }
       last = t; F.t = t; F.dt = dt;
       for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].pre) list[i].pre(t, dt);
       const y = window.scrollY;
@@ -1353,11 +1633,18 @@ html.has-rig .pc {
       F.p = clamp(y / F.max, 0, 1);
       for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].read) list[i].read(t, dt);
       let busy = F.vel !== 0;
-      for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].tick && list[i].tick(t, dt)) busy = true;
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i];
+        if (s.active === false || !s.tick) continue;
+        if (!tr) { if (s.tick(t, dt)) busy = true; continue; }
+        const a = performance.now(), b = s.tick(t, dt);
+        s.ms = (s.ms || 0) + (performance.now() - a - (s.ms || 0)) * .15;
+        if (b) { busy = true; stat.awake.push(s.name); }
+      }
       /* a system may already have woken the loop during this frame (Lenis emits scroll from pre):
          never queue a second callback, or callbacks double every frame */
       if (busy) { if (!raf) raf = requestAnimationFrame(frame); }
-      else if (!raf) last = 0;
+      else if (!raf) { last = 0; if (stat.idle) stat.idle(); }
     }
     function wake() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame); }
     document.addEventListener('visibilitychange', () => {
@@ -1368,7 +1655,11 @@ html.has-rig .pc {
       add(sys) { list.push(sys); wake(); return sys; },
       remove(sys) { const i = list.indexOf(sys); if (i >= 0) list.splice(i, 1); },
       wake,
-      frame: F
+      frame: F,
+      stat,
+      get size() { return list.length; },
+      /* console.table(K2.scheduler.systems()): the loop, as data */
+      systems: () => list.map(s => ({ name: s.name, active: s.active !== false, 'tick ms': +(s.ms || 0).toFixed(3) }))
     };
   })();
   K2.scheduler = S;
@@ -1604,19 +1895,45 @@ html.has-rig .pc {
       v.g.disconnect(); v.g.connect(bp); bp.connect(this.bus);
       v.src.addEventListener('ended', () => bp.disconnect());
     },
-    /* the page gets louder on the way down */
+    /* the LOUD event: a 55Hz swell under all seven strings struck as a chord, the low-pass thrown open */
+    bass() {
+      if (!this.on || !this.gate('bass', 400)) return;
+      const c = this.ctx, t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(55, t);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.5, t + .05); g.gain.exponentialRampToValueAtTime(.001, t + 1.2);
+      o.connect(g); g.connect(this.bus); o.start(t); o.stop(t + 1.25);
+      o.onended = () => { o.disconnect(); g.disconnect(); };
+      for (let i = 0; i < 7; i++) this.play(this.ks[i], .24, (i / 3 - 1) * .5, 1, t + .02 + i * .025);
+      this.lp.frequency.cancelScheduledValues(t); this.lp.frequency.setTargetAtTime(12000, t, .04);
+      clearTimeout(this.bT); this.bT = setTimeout(() => this.setLevel(F.p), 1400);
+    },
+    /* a page turn: paper swished through a falling band, then the leaf settles with a tick */
+    turn() {
+      if (!this.on || !this.gate('turn', 160)) return;
+      const c = this.ctx, t = c.currentTime, bp = c.createBiquadFilter();
+      bp.type = 'bandpass'; bp.Q.value = .9; bp.frequency.setValueAtTime(5200, t); bp.frequency.exponentialRampToValueAtTime(900, t + .2);
+      const v = this.play(this.noise, 0, .25, 1, t, .24);
+      if (!v) return;
+      v.g.gain.setValueAtTime(0, t); v.g.gain.linearRampToValueAtTime(.12, t + .03); v.g.gain.exponentialRampToValueAtTime(.001, t + .22);
+      v.g.disconnect(); v.g.connect(bp); bp.connect(this.bus);
+      v.src.addEventListener('ended', () => bp.disconnect());
+      setTimeout(() => this.tick(.7), 190);
+    },
+    /* WHISPER: the master drops 12 dB for as long as the hush lasts */
+    duck(on) { this.dk = on ? .25 : 1; this.setLevel(F.p); },
+    /* the page gets louder on the way down, and VOL turns the whole instrument up or down */
     setLevel(p) {
       if (!this.ctx) return;
-      const t = this.ctx.currentTime;
-      this.master.gain.setTargetAtTime(.5 + .3 * p, t, .25);
-      this.lp.frequency.setTargetAtTime(1600 * Math.pow(4.75, p), t, .25);
+      const t = this.ctx.currentTime, v = Mode.s.vol, k = .55 + .09 * Math.min(v, 10) + (v > 10 ? .25 : 0);
+      this.master.gain.setTargetAtTime(Math.min(.95, (.5 + .3 * p) * k * (this.dk || 1)), t, .25);
+      this.lp.frequency.setTargetAtTime(Math.min(15000, 1600 * Math.pow(4.75, p) * Math.pow(2, (v - 5) / 4)), t, .25);
     }
   };
   function syncSound() {
+    const loud = Sound.on && Mode.s.vol === 11;
     $$('[data-sound]').forEach(b => {
       b.setAttribute('aria-pressed', String(Sound.on));
-      $('.st', b).textContent = Sound.on ? 'On' : 'Off';
-      b.dataset.cursorLabel = Sound.on ? 'Sound off' : 'Sound on';
+      $('.st', b).textContent = loud ? 'Loud' : Sound.on ? 'On' : 'Off';
     });
   }
   document.addEventListener('visibilitychange', () => {
@@ -1676,20 +1993,44 @@ html.has-rig .pc {
   const nav = $('.nav'), page = $('.page'), menu = $('#menu'), menuBtn = $('#menu-btn');
   const folioP = $('#folio-p'), folioT = $('#folio-t'), folioN = $('.folio-n');
   let navMid = 26, menuOpen = false, menuT = 0;
+  /* the masthead monogram's instance per page: [4, B] — the title ramp, a tape voice, the text setting,
+     two client voices, the board's current stage, Black Extended on the band */
+  const MONO = { '01': [[62, 200], [150, 900]], '02': [[122, 850], [150, 900]], '03': [[80, 520], [80, 520]], '04': [[150, 250], [50, 900]], '05': [[112, 700], [112, 700]], '06': [[150, 900], [150, 900]] };
   const Chrome = {
-    name: 'chrome', active: true, tone: 'paper', key: '', lp: -1,
+    name: 'chrome', active: true, tone: 'paper', key: '', lp: -1, hold: false, n: 1, meter: '', mono: '',
+    segs: $$('.meter i'), m4b: $$('.m4b > span'),
     tick() {
       const tone = Zones.toneAt(F.y + navMid);
       if (tone !== this.tone) { nav.dataset.tone = tone; this.tone = tone; }
       const fz = Zones.folioAt(F.y + F.vh * .35);
-      if (fz && fz.n + fz.title !== this.key) {
+      if (fz && fz.n + fz.title !== this.key && !this.hold) {
         const first = !this.key;
-        this.key = fz.n + fz.title;
+        this.key = fz.n + fz.title; this.n = +fz.n || 1;
         folioP.textContent = fz.n + '/06'; folioT.textContent = fz.title;
         if (!first && !env.reduce && folioN.animate) folioN.animate([{ transform: 'translateY(60%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' });
+        Pages.mark(this.n);
       }
+      this.level();
+      this.monogram();
       if (Sound.on && Math.abs(F.p - this.lp) > .01) { this.lp = F.p; Sound.setLevel(F.p); }
       return false;
+    },
+    /* level meter: lit up to the current page, the next segments flicker with scroll speed */
+    level() {
+      const n = this.n, pk = Math.min(6 - n, Math.round(Math.min(1, Math.abs(F.vel) / 2600) * (6 - n) + (Math.abs(F.vel) > 60 ? .5 : 0)));
+      const key = n * 8 + pk;
+      if (key === this.meter) return;
+      this.meter = key;
+      for (let i = 0; i < 6; i++) { const s = this.segs[i]; s.classList.toggle('on', i < n); s.classList.toggle('pk', i >= n && i < n + pk); }
+    },
+    monogram() {
+      const n = folioP.textContent.slice(0, 2), st = n === '05' ? Board.stage : -1;
+      const key = n + st;
+      if (key === this.mono) return;
+      this.mono = key;
+      const sg = st >= 0 && st < 4 ? Board.stages[st] : null;
+      const ins = st >= 4 ? MONO['06'] : sg ? [[sg.w, sg.g], [sg.w, sg.g]] : MONO[n] || MONO['01'];
+      for (let i = 0; i < this.m4b.length; i++) { const s = this.m4b[i].style, v = ins[i & 1]; s.setProperty('--mw', v[0]); s.setProperty('--mg', v[1]); }
     }
   };
   const focusables = el => $$('a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])', el);
@@ -1699,11 +2040,14 @@ html.has-rig .pc {
     menuOpen = true; menu.hidden = false; menuBtn.setAttribute('aria-expanded', 'true');
     page.inert = true; nav.inert = true;
     K2.lockScroll(true);
-    /* each word fitted to the measure: a specimen crescendo from Work (50/300) to Contact (150/900) */
-    $$('.ml-b', menu).forEach(bx => { if (K2.fit($('.ml-t', bx), bx) > innerHeight * .2) bx.style.fontSize = (innerHeight * .2).toFixed(1) + 'px'; });
+    fitMenu();
     if (env.reduce) menu.classList.add('open');
     else requestAnimationFrame(() => requestAnimationFrame(() => menu.classList.add('open')));
     $('.menu-list a', menu).focus({ preventScroll: true });
+  }
+  /* each word fitted to the measure: a specimen crescendo from Work (50/300) to Contact (150/900); VOL re-fits it live */
+  function fitMenu() {
+    $$('.ml-b', menu).forEach(bx => { if (K2.fit($('.ml-t', bx), bx) > innerHeight * .16) bx.style.fontSize = (innerHeight * .16).toFixed(1) + 'px'; });
   }
   function closeMenu(restore) {
     if (!menuOpen) return;
@@ -1719,11 +2063,7 @@ html.has-rig .pc {
     document.addEventListener('keydown', e => {
       if (!menuOpen) return;
       if (e.key === 'Escape') { e.preventDefault(); closeMenu(true); return; }
-      if (e.key === 'Tab') {
-        const f = focusables(menu), a = f[0], z = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
-        else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
-      }
+      if (e.key === 'Tab') trap(e, menu);
     });
     DESK.addEventListener?.('change', () => { if (DESK.matches) closeMenu(false); });
     $$('[data-sound]').forEach(b => b.addEventListener('click', () => Sound.toggle()));
@@ -1749,7 +2089,7 @@ html.has-rig .pc {
     K: [640, 560, 490, 430],
     src: null, kind: 'base', label: '', paint: false,
     rect: { l: 0, t: 0, r: 0, b: 0, ok: false },
-    live: false, focus: false, press: 0, chipS: '', chipOn: false, placed: false,
+    live: false, focus: false, press: 0, chipS: '', chipOn: false, placed: false, cw: 0,
     init() {
       if (!env.fine) return;
       root.classList.add('has-rig');
@@ -1783,7 +2123,8 @@ html.has-rig .pc {
       if (!isFocus && (dc === 'glyph' || dc === 'throw')) { this.kind = 'glyph'; this.label = dc === 'throw' ? (t.dataset.cursorLabel || 'Throw') : ''; }
       else if (!isFocus && (dc === 'chip' || dc === 'paint')) { this.kind = 'chip'; this.paint = dc === 'paint'; this.label = t.dataset.cursorLabel || ''; }
       else if (!isFocus && dc === 'hide') this.kind = 'hide';
-      else { this.kind = 'el'; this.label = t.dataset.cursorLabel || this.verb(t); }
+      /* a control that already shows its label teaches its key instead of repeating itself */
+      else { this.kind = 'el'; this.label = t.dataset.key ? (Keys.on ? 'Key ' + t.dataset.key : '') : t.dataset.cursorLabel || this.verb(t); }
       /* instrument mode: the marks click softly as they lock onto a new control */
       if (t !== was && this.kind === 'el') Sound.tick(.3);
     },
@@ -1796,6 +2137,7 @@ html.has-rig .pc {
     },
     read() {
       const r = this.rect;
+      if (this.cw < 0 && this.chipOn) this.cw = this.chip.offsetWidth;   /* a new label: measure it once, so it never leaves the viewport */
       r.ok = false;
       if (!this.src || (this.kind !== 'glyph' && this.kind !== 'el')) return;
       if (!this.src.isConnected) { this.src = null; this.kind = 'base'; return; }
@@ -1809,7 +2151,7 @@ html.has-rig .pc {
       const r = this.rect, boxed = r.ok;
       let L, T, R, B;
       if (boxed) { const pad = this.kind === 'glyph' ? 3 : 6; L = r.l - pad; T = r.t - pad; R = r.r + pad; B = r.b + pad; }
-      else { L = P.x - 9; T = P.y - 9; R = P.x + 9; B = P.y + 9; }
+      else { const h = Events.hush ? 6 : 9; L = P.x - h; T = P.y - h; R = P.x + h; B = P.y + h; }
       this.press *= Math.exp(-dt * 10);
       const ins = this.press * 3;
       const tx = this.tx, ty = this.ty;
@@ -1840,11 +2182,11 @@ html.has-rig .pc {
       if (this.kind === 'glyph' && !lab && this.src) lab = this.axes(this.src);
       else if (this.kind === 'chip' && this.paint) lab = Pigment.gain(P.x, P.y) > 0 ? 'Paint' : '';
       else if (this.kind === 'base' || this.kind === 'hide') lab = '';
-      if (lab !== this.chipS) { this.chip.textContent = lab; this.chipS = lab; }
+      if (lab !== this.chipS) { this.chip.textContent = lab; this.chip.classList.toggle('long', lab.length > 30); this.chipS = lab; this.cw = -1; busy = true; }
       const on = !!lab;
       if (on !== this.chipOn) { this.chip.classList.toggle('on', on); this.chipOn = on; }
       if (on) {
-        const cs = `translate3d(${this.x[2].toFixed(1)}px,${(this.y[2] + 6).toFixed(1)}px,0)`;
+        const cs = `translate3d(${Math.max(4, Math.min(this.x[2], F.vw - Math.max(this.cw, 0) - 8)).toFixed(1)}px,${(this.y[2] + 6).toFixed(1)}px,0)`;
         if (cs !== this.ctf) { this.chip.style.transform = cs; this.ctf = cs; }
       }
       return busy;
@@ -1859,7 +2201,10 @@ html.has-rig .pc {
   /* ── 10 · B1 Title page: FIG.1 plucked string ──────────────────────────────
      A damped 1D wave chain (N = 7, free ends) drives each glyph's axes around
      the rest ramp t_i = i/6. Displacement is zero-mean per line, so the
-     measure is conserved; a smoothed scaleX absorbs what is left.          */
+     measure is conserved; a smoothed scaleX absorbs what is left.
+     VOL keeps the line on its measure analytically from the advance grid:
+     louder (wider) sets the name smaller, scaled toward its own baseline;
+     quieter (narrower) holds the size and tracks the sorts out.           */
   const NAME = '4BOOSER', N = 7;
   const SK = 220, SK0 = 38, SC = 7, SH = 1 / 240;          // coupling, on-site, damping, substep
   const RAMP = Float32Array.from({ length: N }, (_, i) => i / (N - 1));
@@ -1874,7 +2219,7 @@ html.has-rig .pc {
     roK: new Float32Array(N).fill(1),
     adv: new Float32Array(N * 9), kap: new Float32Array(N).fill(1),   /* advance per px of font size on a 3×3 designspace grid */
     wd: new Float32Array(N), wg: new Float32Array(N), gx: new Float32Array(N), gw: new Float32Array(N), xc: new Float32Array(N), rx: new Float32Array(N),
-    str: [], tf: [], acc: 0, still: false, pending: true, fn: 0,
+    str: [], tf: [], acc: 0, still: false, pending: true, fn: 0, vv: -1, trueUp: false,
     touch: new Track(),
     /* DOM per breakpoint: one fitted line on desktop, 4BOO / SER on phones (one chain across the break) */
     build() {
@@ -1912,7 +2257,7 @@ html.has-rig .pc {
         }
         hl.append(kin, app, ros);
         this.h1.appendChild(hl);
-        this.lines.push({ hl, kin, kl, probe, i0, n: part.length, capEl, baseEl, capLab, baseLab, bounds, bS: [], ro, fs: 100, cw: 1, scale: 1, tf: '', base: 0, capY: 0, kh: 1, topDoc: 0, left: 0, roW: 40 });
+        this.lines.push({ hl, kin, kl, probe, i0, n: part.length, capEl, baseEl, capLab, baseLab, bounds, bS: [], ro, fs: 100, cw: 1, scale: 1, tf: '', base: 0, capY: 0, kh: 1, topDoc: 0, left: 0, roW: 40, v: 1, trk: 0, kv: 1, vS: -1 });
       }
       this.str = this.L.map(() => ''); this.tf = this.L.map(() => '');
       return true;
@@ -1946,9 +2291,10 @@ html.has-rig .pc {
       this.lines.forEach((ln, j) => {
         let w = 0;
         for (let i = ln.i0; i < ln.i0 + ln.n; i++) w += real[i];
-        ln.cw = cws[j]; ln.fs = w ? ln.cw / w : 100; ln.scale = 1;
+        ln.cw = cws[j]; ln.fs = w ? ln.cw / w : 100; ln.scale = 1; ln.kv = 1;
         ln.kin.style.fontSize = ln.fs.toFixed(3) + 'px';
       });
+      this.vv = -1; this.trueUp = true;
       this.measure();
     },
     measure() {
@@ -1964,14 +2310,47 @@ html.has-rig .pc {
       });
       this.lines.forEach(ln => {
         ln.baseEl.style.top = ln.base.toFixed(1) + 'px';
-        ln.capEl.style.top = ln.capY.toFixed(1) + 'px';
-        const ext = Math.max(8, ln.fs * .05);
-        ln.bounds.forEach(b => { b.style.top = (ln.capY - ext).toFixed(1) + 'px'; b.style.height = (ln.base - ln.capY + 2 * ext).toFixed(1) + 'px'; });
-        if (env.desk) { ln.capLab.style.top = (ln.capY - 4).toFixed(1) + 'px'; ln.baseLab.style.top = (ln.base - 4).toFixed(1) + 'px'; }
-        else { ln.capLab.style.top = (ln.capY - 11).toFixed(1) + 'px'; ln.baseLab.style.top = (ln.base + 4).toFixed(1) + 'px'; }
+        ln.kl.style.transformOrigin = `0 ${ln.base.toFixed(1)}px`;   /* VOL scales the name toward its baseline */
+        ln.vS = -1; this.app(ln);
         ln.bS = []; ln.ro.forEach(r => { r.tf = ''; r.s1 = r.s2 = ''; });
       });
       this.still = false; this.pending = true;
+    },
+    /* cap line, advance boundaries and labels for the size the line is printed at (v = VOL scale) */
+    app(ln) {
+      if (ln.vS === ln.v) return;
+      ln.vS = ln.v;
+      const fs = ln.fs * ln.v, ext = Math.max(8, fs * .05);
+      ln.capY = ln.base - this.cap * fs;
+      ln.capEl.style.top = ln.capY.toFixed(1) + 'px';
+      for (const b of ln.bounds) { b.style.top = (ln.capY - ext).toFixed(1) + 'px'; b.style.height = (ln.base - ln.capY + 2 * ext).toFixed(1) + 'px'; }
+      if (env.desk) { ln.capLab.style.top = (ln.capY - 4).toFixed(1) + 'px'; ln.baseLab.style.top = (ln.base - 4).toFixed(1) + 'px'; }
+      else { ln.capLab.style.top = (ln.capY - 11).toFixed(1) + 'px'; ln.baseLab.style.top = (ln.base + 4).toFixed(1) + 'px'; }
+    },
+    /* VOL → per line: v (uniform scale ≤ 1) when the biased rest ramp is wider than the measure,
+       else trk (px between sorts) to keep the edge-to-edge measure at the designed size */
+    volFit() {
+      for (const ln of this.lines) {
+        let nr = 0, nv = 0;
+        for (let i = ln.i0; i < ln.i0 + ln.n; i++) {
+          const rw = 50 + 100 * RAMP[i], rg = 100 + 800 * RAMP[i];
+          nr += this.advance(i, rw, rg); nv += this.advance(i, Vol.w(rw), Vol.g(rg)) * ln.kv;
+        }
+        if (nv >= nr) { ln.v = nr / nv; ln.trk = 0; }
+        else { ln.v = 1; ln.trk = (nr - nv) * ln.fs / Math.max(1, ln.n - 1); }
+      }
+    },
+    /* after a fit or a settled VOL: true the prediction against the laid-out line once (read phase, no transforms) */
+    read() {
+      if (!this.trueUp || Intro.running) return;
+      this.trueUp = false;
+      for (const ln of this.lines) {
+        let p = 0;
+        for (let i = ln.i0; i < ln.i0 + ln.n; i++) p += this.advance(i, this.wd[i], this.wg[i]) * ln.fs;
+        const real = ln.kl.offsetWidth;
+        if (p > 0 && real > 0) ln.kv = clamp(real / p, .9, 1.1);
+      }
+      this.vv = -1;
     },
     /* the input driving the string this frame: finger, intro ghost brush, or a recent mouse */
     source(t) {
@@ -1989,8 +2368,8 @@ html.has-rig .pc {
       Sound.pluck(i, 1, panOf(cx));
       K2.pigment.burst(cx, cy, { strength: 1, letter: i, size: r.height });
       if (env.reduce) {
-        k.style.fontVariationSettings = `'wdth' 150, 'wght' 900`; this.str[i] = '';
-        setTimeout(() => { k.style.fontVariationSettings = this.restAxes(i); this.str[i] = this.restAxes(i); }, 320);
+        k.style.fontVariationSettings = Vol.fv(150, 900); this.str[i] = '';
+        setTimeout(() => this.write(1, true), 320);
         return;
       }
       this.sa[i] = 1; this.sv[i] = 0; this.hold[i] = .12; this.v[i] += 6;
@@ -2030,6 +2409,7 @@ html.has-rig .pc {
         breath = smooth(0, 1000, tau) * (1 - smooth(6800, 8000, tau));
       }
       const scrollF = Math.abs(F.vel) > 40 && !env.reduce ? clamp(F.vel / 60, -60, 60) * 2.2 : 0; /* scroll plucks the first glyph */
+      if (this.vv !== Vol.ver) { this.vv = Vol.ver; this.volFit(); this.pending = true; }
       if (this.still && !src && !breath && !scrollF && !this.pending && !Intro.running) return false;
       this.still = false; this.pending = false;
 
@@ -2040,8 +2420,8 @@ html.has-rig .pc {
         const vx = src.vx / 1000;
         let mx = 0, sum = 0;
         for (let j = 0; j < this.lines.length; j++) {
-          const ln = this.lines[j], cy = ln.topDoc - F.y + ln.kh / 2, dy = src.y - cy;
-          const gate = Math.abs(dy) < .8 * ln.kh, R = .95 * ln.fs, Rg = .9 * ln.fs;
+          const ln = this.lines[j], fv = ln.fs * ln.v, cy = ln.topDoc - F.y + ln.base - .36 * fv, dy = src.y - cy;
+          const gate = Math.abs(dy) < .8 * ln.kh * ln.v, R = .95 * fv, Rg = .9 * fv;
           for (let i = ln.i0; i < ln.i0 + ln.n; i++) {
             const dx = this.xc[i] - src.x;
             if (gate) {
@@ -2098,36 +2478,41 @@ html.has-rig .pc {
           if (s > 0) tt += (1 - tt) * Math.min(s, 1); else if (s < 0) tt *= 1 + .6 * Math.max(s, -1);
           wd = 50 + 100 * tt + 100 * this.ow[i]; wg = 100 + 800 * tt + 800 * this.og[i];
         }
-        wd = Math.round(clamp(wd, 50, 150) * 10) / 10; wg = Math.round(clamp(wg, 100, 900));
+        wd = Math.round(clamp(Vol.w(clamp(wd, 50, 150)), 50, 150) * 10) / 10; wg = Math.round(clamp(Vol.g(clamp(wg, 100, 900)), 100, 900));
         const k = this.L[i];
         k._w = this.wd[i] = wd; k._g = this.wg[i] = wg;
         const fv = `'wdth' ${wd}, 'wght' ${wg}`;
         if (fv !== this.str[i]) { k.style.fontVariationSettings = fv; this.str[i] = fv; }
-        this.kick[i] *= Math.exp(-dt * 22);
-        const sk = env.reduce ? 0 : clamp(this.v[i] * 5, -12, 12), ky = this.kick[i];
-        const tf = Math.abs(sk) < .05 && Math.abs(ky) < .002 ? '' : `translate3d(0,${ky.toFixed(3)}em,0) skewX(${(-sk).toFixed(2)}deg)`;
-        if (tf !== this.tf[i]) { k.style.transform = tf; this.tf[i] = tf; }
       }
       for (let j = 0; j < this.lines.length; j++) {
         const ln = this.lines[j], i1 = ln.i0 + ln.n;
-        /* width-fit: predicted line width → scaleX in the same frame (never wider than the measure) */
+        /* width-fit: predicted line width (tracking included) → scale in the same frame, never wider than the measure */
         let x = 0;
-        for (let i = ln.i0; i < i1; i++) { const w = this.advance(i, this.wd[i], this.wg[i]) * ln.fs; this.gx[i] = x; this.gw[i] = w; x += w; }
-        const cap = x > 0 ? ln.cw / x : 1;
+        for (let i = ln.i0; i < i1; i++) { const w = this.advance(i, this.wd[i], this.wg[i]) * ln.fs * ln.kv; this.gx[i] = x; this.gw[i] = w; x += w + (i < i1 - 1 ? ln.trk : 0); }
+        const cap = x > 0 ? ln.cw / (x * ln.v) : 1;
         ln.scale = Math.min(clamp(cap, .6, 1.25), cap);
-        const ltf = `scaleX(${ln.scale.toFixed(4)})`;
+        const sx = ln.scale * ln.v, ltf = ln.v === 1 ? `scaleX(${sx.toFixed(4)})` : `scale(${sx.toFixed(4)},${ln.v.toFixed(4)})`;
         if (ltf !== ln.tf) { ln.kl.style.transform = ltf; ln.tf = ltf; }
+        this.app(ln);
+        /* glyph transforms: tracking offset, the strike kick, lean with wave velocity */
+        for (let i = ln.i0; i < i1; i++) {
+          const k = this.L[i];
+          this.kick[i] *= Math.exp(-dt * 22);
+          const sk = env.reduce ? 0 : clamp(this.v[i] * 5, -12, 12), ky = this.kick[i], tx = (i - ln.i0) * ln.trk;
+          const tf = Math.abs(sk) < .05 && Math.abs(ky) < .002 && !tx ? '' : `translate3d(${tx.toFixed(1)}px,${ky.toFixed(3)}em,0) skewX(${(-sk).toFixed(2)}deg)`;
+          if (tf !== this.tf[i]) { k.style.transform = tf; this.tf[i] = tf; }
+        }
         /* advance boundaries ride the glyph edges */
         for (let b = 0; b <= ln.n; b++) {
           const i = ln.i0 + Math.min(b, ln.n - 1);
-          const s = `translate3d(${((b < ln.n ? this.gx[i] : this.gx[i] + this.gw[i]) * ln.scale).toFixed(1)}px,0,0)`;
+          const s = `translate3d(${((b < ln.n ? this.gx[i] : this.gx[i] + this.gw[i]) * sx).toFixed(1)}px,0,0)`;
           if (s !== ln.bS[b]) { ln.bounds[b].style.transform = s; ln.bS[b] = s; }
         }
         /* readouts centred under each glyph, swept apart where neighbours squeeze to hairline */
         const rw = ln.roW, gap = 6;
         let lim = 0;
         for (let i = ln.i0; i < i1; i++) {
-          const cx = (this.gx[i] + this.gw[i] / 2) * ln.scale;
+          const cx = (this.gx[i] + this.gw[i] / 2) * sx;
           this.xc[i] = ln.left + cx;
           this.rx[i] = Math.max(cx - rw / 2, lim); lim = this.rx[i] + rw + gap;
         }
@@ -2369,6 +2754,22 @@ html.has-rig .pc {
       this.P = acc; this.maxW = maxW; this.wtf = this.words.map(() => '');
       this.dirty = true;
     }
+    /* VOL changed the voices' widths: re-space the marquee (and add clones if it no longer covers the tape)
+       without touching the string's state, so a ringing tape keeps ringing */
+    measureWords() { this.nw = this.set.map(w => w.offsetWidth); }
+    rewidth() {
+      const nw = this.nw, k = nw.length;
+      if (!nw || !k) return;
+      const sum = nw.reduce((a, b) => a + b, 0) || 1, maxW = Math.max(...nw);
+      while (this.words.length < Math.ceil((this.L + 2 * maxW) / sum) * k) {
+        const j = this.words.length % k, c = this.set[j].cloneNode(true);
+        c.classList.add('cl'); this.el.appendChild(c); this.words.push(c); this.wtf.push('');
+      }
+      let acc = 0;
+      for (let q = 0; q < this.words.length; q++) { const w = nw[q % k]; this.ww[q] = w; this.wb[q] = acc; acc += w; }
+      this.P = acc; this.maxW = maxW; this.nw = null;
+      this.render();
+    }
     nAt(s) {
       const x = clamp(s / this.D, 0, this.N - 1.0001), j = x | 0, fr = x - j, u = clamp(s / this.L, 0, 1);
       return this.S * 4 * u * (1 - u) + this.d[j] + (this.d[j + 1] - this.d[j]) * fr;
@@ -2487,7 +2888,7 @@ html.has-rig .pc {
       tp.bump(at * tp.L, 1400 * amp); tp.pluckSound(at * tp.L, amp);
       S.wake();
     },
-    sec: $('.strings'), field: $('.str-field'), tapes: [], topDoc: 0, left: 0,
+    sec: $('.strings'), field: $('.str-field'), tapes: [], topDoc: 0, left: 0, vv: 0, due: false,
     GEO: { d: [[.25, .75], [.73, .27]], p: [[.22, .74], [.72, .24]] }, /* [y at left, y at right] per tape, field-relative */
     init() { this.tapes = $$('.str', this.field).map(el => new Tape(el)); this.sec.classList.add('live'); },
     layout() {
@@ -2495,8 +2896,13 @@ html.has-rig .pc {
       this.topDoc = r.top + window.scrollY; this.left = r.left;
       const W = this.field.clientWidth, H = this.field.clientHeight;
       this.tapes.forEach(tp => { tp.layout(W, H, env.desk); tp.render(); });
+      this.vv = Vol.ver;
     },
+    /* VOL: read the voices' new widths in the read phase, re-space them in tick */
+    read() { if (this.vv !== Vol.ver) { this.vv = Vol.ver; this.tapes.forEach(tp => tp.measureWords()); this.due = true; } },
+    revol() { this.tapes.forEach(tp => { tp.measureWords(); tp.rewidth(); }); this.vv = Vol.ver; this.due = false; },
     tick(t, dt) {
+      if (this.due) { this.due = false; this.tapes.forEach(tp => tp.rewidth()); }
       if (env.reduce) return false;
       const ptr = P.seen && P.inside && P.type !== 'touch' && t - P.last < 400 ? P : null;
       for (let i = 0; i < this.tapes.length; i++) this.tapes[i].frame(t, dt, ptr);
@@ -2693,10 +3099,11 @@ void main () {
   for (int i = 0; i < 3; i++) { vec4 q = uFade[i]; if (vUv.x >= q.x && vUv.x <= q.z && vUv.y >= q.y && vUv.y <= q.w) k = keepFade; }
   gl_FragColor = min(r * k, vec4(cap));
 }`,
-    /* the print: a toothy screen-print threshold, then a 45° AM halftone for the drying edge, fixed to the paper */
+    /* the print: a toothy screen-print threshold, then a 45° AM halftone for the drying edge, fixed to the paper;
+       PROOF draws the same dye as 1px iso-lines of density instead (a topographic proof of the fluid) */
     disp: `uniform sampler2D uDye;
 uniform vec2 uPx, uView, srcTexel;
-uniform float uDpr, uOff, uCell, uWrap;
+uniform float uDpr, uOff, uCell, uWrap, uProof;
 uniform vec3 uX, uXB;
 uniform vec4 uR[3];
 float hash (vec2 p) { vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
@@ -2712,6 +3119,7 @@ void main () {
   float dist = length(fract(h) - .5) * uCell;
   float rad = .74 * uCell * sqrt(clamp((d - .05) / (T - .05), 0., 1.));
   float a = max(solid, clamp((rad - dist) * uDpr, 0., 1.));
+  if (uProof > .5) { float iso = abs(fract(d * 7.) - .5) / (7. * fw); a = clamp(1.4 - iso, 0., 1.) * .9; }
   vec3 X = uX;
   for (int i = 0; i < 3; i++) { vec4 r = uR[i]; if (vUv.x >= r.x && vUv.x <= r.z && vUv.y >= r.y && vUv.y <= r.w) X = uXB; }
   gl_FragColor = vec4(X * a, a);
@@ -3193,6 +3601,7 @@ void main () {
       gl.uniform1i(p.u.uDye, this.bind(d, 0));
       gl.uniform2f(p.u.uPx, 1 / this.W, 1 / this.H); gl.uniform2f(p.u.uView, this.vw, this.vh); gl.uniform2f(p.u.srcTexel, d.tx, d.ty);
       gl.uniform1f(p.u.uDpr, this.dpr); gl.uniform1f(p.u.uOff, this.off); gl.uniform1f(p.u.uCell, this.cell); gl.uniform1f(p.u.uWrap, this.wrap);
+      gl.uniform1f(p.u.uProof, Mode.s.proof ? 1 : 0);
       gl.uniform3f(p.u.uX, X[0] / 255, X[1] / 255, X[2] / 255); gl.uniform3f(p.u.uXB, XB[0] / 255, XB[1] / 255, XB[2] / 255);
       gl.uniform4fv(p.u.uR, this.rS);
       this.blit(null);
@@ -3430,7 +3839,7 @@ void main () {
   const HIST = 64;
   const Work = {
     name: 'work', active: false,
-    sec: $('#work'), list: $('.rows'), rows: [], hov: null, kb: null, act: -1, frozen: false,
+    sec: $('#work'), list: $('.rows'), rows: [], hov: null, kb: null, act: -1, frozen: false, vv: 0,
     rr: { l: 0, t: 0, r: 0, b: 0, ok: false },
     card: $('.pc'), cv: $('.pc canvas'), cap: $('.pc-cap'), cc: null, pl: new Plates(),
     shown: 0, placed: false, x: 0, y: 0, mx: 1, my: .5, mvx: 0, mvy: 0, tf: '', op: '', vis: false, drawn: -1,
@@ -3506,18 +3915,38 @@ void main () {
     kinWrite(T) {
       const L = this.kin.L;
       for (let j = 0; j < L.length; j++) {
-        const q = this.kinAxes(j, T), wd = Math.round((50 + 100 * q) * 2) / 2, wg = Math.round(100 + 800 * q);
+        const q = this.kinAxes(j, T), wd = Math.round(Vol.w(50 + 100 * q) * 2) / 2, wg = Math.round(Vol.g(100 + 800 * q));
         const fv = `'wdth' ${wd}, 'wght' ${wg}`;
         if (fv !== this.kin.str[j]) { L[j].style.fontVariationSettings = fv; this.kin.str[j] = fv; L[j]._w = wd; L[j]._g = wg; }
       }
     },
-    /* the axes a row letter is set in right now (start and end of the title flight) */
-    axes(row, j) { const l = row._L[j]; return l._w != null ? [l._w, l._g] : [row._w, row._g]; },
+    /* the axes a row letter is set in right now, VOL included (start and end of the title flight) */
+    axes(row, j) { const l = row._L[j]; return l._w != null ? [l._w, l._g] : [Vol.w(row._w), Vol.g(row._g)]; },
     layout() {
+      this.fitTitles();
+      this.kin.str.fill('');
+      this.kinWrite(performance.now() / 1000);
+      /* preview card (fine pointers) and inline plates (phones) */
+      if (env.fine) {
+        const d = DPR(1.5);
+        this.cc = fitCanvas(this.cv, CARD.w + 2 * CARD.px, CARD.h + 2 * CARD.py, d);
+        this.pl.size(CARD.w, CARD.h, d);
+        this.drawn = -1;
+      }
+      const ic = this.inl;
+      if (!env.desk) {
+        const cw = ic.cvs[0].offsetWidth, ch = ic.cvs[0].offsetHeight, d = DPR(1.5);
+        ic.pl.size(cw, ch, d);
+        ic.cs = ic.cvs.map(cv => fitCanvas(cv, cw, ch, d));
+        ic.cvs.forEach((cv, i) => this.inlineDraw(i, 1.5 + i, 0));
+      }
+    },
+    /* the five voices on their measure (layout, and again whenever VOL moves them) */
+    fitTitles() {
       const desk = env.desk, rows = this.rows;
       this.list.style.removeProperty('--rt-fs');
       rows.forEach(r => { $('.r-title', r).style.fontSize = ''; });
-      if (this.kin.L.length) this.kin.L.forEach(l => { l.style.fontVariationSettings = `'wdth' 125, 'wght' 700`; });
+      if (this.kin.L.length) this.kin.L.forEach(l => { l.style.fontVariationSettings = Vol.fv(125, 700); });
       const base = parseFloat(getComputedStyle($('.r-title', rows[0])).fontSize) || 60;
       if (desk) {
         /* one size for all five voices: the widest title must leave the dot leaders their 24px */
@@ -3534,21 +3963,7 @@ void main () {
       }
       rows.forEach(r => { const rb = r.getBoundingClientRect(); r._te = r._btn.getBoundingClientRect().right - rb.left; r._fs = parseFloat(getComputedStyle(r._btn).fontSize) || base; });
       this.kin.str.fill('');
-      this.kinWrite(performance.now() / 1000);
-      /* preview card (fine pointers) and inline plates (phones) */
-      if (env.fine) {
-        const d = DPR(1.5);
-        this.cc = fitCanvas(this.cv, CARD.w + 2 * CARD.px, CARD.h + 2 * CARD.py, d);
-        this.pl.size(CARD.w, CARD.h, d);
-        this.drawn = -1;
-      }
-      const ic = this.inl;
-      if (!desk) {
-        const cw = ic.cvs[0].offsetWidth, ch = ic.cvs[0].offsetHeight, d = DPR(1.5);
-        ic.pl.size(cw, ch, d);
-        ic.cs = ic.cvs.map(cv => fitCanvas(cv, cw, ch, d));
-        ic.cvs.forEach((cv, i) => this.inlineDraw(i, 1.5 + i, 0));
-      }
+      this.vv = Vol.ver;
     },
     inlineDraw(i, T, my) {
       const ic = this.inl, c = ic.cs[i];
@@ -3567,6 +3982,7 @@ void main () {
     tick(t, dt) {
       const T = t / 1000;
       let busy = false;
+      if (this.vv !== Vol.ver && !Case.isOpen) { this.fitTitles(); this.kinWrite(T); }   /* VOL is moving the voices on screen */
       if (this.kin.L.length && !this.frozen && !env.reduce) { this.kinWrite(T); busy = true; }
       /* the page scrolled the hovered row out from under a still pointer */
       const r = this.rr;
@@ -3678,11 +4094,7 @@ void main () {
       document.addEventListener('keydown', e => {
         if (!this.isOpen) return;
         if (e.key === 'Escape') { e.preventDefault(); this.close(); return; }
-        if (e.key === 'Tab') {
-          const f = focusables(this.el), a = f[0], z = f[f.length - 1];
-          if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
-          else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
-        }
+        if (e.key === 'Tab') trap(e, this.el);
       });
       this.swipe();
     },
@@ -3987,8 +4399,8 @@ void main () {
      scrubbed, so it reverses for free. Reduced motion: a static heading.  */
   const Thresh = {
     name: 'thresh', active: false,
-    sec: $('#process'), pin: $('.thr-pin'), a: $('.thr-a'), at: $('.thr-a .thr-t'), b: $('.thr-b'), bt: $('.thr-b .thr-t'), ink: $('.thr-ink'),
-    G: [], O: 1, live: false, top: 0, run: 1, p: -1, w0: [], w1: [], gs: [], os: '', as: '', ks: '', loud: false, ox: 0, oy: 0, pw: 1, ph: 1,
+    sec: $('#process'), pin: $('.thr-pin'), a: $('.thr-a'), at: $('.thr-a .thr-t'), b: $('.thr-b'), bt: $('.thr-b .thr-t'), ink: $('.thr-ink'), vv: 0,
+    G: [], O: 1, live: false, top: 0, run: 1, p: -1, w0: [], w1: [], gs: [], os: '', as: '', ks: '', loud: false, ox: 0, oy: 0, pw: 1, ph: 1, trk: 0,
     init() {
       const word = this.bt.textContent.trim();
       this.bt.textContent = '';
@@ -4004,20 +4416,23 @@ void main () {
       this.G.forEach(g => { g.style.cssText = ''; });
       this.bt.style.cssText = ''; this.at.style.cssText = ''; this.ink.style.opacity = '';
       this.gs = this.G.map(() => ['', '', '']); this.os = this.as = this.ks = '';
-      K2.fit(this.bt, this.b); K2.fit(this.at, this.a);
+      const fb = K2.vol.fit(this.bt, this.b); K2.fit(this.at, this.a);
       /* MOVES fills the measure; the hairline (Anybody 50/100 is very narrow) takes the height that is left */
       const room = (this.live ? this.pin.clientHeight : innerHeight) * .62, scale = (el, k) => { el.style.fontSize = (parseFloat(el.style.fontSize) * k).toFixed(2) + 'px'; };
       if (this.b.offsetHeight > room * .6) scale(this.b, room * .6 / this.b.offsetHeight);
       const left = room - this.b.offsetHeight, ha = this.a.offsetHeight;
       if (ha > left) scale(this.a, left / ha);
-      if (!this.live) return;
+      /* a quieter VOL narrows MOVES: it keeps its measure by tracking out (only the gap VOL opened, never at rest) */
+      const n = this.G.length, gap = fb.cw - this.bt.offsetWidth;
+      this.trk = Vol.a < 0 && gap > 1 ? gap / Math.max(1, n - 1) : 0;
+      if (!this.live) { if (this.trk) this.bt.style.letterSpacing = (gap / n).toFixed(2) + 'px'; return; }
       /* measure each glyph at 150 and at 50, then set them absolutely so thinning one never moves another */
-      const n = this.G.length, x = [], l0 = this.bt.getBoundingClientRect().left;
-      for (let j = 0; j < n; j++) { x[j] = this.G[j].getBoundingClientRect().left - l0; this.w0[j] = this.G[j].offsetWidth; }
+      const x = [], l0 = this.bt.getBoundingClientRect().left;
+      for (let j = 0; j < n; j++) { x[j] = this.G[j].getBoundingClientRect().left - l0 + j * this.trk; this.w0[j] = this.G[j].offsetWidth; }
       this.bt.classList.add('thin');
       for (let j = 0; j < n; j++) this.w1[j] = this.G[j].offsetWidth;
       this.bt.classList.remove('thin');
-      const lw = this.bt.offsetWidth, lh = this.bt.offsetHeight;
+      const lw = this.bt.offsetWidth + (n - 1) * this.trk, lh = this.bt.offsetHeight;
       this.bt.style.width = lw + 'px'; this.bt.style.height = lh + 'px';
       this.G.forEach((g, j) => { g.style.left = x[j] + 'px'; });
       sec.classList.add('abs');
@@ -4035,6 +4450,7 @@ void main () {
     },
     tick() {
       if (!this.live) return false;
+      if (this.vv !== Vol.ver && Vol.moving) { this.layout(); this.vv = Vol.ver; }   /* on screen while VOL moves: re-set live */
       const p = clamp((F.y - this.top) / this.run, 0, 1);
       if (p === this.p) return false;
       this.p = p;
@@ -4044,7 +4460,7 @@ void main () {
       for (let j = 0; j < this.G.length; j++) {
         if (j === this.O) continue;
         const g = this.G[j], c = this.gs[j], dir = j < this.O ? -1 : 1, w = lerp(this.w0[j], this.w1[j], q);
-        const fv = q > 0 ? `'wdth' ${(150 - 100 * q).toFixed(1)}, 'wght' 900` : '';
+        const fv = q > 0 ? Vol.fv(150 - 100 * q, 900) : '';
         const tf = q > 0 ? `translate3d(${((this.w0[j] - w) / 2 + dir * q * vw * .2).toFixed(1)}px,0,0)` : '';
         const op = q > 0 ? (1 - q).toFixed(3) : '';
         if (fv !== c[0]) { g.style.fontVariationSettings = fv; c[0] = fv; }
@@ -4068,20 +4484,23 @@ void main () {
      pin releases into the identical blue band.                           */
   const STAGE_SVH = 60, FLOOD_SVH = 70, FLAP0 = 90, FLAP = 70, FLAP_STAG = 30;
   const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', BLANK = { ch: ' ', w: 150, g: 900, bl: false, fv: '' };
-  const face = (ch, w, g, bl) => ({ ch, w, g, bl, fv: `'wdth' ${Math.round(w)}, 'wght' ${Math.round(g)}` });
+  /* a face keeps its own instance; the printed one goes through VOL (re-derived when VOL moves) */
+  const faceFv = s => (s.ch === ' ' ? '' : `'wdth' ${Math.round(Vol.w(s.w))}, 'wght' ${Math.round(Vol.g(s.g))}`);
+  const face = (ch, w, g, bl) => { const s = { ch, w, g, bl, fv: '' }; s.fv = faceFv(s); return s; };
   class Tile {
     constructor() {
       this.el = mk('span', 'tile');
       this.lv = ['t', 'b', 'ft', 'fb'].map(c => {
         const l = mk('span', 'lf ' + c), g = mk('b'), sh = mk('i');
         l.append(g, sh); this.el.appendChild(l);
-        return { l, g, sh, ch: null, fv: null, bl: null, tf: '', so: '', on: c === 't' || c === 'b' };
+        return { l, g, sh, ch: null, fv: null, bl: null, tf: '', so: '', on: c === 't' || c === 'b', s: null };
       });
       this.cur = BLANK; this.q = []; this.t0 = 0; this.first = true; this.started = false;
       this.paint(0, BLANK); this.paint(1, BLANK);
     }
     paint(k, s) {
       const v = this.lv[k];
+      v.s = s;
       if (v.ch !== s.ch) { v.g.textContent = s.ch; v.ch = s.ch; }
       if (v.fv !== s.fv) { v.g.style.fontVariationSettings = s.fv; v.fv = s.fv; }
       if (v.bl !== s.bl) { v.l.classList.toggle('blue', s.bl); v.bl = s.bl; }
@@ -4093,6 +4512,12 @@ void main () {
       if (so !== v.so) { v.sh.style.opacity = so; v.so = so; }
     }
     set(s) { this.q.length = 0; this.cur = s; this.started = false; this.paint(0, s); this.paint(1, s); this.show(2, false); this.show(3, false); }
+    /* VOL moved: every face this tile holds or will show re-derives its printed instance */
+    revol() {
+      for (const s of this.q) s.fv = faceFv(s);
+      this.cur.fv = faceFv(this.cur);
+      for (let k = 0; k < 4; k++) { const v = this.lv[k]; if (v.s) { v.s.fv = faceFv(v.s); this.paint(k, v.s); } }
+    }
     start(q, t0) { if (this.started) { this.started = false; this.paint(0, this.cur); this.paint(1, this.cur); this.show(2, false); this.show(3, false); } this.q = q; this.t0 = t0; this.first = true; }
     /* one flap: the old top leaf falls 0 → -90°, then the new bottom leaf falls 90 → 0° */
     step(t) {
@@ -4120,7 +4545,7 @@ void main () {
     sec: $('#instances'), pin: $('.inst-pin'), boardEl: $('.board'), flood: $('.flood'), fc: null,
     nEl: $('#inst-n'), iEl: $('#inst-i'), rail: $$('.inst-bar .rail i'), dEl: $('#inst-d'), lEl: $('#inst-l'), copyEl: $('.inst-copy'),
     ds: $('.ds'), dsP: $('.ds-p'), dsD: $('.ds-d'), dsX: $('.ds-x'), dsY: $('.ds-y'), dsN: $$('.ds-n'), dsR: $('#ds-r'),
-    stages: [], tiles: [], live: false, top: 0, run: 1, svh: 1, stage: -1, fp: -1, u: -1, size: 1, busy: false,
+    stages: [], tiles: [], live: false, top: 0, run: 1, svh: 1, stage: -1, fp: -1, u: -1, size: 1, busy: false, vv: 0,
     fw: 0, fh: 0, cols: 16, rows: 10, prev: null, ink: [], blue: [], dS: ['', '', '', '', ''],
     NODES: [[0, 1], [.25, .625], [.62, .25], [1, 0]],
     init() {
@@ -4199,8 +4624,10 @@ void main () {
       this.run = Math.max(1, this.sec.offsetHeight - this.pin.offsetHeight);
       this.u = -1; this.fp = -1;
     },
+    revol() { this.tiles.forEach(tl => tl.revol()); this.vv = Vol.ver; },
     tick(t) {
       if (!this.live) return false;
+      if (this.vv !== Vol.ver) this.revol();
       const run = F.y - this.top, sh = this.svh * STAGE_SVH / 100, u = run / sh;
       const fp = clamp((run - 4 * sh) / (this.svh * FLOOD_SVH / 100), 0, 1);
       /* stage with hysteresis; the flood stage (4) blanks the tiles to IKB */
@@ -4273,7 +4700,7 @@ void main () {
     form: $('#mk'), input: $('#mk-in'), chips: $$('#mk .chip'), typeT: 0,
     init() {
       this.lines = $$('.ld', this.el).map((ld, i) => {
-        const t = $('.ld-t', ld), ln = { i, el: ld, t, shelf: $('.ld-shelf', ld), probe: mk('i', 'probe'), glyphs: [], w: +ld.style.getPropertyValue('--w'), g: +ld.style.getPropertyValue('--g'), fs: 0, base: 0 };
+        const t = $('.ld-t', ld), ln = { i, el: ld, t, shelf: $('.ld-shelf', ld), probe: mk('i', 'probe'), glyphs: [], w: +ld.style.getPropertyValue('--w'), g: +ld.style.getPropertyValue('--g'), vw: 0, vg: 0, ls: 0, fs: 0, base: 0 };
         this.split(ln, t.textContent);
         return ln;
       });
@@ -4298,8 +4725,15 @@ void main () {
       ln.t.appendChild(ln.probe);
     },
     sanitize: w => String(w || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 12),
+    /* fitted at the current VOL, never larger than the designed (VOL 05) size: a line VOL narrows
+       keeps its measure by tracking out the gap */
     fitLine(ln, fs) {
-      ln.fs = fs || K2.fit(ln.t, ln.el);
+      if (fs) { ln.el.style.fontSize = fs.toFixed(2) + 'px'; ln.fs = fs; ln.ls = 0; }
+      else {
+        const f = K2.vol.fit(ln.t, ln.el);
+        ln.fs = f.fs; ln.ls = f.fs < f.fsV - .5 ? (f.cw - f.w) / Math.max(1, ln.glyphs.length - 1) : 0;
+      }
+      ln.t.style.letterSpacing = ln.ls ? ln.ls.toFixed(2) + 'px' : '';
       ln.base = ln.probe.getBoundingClientRect().top - ln.el.getBoundingClientRect().top;
       ln.shelf.style.top = ln.base.toFixed(1) + 'px';
     },
@@ -4309,10 +4743,15 @@ void main () {
     layout() {
       Phys.unfix();
       const [a, b, c] = this.lines;
-      this.lines.forEach(ln => this.fitLine(ln));
-      if (b.fs > c.fs * .8) { b.el.style.fontSize = (c.fs * .8).toFixed(2) + 'px'; this.fitLine(b, c.fs * .8); }
-      if (a.fs > b.fs) { a.el.style.fontSize = b.fs.toFixed(2) + 'px'; this.fitLine(a, b.fs); }
+      this.lines.forEach(ln => { ln.vw = Vol.w(ln.w); ln.vg = Vol.g(ln.g); ln.t.style.letterSpacing = ''; this.fitLine(ln); });
+      if (b.fs > c.fs * .8) this.fitLine(b, c.fs * .8);
+      if (a.fs > b.fs) this.fitLine(a, b.fs);
       Phys.measure();
+    },
+    /* VOL settled: re-set the lines and fly the home sorts to their new homes (loose ones stay loose) */
+    revol() {
+      if (!Phys.live) { this.layout(); return; }
+      Phys.keep = true; this.layout(); Phys.keep = false;
     },
     /* the static swap: re-set the middle line, then tell everyone */
     typeset(word) {
@@ -4404,11 +4843,11 @@ void main () {
       this.el.classList.remove('phys');
       Loud.layout(); this.caption();
     },
-    /* before the lines are fitted: natural advances, no transforms */
+    /* before the lines are fitted: natural advances at the line's own (VOL-biased) instance, no transforms */
     unfix() {
       if (!this.live) return;
       this.el.classList.remove('phys');
-      for (const g of this.G) { g.el.style.transform = ''; g.tf = null; }
+      for (const g of this.G) { g.el.style.transform = ''; g.tf = null; g.el.style.fontVariationSettings = ''; g.fv = null; }
     },
     /* after the lines are fitted: homes, bodies, shelves, floor, walls (all in .loud px) */
     measure() {
@@ -4427,19 +4866,19 @@ void main () {
           const r = el.getBoundingClientRect(), bx = r.left - R.left, by = r.top - R.top;
           el.style.setProperty('--aw', r.width.toFixed(2) + 'px');
           if (el.classList.contains('sp')) return;
-          const ink = this.ink(el.textContent, ln, r.width);
+          const ink = this.ink(el.textContent, ln, r.width - ln.ls);
           const top = base - ink.a, bot = Math.min(base + Math.min(ink.d, 0), base) - .5;
           const w = Math.max(4, ink.r - ink.l), h = Math.max(4, bot - top), cx = ink.l + w / 2, hx = bx + cx, hy = top + h / 2;
           let g = el._g;
           if (!g) {
             g = el._g = { el, li, dot: /[.,]/.test(el.textContent), b: null, inW: false, state: 'wait', w: 0, h: 0, hx, hy, bx, by, fs: 0,
-              baseW: ln.w, baseG: ln.g, sq: 0, sqv: 0, bold: 0, tf: null, fv: null, I: 0, x0: 0, y0: 0, a0: 0, t0: 0, dur: 0, lift: 0, hitT: -1e9, outT: 0 };
+              baseW: ln.vw, baseG: ln.vg, sq: 0, sqv: 0, bold: 0, tf: null, fv: null, I: 0, x0: 0, y0: 0, a0: 0, t0: 0, dur: 0, lift: 0, hitT: -1e9, outT: 0 };
             el.dataset.cursor = 'throw'; el.dataset.cursorLabel = 'Throw';
             this.G.push(g);
             if (keep) g.fresh = true;
           }
           const moved = Math.abs(g.hx - hx) + Math.abs(g.hy - hy);
-          g.li = li; g.bx = bx; g.by = by; g.fs = ln.fs; g.baseW = ln.w; g.baseG = ln.g; g.float = base - bot > 3;
+          g.li = li; g.bx = bx; g.by = by; g.fs = ln.fs; g.baseW = ln.vw; g.baseG = ln.vg; g.float = base - bot > 3;
           el.style.transformOrigin = `${cx.toFixed(2)}px ${(hy - by).toFixed(2)}px`;
           if (!g.b || Math.abs(g.w - w) > .5 || Math.abs(g.h - h) > .5) this.body(g, w, h, hx, hy);
           g.hx = hx; g.hy = hy;
@@ -4471,7 +4910,7 @@ void main () {
     /* ink box of one sort at its line's instance (canvas metrics, trued to the DOM advance) */
     ink(ch, ln, adv) {
       const c = this.mc || (this.mc = mk('canvas').getContext('2d'));
-      c.font = cfont(ln.w, ln.g, ln.fs);
+      c.font = cfont(ln.vw, ln.vg, ln.fs);
       const m = c.measureText(ch), k = m.width > 0 ? adv / m.width : 1;
       if (!(m.actualBoundingBoxAscent > 0)) return { l: adv * .06, r: adv * .94, a: ln.fs * Hero.cap, d: 0 };
       return { l: -(m.actualBoundingBoxLeft || 0) * k, r: (m.actualBoundingBoxRight || m.width) * k, a: m.actualBoundingBoxAscent, d: m.actualBoundingBoxDescent || 0 };
@@ -4922,10 +5361,11 @@ void main () {
       this.el.textContent = '';
       for (const ch of this.text) { const s = mk('span', 'em', ch); this.el.appendChild(s); this.L.push(s); }
       this.str = this.L.map(() => '');
-      const copy = () => { this.ripple(); K2.copy(this.text, this.el); };
-      $('#copy').addEventListener('click', copy);
-      this.el.addEventListener('click', () => { const s = getSelection(); if (!s || s.isCollapsed) copy(); });
+      $('#copy').addEventListener('click', () => this.copy());
+      this.el.addEventListener('click', () => { const s = getSelection(); if (!s || s.isCollapsed) this.copy(); });
     },
+    /* from a click or a key (both count as the user gesture the clipboard needs) */
+    copy() { this.ripple(); return K2.copy(this.text, this.el); },
     fit() {
       const box = this.el.parentElement, cs = this.el.style;
       cs.fontSize = '';
@@ -4938,7 +5378,7 @@ void main () {
       const n = this.L.length, q = (t - this.t0) / 520, c = -2 + q * (n + 4), done = q >= 1;
       for (let i = 0; i < n; i++) {
         const a = done ? 0 : Math.exp(-((i - c) * (i - c)) / 2.4);
-        const fv = a < .01 ? '' : `'wdth' ${(96 + 54 * a).toFixed(1)}, 'wght' ${Math.round(640 + 220 * a)}`;
+        const fv = a < .01 ? '' : Vol.fv(96 + 54 * a, 640 + 220 * a);
         if (fv !== this.str[i]) { this.L[i].style.fontVariationSettings = fv; this.str[i] = fv; }
       }
       if (done) this.t0 = -1;
@@ -5120,22 +5560,23 @@ void main () {
   const Rewind = {
     name: 'rewind', active: true, on: false, t0: 0, rows: [], mid: null, was: null, off: null,
     init() {
-      $('#fns').append(...K2.footnotes.map(([m, s]) => { const li = mk('li'); li.append(mk('b', '', m), mk('span', '', s)); return li; }));
       $('#rewind').addEventListener('click', () => this.run());
       this.rows = Work.rows;
       this.mid = new Float32Array(this.rows.length); this.was = new Int8Array(this.rows.length); this.off = new Float64Array(this.rows.length);
     },
     run() {
       const top = $('#top');
+      /* the director's top event: anything page-scale (the LOUD event, a demonstration) yields to it */
+      Director.run('rewind', { dur: 4200 });
       K2.loud.kick();
-      if (env.reduce) { K2.scrollTo(0, { immediate: true, focus: top }); return; }
+      if (env.reduce) { K2.scrollTo(0, { immediate: true, focus: top }); Director.end('rewind'); return; }
       Sound.whoosh();
       $$('#rewind > span').forEach((sp, i) => sp.animate([{ transform: 'none' }, { transform: 'translateY(-140%)', opacity: 0, offset: .45 }, { transform: 'translateY(140%)', opacity: 0, offset: .46 }, { transform: 'none', opacity: 1 }], { duration: 700, delay: i * 70, easing: 'cubic-bezier(.6,0,.2,1)' }));
       setTimeout(() => {
         this.on = true; this.t0 = performance.now(); this.was.fill(0); S.wake();
         K2.scrollTo(0, {
           duration: 2.4, easing: x => (x < .5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2), lock: true, focus: top,
-          onComplete: () => { this.on = false; K2.intro.play({ short: true }); }
+          onComplete: () => { this.on = false; Director.end('rewind'); K2.intro.play({ short: true }); }
         });
       }, 260);
     },
@@ -5163,7 +5604,1020 @@ void main () {
   };
   K2.rewind = { run: () => Rewind.run() };
 
-  /* ── 22 · Layout + boot ─────────────────────────────────────────────────── */
+  /* ── 22 · K2.mode, K2.vol, K2.director: one bus for every mode ──────────────
+     The mode bus { vol 0–11, proof, brush, tip, show } is mirrored to html data
+     attributes and CSS custom properties and announced as 'k2:mode'. VOL is
+     the crescendo as a control: 05 is the page as designed. One spring-eased
+     bias a ∈ [−1, 1] remaps every display line toward Thin Compressed 50/100
+     or Black Extended 150/900: CSS lines read --vp/--vn inside calc(), JS
+     writers call Vol.w()/Vol.g(), and each system re-fits through its own fit
+     code — live while it is on screen, exactly once when the bias settles.
+     Body copy and mono never move. 11 is the LOUD event, 00 the WHISPER; the
+     director runs one page-scale event at a time.                          */
+  const VOL_K = .8;                          /* bias at VOL 00 / 10; the LOUD and WHISPER events take it to ±1 */
+  const pad2 = n => String(n).padStart(2, '0');
+
+  const Director = {
+    PRI: { rewind: 5, 'press-pull': 4, klein: 3, eleven: 3, whisper: 3, snap: 2, demonstration: 1 },
+    cur: null, last: 0, T: 0,
+    /* start an event unless a higher one is running; an equal or lower one is cancelled first */
+    run(name, o = {}) {
+      const c = this.cur, p = this.PRI[name] || 1;
+      if (c && c.name === name) { c.end = o.end || c.end; this.timer(name, o.dur); return true; }
+      if (c && (this.PRI[c.name] || 1) > p) return false;
+      if (c) this.finish(true);
+      this.cur = { name, t0: performance.now(), end: o.end || null };
+      this.timer(name, o.dur);
+      root.dataset.event = name;
+      this.emit(name, 'start');
+      return true;
+    },
+    timer(name, dur) { clearTimeout(this.T); if (dur) this.T = setTimeout(() => this.end(name), dur); },
+    end(name) { if (this.cur && (!name || this.cur.name === name)) this.finish(false); },
+    finish(cancelled) {
+      const c = this.cur;
+      this.cur = null; clearTimeout(this.T); this.last = performance.now();
+      delete root.dataset.event;
+      if (c.end) c.end(cancelled);
+      this.emit(c.name, cancelled ? 'cancel' : 'end');
+    },
+    emit(name, state) { document.dispatchEvent(new CustomEvent('k2:director', { detail: { name, state } })); },
+    quiet(ms) { return !this.cur && performance.now() - this.last > ms; }
+  };
+
+  const Vol = {
+    name: 'vol', active: true,
+    a: 0, v: 0, goal: 0, vp: 0, vn: 0, ver: 0, moving: false, due: false, key: '',
+    amount: n => (n >= 11 ? 1 : (clamp(n, 0, 10) - 5) / 5 * VOL_K),
+    w(w) { return w + this.vp * (150 - w) + this.vn * (w - 50); },
+    g(g) { return g + this.vp * (900 - g) + this.vn * (g - 100); },
+    fv(w, g) { return `'wdth' ${Math.round(this.w(w) * 10) / 10}, 'wght' ${Math.round(this.g(g))}`; },
+    aim(goal) {
+      this.goal = clamp(goal, -1, 1);
+      if (env.reduce) { this.a = this.goal; this.v = 0; this.moving = false; this.apply(); this.due = true; }
+      else this.moving = true;
+      S.wake();
+    },
+    /* critically damped spring (ω 10/s, about 0.5s): it runs in pre, so every read phase sees the new bias */
+    pre(t, dt) {
+      if (!this.moving) return;
+      const w = 10, n = Math.ceil(dt * 240), h = dt / n;
+      for (let i = 0; i < n; i++) { this.v += (w * w * (this.goal - this.a) - 2 * w * this.v) * h; this.a += this.v * h; }
+      if (Math.abs(this.goal - this.a) < 6e-4 && Math.abs(this.v) < 6e-3) { this.a = this.goal; this.v = 0; this.moving = false; this.due = true; }
+      this.apply();
+    },
+    apply() {
+      this.vp = Math.max(this.a, 0); this.vn = Math.min(this.a, 0);
+      const key = this.vp.toFixed(4) + this.vn.toFixed(4);
+      if (key === this.key) return;
+      this.key = key; this.ver++;
+      root.style.setProperty('--vp', this.vp.toFixed(4)); root.style.setProperty('--vn', this.vn.toFixed(4));
+    },
+    tick() {
+      if (this.due) { this.due = false; this.settle(); }
+      return this.moving;
+    },
+    /* the bias came to rest: every display system re-fits once, exactly, then the pins re-measure */
+    settle() {
+      Strings.revol(); Work.fitTitles(); Thresh.layout(); Thresh.vv = this.ver; Board.revol(); Loud.revol(); Mail.fit();
+      if (menuOpen) fitMenu();
+      Hero.trueUp = true; Hero.pending = true;
+      Zones.measure(); measurePins();
+    },
+    /* a display line fitted at the current bias, never above its designed (VOL 05) size;
+       returns { fs, fsV (the unbounded fit), cw (the measure), w (natural width at fs) } */
+    fit(line, box) {
+      box.style.fontSize = '100px';
+      const cw = box.clientWidth, wV = line.offsetWidth || 1;
+      let w5 = wV;
+      if (this.a) {
+        for (const e of [box, line]) { e.style.setProperty('--vp', '0'); e.style.setProperty('--vn', '0'); }
+        w5 = line.offsetWidth || 1;
+        for (const e of [box, line]) { e.style.removeProperty('--vp'); e.style.removeProperty('--vn'); }
+      }
+      const fsV = 100 * cw / wV, fs = Math.min(fsV, 100 * cw / w5);
+      box.style.fontSize = fs.toFixed(2) + 'px';
+      return { fs, fsV, cw, w: wV * fs / 100 };
+    }
+  };
+
+  const Mode = {
+    s: { vol: 5, proof: false, brush: 'ikb', tip: 'round', show: false },
+    prev: 5,                                   /* the VOL the LOUD event hands back to */
+    init() {
+      const v = parseInt(session.get('k2:vol'), 10);
+      if (v >= 0 && v <= 10) this.s.vol = v;
+      this.s.proof = session.get('k2:proof') === '1';
+      Vol.a = Vol.goal = Vol.amount(this.s.vol); Vol.apply();
+      $$('button[data-proof]').forEach(b => b.addEventListener('click', () => {
+        if (!menuOpen) { K2.mode.toggle('proof'); return; }
+        closeMenu(false); setTimeout(() => K2.mode.toggle('proof'), env.reduce ? 0 : 380);   /* from the menu: watch the plotter pass */
+      }));
+      this.mirror();
+    },
+    set(patch) {
+      const s = this.s, changed = [];
+      for (const k in patch) {
+        if (!(k in s)) continue;
+        let v = patch[k];
+        if (k === 'vol') v = clamp(Math.round(+v || 0), 0, 11);
+        else if (k === 'brush') v = v === 'gold' ? 'gold' : 'ikb';
+        else if (k === 'tip') v = ['round', 'chisel', 'type'].includes(v) ? v : 'round';
+        else v = !!v;
+        if (v === s[k]) continue;
+        const was = s[k];
+        s[k] = v;
+        if (k === 'vol' && !this.onVol(v, was)) { s[k] = was; continue; }
+        if (k === 'proof') Proof.toggle(v);
+        changed.push(k);
+      }
+      if (!changed.length) { Faders.sync(s.vol); return false; }
+      this.mirror();
+      session.set('k2:vol', String(s.vol === 11 ? this.prev : s.vol)); session.set('k2:proof', s.proof ? '1' : '0');
+      document.dispatchEvent(new CustomEvent('k2:mode', { detail: { mode: Object.assign({}, s), changed } }));
+      return true;
+    },
+    /* VOL side effects: 11 is the LOUD event (refused while a higher event runs), 00 starts the WHISPER */
+    onVol(v, was) {
+      if (v === 11) return Events.eleven(was);
+      if (was === 11) Director.end('eleven');
+      if (was === 0) Director.end('whisper');
+      if (v === 0 && Events.whisper()) return true;
+      Vol.aim(Vol.amount(v));
+      return true;
+    },
+    mirror() {
+      const s = this.s;
+      root.dataset.vol = pad2(s.vol); root.dataset.brush = s.brush; root.dataset.tip = s.tip;
+      root.toggleAttribute('data-proof', s.proof); root.toggleAttribute('data-show', s.show);
+      root.style.setProperty('--vol', s.vol);
+      Faders.sync(s.vol);
+      $$('button[data-proof]').forEach(b => b.setAttribute('aria-pressed', String(s.proof)));
+      syncSound();
+      if (Sound.on) Sound.setLevel(F.p);
+      if (Keys.open) Keys.refresh();
+    }
+  };
+
+  /* page-scale events: the rubber stamp, the shake, LOUD and its quiet inverse */
+  const Events = {
+    el: $('.stamp'), word: $('.stamp-w'), sub: $('.stamp-s'), anim: null, hush: false,
+    /* VOL 11: a LOUD stamp slams on with a thud, three hits of shake, every display line Black Extended
+       for 10s (the hero ramp included), both strings rung, the bass under a strummed chord */
+    eleven(was) {
+      const ok = Director.run('eleven', { dur: 10000, end: () => { syncSound(); if (Mode.s.vol === 11) Mode.set({ vol: Mode.prev }); } });
+      if (!ok) { K2.toast('Not now: the page is busy'); return false; }
+      Mode.prev = Math.min(was, 10);
+      Vol.aim(1);
+      this.stamp('Loud', Sound.on ? 'Vol 11 — this one goes to eleven' : 'Vol 11 · press ! for the full set', false);
+      this.shake();
+      Sound.thud(.5, 1); Sound.bass(); Sound.buzz([18, 40, 26]);
+      K2.strings.pluck(0, .3, 1); K2.strings.pluck(1, .7, 1);
+      const f = $('.nav .fader'), r = f && f.offsetParent ? f.getBoundingClientRect() : null;
+      K2.pigment.burst(r ? r.left + r.width * .8 : F.vw / 2, r ? r.bottom + 36 : F.vh / 2, { size: 150 });
+      K2.toast('This one goes to eleven.');
+      return true;
+    },
+    /* VOL 00: a hairline stamp, the master ducked 12 dB, every display line hairline for 6s, the rig shrinks */
+    whisper() {
+      const ok = Director.run('whisper', { dur: 6000, end: () => {
+        this.hush = false; root.classList.remove('whisper'); Sound.duck(false);
+        if (Mode.s.vol === 0) Vol.aim(Vol.amount(0));
+      } });
+      if (!ok) return false;
+      this.hush = true; root.classList.add('whisper'); Sound.duck(true);
+      Vol.aim(-1);
+      this.stamp('whisper', 'Vol 00 — the quiet inverse', true);
+      K2.toast('Whisper.');
+      return true;
+    },
+    stamp(word, sub, thin) {
+      const el = this.el;
+      const tone = Zones.toneAt(F.y + F.vh / 2);
+      el.classList.toggle('inv', tone === 'ink'); el.classList.toggle('on-blue', tone === 'blue'); el.classList.toggle('wh', !!thin);
+      this.word.textContent = word; this.sub.textContent = sub;
+      if (this.anim) this.anim.cancel();
+      el.classList.add('on');
+      if (!el.animate) { setTimeout(() => el.classList.remove('on'), 2600); return; }
+      const R = 'translate(-50%,-50%) rotate(-8deg)';
+      const kf = env.reduce ? [{ opacity: 0 }, { opacity: 1, offset: .12 }, { opacity: 1, offset: .82 }, { opacity: 0 }]
+        : thin ? [{ transform: R + ' scale(1.06)', opacity: 0 }, { transform: R, opacity: 1, offset: .3 }, { transform: R, opacity: 1, offset: .8 }, { transform: R, opacity: 0 }]
+        : [{ transform: R + ' scale(1.9)', opacity: 0, easing: 'cubic-bezier(.6,0,1,.6)' }, { transform: R + ' scale(.96)', opacity: 1, offset: .07 },
+          { transform: R, opacity: 1, offset: .11 }, { transform: R, opacity: 1, offset: .8 }, { transform: R + ' scale(1.01)', opacity: 0 }];
+      this.anim = el.animate(kf, { duration: thin ? 3000 : 2600, fill: 'forwards' });
+      this.anim.onfinish = () => { el.classList.remove('on'); this.anim.cancel(); this.anim = null; };
+    },
+    /* three decaying hits, vertical only (no horizontal overflow); never under reduced motion */
+    shake() {
+      if (env.reduce || !page.animate) return;
+      page.animate([{ transform: 'none' }, { transform: 'translate3d(0,4px,0)', offset: .14 }, { transform: 'translate3d(0,-2.6px,0)', offset: .4 },
+        { transform: 'translate3d(0,1.3px,0)', offset: .68 }, { transform: 'none' }], { duration: 380, easing: 'linear' });
+    }
+  };
+
+  /* the No.02 seal: five quick taps are the touch route to VOL 11 */
+  const Seal = {
+    el: $('.seal'), taps: [],
+    init() {
+      this.el.addEventListener('pointerdown', () => {
+        const t = performance.now();
+        this.taps = this.taps.filter(x => t - x < 1500); this.taps.push(t);
+        Sound.tick(.8); Sound.buzz(5);
+        if (!env.reduce && this.el.animate) this.el.animate([{ transform: 'rotate(-8deg) scale(.88)' }, { transform: 'rotate(-8deg)' }], { duration: 240, easing: 'cubic-bezier(.2,1.6,.5,1)' });
+        if (this.taps.length >= 5) { this.taps = []; K2.mode.set({ vol: 11 }); }
+      });
+    }
+  };
+
+  K2.mode = {
+    get vol() { return Mode.s.vol; }, get proof() { return Mode.s.proof; }, get brush() { return Mode.s.brush; },
+    get tip() { return Mode.s.tip; }, get show() { return Mode.s.show; }, get bias() { return Vol.a; },
+    set: patch => Mode.set(patch),
+    toggle: k => Mode.set({ [k]: !Mode.s[k] })
+  };
+  K2.vol = { get a() { return Vol.a; }, w: w => Vol.w(w), g: g => Vol.g(g), fv: (w, g) => Vol.fv(w, g), fit: (line, box) => Vol.fit(line, box) };
+  K2.director = { run: (n, o) => Director.run(n, o), end: n => Director.end(n), get current() { return Director.cur ? Director.cur.name : null; }, quiet: ms => Director.quiet(ms) };
+  K2.events = { eleven: () => K2.mode.set({ vol: 11 }), whisper: () => K2.mode.set({ vol: 0 }), stamp: (w, s, h) => Events.stamp(w, s, h), shake: () => Events.shake() };
+
+  /* ── 23 · VOL fader: 10 graduated segments plus the overload 11 ───────────────
+     One component, three places: the nav (≥1100px), the VOL console popover
+     (761–1099px) and the phone menu. Drag, click or arrow keys; every detent
+     ticks (a haptic on phones) and goes through the mode bus.             */
+  class Fader {
+    constructor(el) {
+      this.el = el; this.big = el.classList.contains('big'); this.id = -1; this.r = null; this.v = -1;
+      const lab = mk('span', 'fd-l', this.big ? 'Volume — whisper to LOUD' : 'Vol'), seg = mk('span', 'fd-s'), num = mk('span', 'fd-n', '05');
+      for (let i = 0; i < 11; i++) { const s = mk('i', i === 10 ? 'x' : ''); s.style.setProperty('--k', i); seg.appendChild(s); }
+      el.append(lab, seg, num);
+      this.seg = seg; this.num = num; this.segs = Array.from(seg.children);
+      el.tabIndex = 0;
+      for (const [k, v] of [['role', 'slider'], ['aria-label', 'Volume, whisper to loud'], ['aria-valuemin', '0'], ['aria-valuemax', '11']]) el.setAttribute(k, v);
+      if (!this.big) el.dataset.key = '+ −';
+      el.addEventListener('pointerdown', e => {
+        if (e.button > 0) return;
+        this.r = this.segs.map(s => { const b = s.getBoundingClientRect(); return [b.left, b.right]; }); this.id = e.pointerId;
+        try { el.setPointerCapture(e.pointerId); } catch (x) { /* capture is best effort */ }
+        this.at(e.clientX);
+      });
+      el.addEventListener('pointermove', e => { if (e.pointerId === this.id) this.at(e.clientX); });
+      const up = e => { if (e.pointerId === this.id) { this.id = -1; this.r = null; } };
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+      el.addEventListener('keydown', e => {
+        const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 2, PageDown: -2 }[e.key];
+        const n = d != null ? Mode.s.vol + d : e.key === 'Home' ? 0 : e.key === 'End' ? 10 : null;
+        if (n == null) return;
+        e.preventDefault(); e.stopPropagation();
+        Faders.go(clamp(n, 0, 11));
+      });
+    }
+    /* the nearest segment sets its value (left of the first one is 00); past the end is the overload 11 */
+    at(x) {
+      const r = this.r;
+      if (!r) return;
+      let v = 0, d = Infinity;
+      if (x >= r[0][0] - 2) for (let i = 0; i < 11; i++) { const c = Math.abs(x - (r[i][0] + r[i][1]) / 2); if (c < d) { d = c; v = i + 1; } }
+      Faders.go(v);
+    }
+    sync(v) {
+      if (v === this.v) return;
+      this.v = v;
+      for (let i = 0; i < 11; i++) this.segs[i].classList.toggle('on', i < 10 ? i < Math.min(v, 10) : v === 11);
+      this.num.textContent = pad2(v);
+      this.el.setAttribute('aria-valuenow', v);
+      this.el.setAttribute('aria-valuetext', v === 5 ? '05, as designed' : v === 11 ? '11, LOUD' : v === 0 ? '00, whisper' : pad2(v) + ' of 10');
+    }
+  }
+  const Faders = {
+    list: [], btn: $('#vol-btn'), pop: $('#volpop'), open: false,
+    init() {
+      this.list = $$('[data-fader]').map(el => new Fader(el));
+      $$('.vp-pre [data-vol]').forEach(b => b.addEventListener('click', () => this.go(+b.dataset.vol)));
+      this.btn.addEventListener('click', () => this.show(!this.open));
+      this.pop.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); this.show(false, true); } });
+      document.addEventListener('pointerdown', e => { if (this.open && !this.pop.contains(e.target) && !this.btn.contains(e.target)) this.show(false); }, true);
+    },
+    /* one detent: a tick (and a haptic on phones), then the mode bus does the rest */
+    go(v) {
+      if (v === Mode.s.vol) return;
+      Sound.tick(.9); Sound.buzz(6);
+      Mode.set({ vol: v });
+    },
+    sync(v) {
+      this.list.forEach(f => f.sync(v));
+      $$('[data-vol-n]').forEach(n => { n.textContent = pad2(v); });
+      $$('.vp-pre [data-vol]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.vol === v)));
+    },
+    show(on, restore) {
+      if (on === this.open) return;
+      this.open = on;
+      popover(this.pop, this.btn, on, restore);
+      if (on) this.list[this.list.length - 1].el.focus({ preventScroll: true });
+    }
+  };
+
+  /* paper popovers hang under their nav control (full width under the nav on phones) */
+  function popover(el, btn, on, restore) {
+    btn.setAttribute('aria-expanded', String(on));
+    if (on) {
+      clearTimeout(el._t);
+      el.hidden = false;
+      const r = btn.getBoundingClientRect(), nb = nav.getBoundingClientRect().bottom, g = parseFloat(getComputedStyle(nav).paddingLeft) || 16;
+      if (env.desk) { el.style.right = ''; el.style.left = clamp(r.right - el.offsetWidth, g, innerWidth - el.offsetWidth - g).toFixed(0) + 'px'; }
+      else { el.style.left = g + 'px'; el.style.right = g + 'px'; }
+      el.style.top = (Math.max(nb, r.bottom) + 8).toFixed(0) + 'px';
+      if (env.reduce) el.classList.add('open'); else requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('open')));
+      return;
+    }
+    el.classList.remove('open');
+    el._t = setTimeout(() => { if (!el.classList.contains('open')) el.hidden = true; }, env.reduce ? 0 : 260);
+    if (restore) btn.focus({ preventScroll: true });
+  }
+
+  /* ── 24 · Contents: the folio is a button; pages turn with a folio flap ───────
+     Six pages with dot leaders, each title set in its own instance so the
+     list is itself a ramp, the current page in IKB with ▸. Arrow keys and
+     Enter; choosing flaps the folio through every page in between with a
+     page-turn sound, then turns (scrolls) to it.                           */
+  const PAGES = [['#top', 'Title'], ['#strings', 'Strings'], ['#text', 'Text'], ['#work', 'In Use'], ['#process', 'Instances'], ['#contact', 'Colophon']];
+  const Pages = {
+    btn: $('#folio'), el: $('#toc'), list: $('#toc .toc-l'), links: [], open: false, T: 0, H: 0,
+    init() {
+      this.links = PAGES.map(([href, title], i) => {
+        const li = mk('li'), a = mk('a'), t = mk('span', 'toc-t', title), q = i / 5;
+        a.href = href; a.dataset.n = i + 1; a.dataset.cursorLabel = 'Turn';
+        t.style.cssText = `--w:${50 + 100 * q};--g:${Math.round(100 + 800 * q)}`;
+        a.append(mk('span', 'toc-cur', '▸'), mk('span', 'idx', pad2(i + 1)), t, mk('i', 'lead'), mk('span', 'lbl', 'p.' + pad2(i + 1)));
+        li.appendChild(a); this.list.appendChild(li);
+        return a;
+      });
+      this.mark(1);
+      this.btn.addEventListener('click', () => this.show(!this.open));
+      $$('[data-toc]').forEach(b => b.addEventListener('click', () => { closeMenu(false); setTimeout(() => this.show(true), env.reduce ? 0 : 120); }));
+      this.el.addEventListener('click', e => {
+        const a = e.target.closest('a[data-n]');
+        if (!a) return;
+        e.preventDefault();
+        this.turn(+a.dataset.n);
+      });
+      this.el.addEventListener('keydown', e => {
+        const i = this.links.indexOf(document.activeElement);
+        let j = -1;
+        if (e.key === 'ArrowDown') j = (i + 1) % 6; else if (e.key === 'ArrowUp') j = (i + 5) % 6;
+        else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = 5;
+        else if (e.key === 'Escape') { e.preventDefault(); this.show(false, true); return; }
+        else if (e.key === 'Tab') { this.show(false); return; }
+        if (j < 0) return;
+        e.preventDefault(); this.links[j].focus();
+      });
+      document.addEventListener('pointerdown', e => { if (this.open && !this.el.contains(e.target) && !this.btn.contains(e.target)) this.show(false); }, true);
+    },
+    mark(n) { this.links.forEach((a, i) => { if (i === n - 1) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); },
+    show(on, restore) {
+      if (on === this.open) return;
+      this.open = on;
+      popover(this.el, this.btn, on, restore);
+      if (on) (this.links[Chrome.n - 1] || this.links[0]).focus({ preventScroll: true });
+    },
+    /* turn to page n: the folio flaps through the pages in between, a page-turn sound, then the scroll */
+    turn(n) {
+      n = clamp(n | 0, 1, 6);
+      if (this.open) this.show(false);
+      if (menuOpen) closeMenu(false);
+      const tgt = $(PAGES[n - 1][0]), from = Chrome.n, dur = 1 + .12 * Math.abs(n - from);
+      this.flap(from, n);
+      Sound.turn();
+      clearTimeout(this.H);
+      this.H = setTimeout(() => { Chrome.hold = false; }, (dur + .6) * 1000);   /* a scroll cut short by the reader still hands the folio back */
+      K2.scrollTo(n === 1 ? 0 : tgt, { focus: tgt, duration: dur, onComplete: () => { clearTimeout(this.H); Chrome.hold = false; } });
+    },
+    flap(from, to) {
+      clearInterval(this.T);
+      Chrome.hold = true;
+      const name = k => { const f = Zones.folios.find(z => +z.n === k); return f ? f.title : PAGES[k - 1][1]; };
+      const set = k => { folioP.textContent = pad2(k) + '/06'; folioT.textContent = name(k); Chrome.key = pad2(k) + name(k); Chrome.n = k; this.mark(k); };
+      if (env.reduce || from === to) { set(to); return; }
+      let k = from;
+      const step = to > from ? 1 : -1;
+      this.T = setInterval(() => {
+        k += step; set(k);
+        if (folioN.animate) folioN.animate([{ transform: 'perspective(60px) rotateX(-70deg)', opacity: .3 }, { transform: 'none', opacity: 1 }], { duration: 140, easing: 'cubic-bezier(.2,1.4,.5,1)' });
+        Sound.tick(.5);
+        if (k === to) clearInterval(this.T);
+      }, 70);
+    }
+  };
+  K2.pages = { turn: n => Pages.turn(n), flap: (a, b) => Pages.flap(a, b), get current() { return Chrome.n; }, contents: on => Pages.show(on !== false) };
+
+  /* ── 25 · Key to the Specimen: one table drives the keys and renders the sheet ─
+     Punctuation that means its action. Matched on e.key first, then on
+     e.code + Shift (a Russian layout has no # on Shift+3). Ignored while
+     typing, with a modifier, in the menu or a case. While the sheet is open
+     every key depresses its cap and runs live. Single-key shortcuts can be
+     switched off (WCAG 2.1.4); Esc always works. The Konami code is LOUD. */
+  const onoff = b => (b ? 'On' : 'Off');
+  function dropAtCursor() {
+    const x = P.inside ? P.x : F.vw / 2, y = P.inside ? P.y : F.vh / 2;
+    if (!Pigment.on) { K2.toast(env.reduce ? 'The brush rests under reduced motion' : 'Pigment is not available in this browser'); return; }
+    if (!Pigment.gain(x, y)) { K2.toast('No pigment on blue'); return; }
+    Pigment.drop(x, y); Sound.thud(x / F.vw, .45);
+  }
+  const KEYS = [
+    { caps: ['?'], label: 'Key to the specimen', run: () => Keys.toggle(), m: [['?', 'Slash', 1]] },
+    { caps: ['#', 'G'], label: 'Proof marks', run: () => K2.mode.toggle('proof'), st: () => onoff(Mode.s.proof), m: [['#', 'Digit3', 1], ['g', 'KeyG', 0], ['G', 'KeyG', 1]] },
+    { caps: ['!'], label: 'Sound — the loud key', run: () => Sound.toggle(), st: () => onoff(Sound.on), m: [['!', 'Digit1', 1]] },
+    { caps: ['.'], label: 'Drop a full stop of pigment', run: dropAtCursor, st: () => (Pigment.on ? pad2(Pigment.drops) + ' drops' : 'Off'), m: [['.', 'Period', 0]] },
+    { caps: ['@'], label: 'Copy the email', run: () => Mail.copy(), m: [['@', 'Digit2', 1]] },
+    { caps: ['^', '0'], label: 'Back to the title page', nav: true, run: () => Pages.turn(1), m: [['^', 'Digit6', 1], ['0', 'Digit0', 0]] },
+    { caps: ['1–6'], label: 'Turn to page 01–06', nav: true, run: (e, n) => Pages.turn(n), st: () => 'p.' + pad2(Chrome.n), m: [1, 2, 3, 4, 5, 6].map(n => [String(n), 'Digit' + n, 0, n]) },
+    { caps: ['[', ']'], label: 'Previous / next page', nav: true, run: (e, d) => Pages.turn(Chrome.n + d), m: [['[', 'BracketLeft', 0, -1], [']', 'BracketRight', 0, 1]] },
+    { caps: ['+', '−'], label: 'Volume up / down, past 10 is 11', run: (e, d) => Faders.go(clamp(Mode.s.vol + d, 0, 11)), st: () => 'Vol ' + pad2(Mode.s.vol),
+      m: [['+', 'Equal', 1, 1], ['=', 'Equal', 0, 1], ['-', 'Minus', 0, -1], ['_', 'Minus', 1, -1], ['−', 'Minus', 0, -1]] },
+    { caps: ['Esc'], label: 'Close, clear or stop', always: true, run: () => Keys.escape(), m: [['Escape', 'Escape', null]] }
+  ];
+  const Keys = {
+    el: $('#ks'), list: $('#ks .ks-l'), last: $('.ks-last'), sw: $('#ks-sw'), x: $('#ks-x'),
+    open: false, on: true, ret: null, byKey: new Map(), byCode: new Map(), buf: [], fallback: null,
+    KONAMI: 'arrowup arrowup arrowdown arrowdown arrowleft arrowright arrowleft arrowright b a',
+    init() {
+      KEYS.forEach((row, ri) => {
+        for (const [key, code, shift, arg] of row.m) {
+          this.byKey.set(key, [row, arg]);
+          this.byCode.set(code + (shift == null ? '' : shift ? '+' : '-'), [row, arg]);
+        }
+        /* the sheet is the table: caps ramp from 50/100 to 150/900 down the page */
+        const li = mk('li'), caps = mk('span', 'ks-caps'), a = mk('span', 'ks-a'), st = mk('span', 'ks-st'), q = ri / (KEYS.length - 1);
+        row.capEls = row.caps.map(c => { const k = mk('kbd', 'cap', c); k.style.cssText = `--w:${50 + 100 * q};--g:${Math.round(100 + 800 * q)}`; caps.appendChild(k); return k; });
+        a.append(mk('span', '', row.label), mk('i', 'lead'));
+        li.append(caps, a, st);
+        row.stEl = st;
+        this.list.appendChild(li);
+      });
+      document.addEventListener('keydown', e => this.down(e));
+      $$('[data-keys]').forEach(b => b.addEventListener('click', () => { if (menuOpen) closeMenu(false); this.show(true); }));
+      this.x.addEventListener('click', () => this.show(false));
+      this.sw.addEventListener('click', () => this.enable(!this.on));
+      this.enable(session.get('k2:keys') !== '0');
+    },
+    match(e) { return this.byKey.get(e.key) || this.byCode.get(e.code + (e.shiftKey ? '+' : '-')) || this.byCode.get(e.code) || null; },
+    down(e) {
+      if (e.defaultPrevented || e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (this.open) { this.sheetKey(e); return; }
+      if (menuOpen || Case.isOpen) return;
+      this.konami(e);
+      const hit = this.match(e);
+      if (!hit) { if (this.on && this.fallback && e.key.length === 1) this.fallback(e); return; }
+      const [row, arg] = hit;
+      if (!this.on && !row.always) return;
+      e.preventDefault();
+      row.run(e, arg);
+    },
+    /* the sheet doubles as a tester: caps depress, actions run live, unknown keys are named */
+    sheetKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); this.show(false); return; }
+      if (e.key === 'Tab') { trap(e, this.el); return; }
+      this.konami(e);
+      const hit = this.match(e);
+      if (!hit) { if (e.key.length === 1) this.last.textContent = `Last key: ${e.key === ' ' ? 'Space' : e.key} · code ${e.code || '—'} · not on the key`; return; }
+      const [row, arg] = hit;
+      e.preventDefault();
+      this.press(row, e.key);
+      this.last.textContent = `Last key: ${e.key} · ${row.label}`;
+      if (row === KEYS[0]) { this.show(false); return; }
+      if (row.nav) { this.show(false); setTimeout(() => row.run(e, arg), 80); return; }
+      row.run(e, arg);
+      this.refresh();
+    },
+    press(row, key) {
+      const i = Math.max(0, row.caps.findIndex(c => c.toLowerCase() === key.toLowerCase() || (c === '−' && (key === '-' || key === '_'))));
+      const cap = row.capEls[i];
+      cap.classList.add('dn');
+      setTimeout(() => cap.classList.remove('dn'), env.reduce ? 0 : 110);
+    },
+    konami(e) {
+      this.buf.push(e.key.toLowerCase());
+      if (this.buf.length > 10) this.buf.shift();
+      if (this.buf.join(' ') === this.KONAMI) { this.buf.length = 0; K2.mode.set({ vol: 11 }); }
+    },
+    show(on) {
+      if (on === this.open) return;
+      this.open = on;
+      $$('[data-keys]').forEach(b => b.setAttribute('aria-expanded', String(on)));
+      if (on) {
+        Pages.show(false); Faders.show(false);
+        this.ret = document.activeElement;
+        this.refresh();
+        this.el.hidden = false;
+        page.inert = true; nav.inert = true;
+        K2.lockScroll(true);
+        void this.el.offsetWidth;   /* commit the closed state, so the slide-in transition runs */
+        this.el.classList.add('open');
+        this.x.focus({ preventScroll: true });
+        return;
+      }
+      this.el.classList.remove('open');
+      page.inert = false; nav.inert = false;
+      K2.lockScroll(false);
+      setTimeout(() => { if (!this.open) this.el.hidden = true; }, env.reduce ? 0 : 520);
+      if (this.ret && this.ret.focus && this.ret.isConnected) this.ret.focus({ preventScroll: true });
+    },
+    toggle() { this.show(!this.open); },
+    refresh() { KEYS.forEach(r => { const s = r.st ? r.st() : ''; if (r.stEl.textContent !== s) r.stEl.textContent = s; }); },
+    enable(on) {
+      this.on = on; session.set('k2:keys', on ? '1' : '0');
+      this.sw.setAttribute('aria-pressed', String(on)); $('span', this.sw).textContent = onoff(on);
+    },
+    /* Esc: the nearest open thing closes; then a running event stops; then proof marks come off */
+    escape() {
+      if (Pages.open) { Pages.show(false, true); return; }
+      if (Faders.open) { Faders.show(false, true); return; }
+      if (Notes.hidePop() || Notes.clear()) return;
+      const c = Director.cur && Director.cur.name;
+      if (c === 'eleven') { Mode.set({ vol: Mode.prev }); return; }
+      if (c === 'whisper') { Director.end('whisper'); return; }
+      if (Mode.s.proof) Mode.set({ proof: false });
+    }
+  };
+  /* focus stays inside a modal: Tab off either end wraps around */
+  function trap(e, el) {
+    const f = focusables(el), a = f[0], z = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+    else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+  }
+  K2.keys = { table: KEYS, sheet: on => Keys.show(on !== false), get enabled() { return Keys.on; }, get fallback() { return Keys.fallback; }, set fallback(fn) { Keys.fallback = fn; } };
+
+  /* ── 26 · PROOF: the specimen shows its working ───────────────────────────────
+     A 1px IKB plotter line sweeps down and draws the real construction on one
+     fixed 2D canvas (pointer-events: none, so everything stays live): the
+     12-column grid (4 on phones) on the real gutters with IKB 6% gutters, the
+     8px baseline grid, margins with redlines, section boxes with tabs, a live
+     spec tag on every display element and each system's own working — the
+     hero chain, the tapes' nodes, the sorts' hulls and home springs, the
+     board's hinges, the zoom origin. Display type turns to 1px keylines
+     (CSS) and the pigment prints iso-lines. Telemetry comes from the one
+     scheduler. It redraws only on frames something else woke.            */
+  const PROOF_SEC = [['#top', '01', 'Title'], ['#strings', '02', 'Strings'], ['#text', '03', 'Text setting'], ['#work', '04', 'In use'],
+    ['#process', '05', 'Threshold'], ['#instances', '05', 'Instances'], ['#contact', '06', 'Colophon']];
+  const PC = { ikb: 'rgba(29,44,243,', pap: 'rgba(230,231,227,', IKB: '#1D2CF3', PAPER: '#E6E7E3', INK: '#0E0E10' };
+  const Proof = {
+    name: 'proof', active: false,
+    cv: $('.proof-cv'), tele: $('.tele'), c: null, d: 1, W: 0, H: 0, on: false, sw: 0, dir: 1,
+    secs: [], items: [], extra: [], R: new Float32Array(0), gl: 16, gr: 16, bands: [], tT: 0, tS: '',
+    init() {
+      this.c = this.cv.getContext('2d');
+      this.secs = PROOF_SEC.map(([sel, n, t]) => ({ el: $(sel), n, t, top: 0, h: 0, x: 0, w: 0, vis: false }));
+      S.stat.idle = () => { if (this.on) this.telemetry(true); };
+    },
+    toggle(on, instant) {
+      this.on = on; S.stat.trace = on;
+      if (on) {
+        root.classList.add('proof');
+        this.cv.hidden = false; this.tele.hidden = false;
+        this.size(); this.measure();
+        this.sw = instant || env.reduce ? 1 : 0;
+        Sound.tick(1); setTimeout(() => Sound.tick(.6), 70);   /* the lamp clicks on */
+      } else if (env.reduce) this.sw = 0;
+      this.dir = on ? 1 : -1;
+      this.active = true; S.wake();
+    },
+    off() {
+      this.active = false;
+      root.classList.remove('proof');
+      this.cv.hidden = true; this.tele.hidden = true;
+      this.c.setTransform(1, 0, 0, 1, 0, 0); this.c.clearRect(0, 0, this.W, this.H);
+    },
+    size() {
+      if (!this.on) return;
+      const d = DPR(1.5), W = Math.round(innerWidth * d), H = Math.round((this.cv.clientHeight || innerHeight) * d);
+      if (W !== this.W || H !== this.H) { this.W = this.cv.width = W; this.H = this.cv.height = H; }
+      this.d = d;
+    },
+    /* layout-time geometry: section boxes in document px, the gutters, and the display elements to tag */
+    measure() {
+      if (!this.on) return;
+      const y = window.scrollY, cs = getComputedStyle(nav);
+      this.gl = parseFloat(cs.paddingLeft) || 16; this.gr = parseFloat(cs.paddingRight) || 16;
+      for (const s of this.secs) { const r = s.el.getBoundingClientRect(); s.top = r.top + y; s.h = r.height; s.x = r.left; s.w = r.width; }
+      const I = [], fsOf = el => Math.round(parseFloat(getComputedStyle(el).fontSize) || 0);
+      const add = (el, sec, kind, tag, ref) => { if (el) I.push({ el, sec, kind, tag, ref, ok: false }); };
+      Hero.lines.forEach(ln => add(ln.kin, 0, 'hero', () => `Anybody · ${ln.n} sorts · ${Math.round(ln.fs * ln.v)}px · fit ${Math.round(ln.cw)}${ln.trk ? ' · tr +' + ln.trk.toFixed(1) : ''}`, ln));
+      const tg = $('.tagline'), tgf = fsOf(tg);
+      add(tg, 0, 'line', () => `Anybody 68/560 · ${tgf}px`);
+      Strings.tapes.forEach((tp, i) => add(tp.el, 1, 'tape', () => `Tape ${'BA'[i]} · ${tp.N} nodes · ${Math.round(tp.fs)}px · ${tp.set.length} voices`, tp));
+      const mf = Text.el, mfs = fsOf(mf);
+      add(mf, 2, 'line', () => `Anybody ${mfs}/${mfs} · 80/520 · ${Text.words.length} words · ${Text.lines.length} lines`);
+      Work.rows.forEach(r => add(r._btn, 3, 'line', () => `${Math.round(Vol.w(r._w))}/${Math.round(Vol.g(r._g))}${r._it ? ' ital' : ''} · ${Math.round(r._fs)}px`));
+      if (!env.desk) $$('.r-media').forEach(m => add(m, 3, 'canvas', () => 'Canvas 2D · 2 plates'));
+      add(Thresh.at, 4, 'line', () => `Anybody ${Math.round(Vol.w(50))}/${Math.round(Vol.g(100))} · ${Math.round(parseFloat(Thresh.a.style.fontSize) || 0)}px`);
+      add(Thresh.bt, 4, 'line', () => `Anybody ${Math.round(Vol.w(150))}/${Math.round(Vol.g(900))} · ${Math.round(parseFloat(Thresh.b.style.fontSize) || 0)}px${Thresh.trk ? ' · tr +' + Thresh.trk.toFixed(1) : ''}`);
+      Board.tiles.forEach((tl, i) => add(tl.el, 5, 'tile', i ? null : () => {
+        const s = Board.stages[clamp(Board.stage, 0, 3)];
+        return Board.stage >= 4 ? 'Solari · 8 tiles · flood' : `Solari · 8 tiles · ${s ? Math.round(Vol.w(s.w)) + '/' + Math.round(Vol.g(s.g)) : ''}`;
+      }));
+      add(Board.ds, 5, 'line', () => 'Designspace · wdth × wght');
+      Loud.lines.forEach(ln => add(ln.el, 6, 'line', () => `Anybody ${Math.round(ln.vw)}/${Math.round(ln.vg)} · ${Math.round(ln.fs)}px${ln.ls ? ' · tr +' + ln.ls.toFixed(1) : ' · fit'}`));
+      const em = Mail.el, emf = fsOf(em);
+      add(em, 6, 'line', () => `Anybody ${Math.round(Vol.w(96))}/${Math.round(Vol.g(640))} · ${emf}px`);
+      add($('.ant-img'), 6, 'canvas', () => `Canvas 2D · ${K2.plate.number} · ${Pigment.ln} points`);
+      for (const x of this.extra) add(x.el, -1, 'line', x.fn);
+      this.items = I;
+      if (this.R.length < I.length * 4) this.R = new Float32Array(I.length * 4);
+    },
+    /* K2.proof.spec(el, () => 'tag'): a later system's display element joins the proof */
+    spec(el, fn) { this.extra.push({ el, fn }); if (this.on) this.measure(); },
+    /* read phase: rects of the tagged elements in the sections on screen (≤ ~40 reads) */
+    read() {
+      if (!this.on && this.sw <= 0) return;
+      const y = F.y, vh = F.vh, R = this.R;
+      for (const s of this.secs) s.vis = s.top - y < vh && s.top + s.h - y > 0;
+      for (let i = 0; i < this.items.length; i++) {
+        const it = this.items[i];
+        it.ok = false;
+        if (it.sec >= 0 && !this.secs[it.sec].vis) continue;
+        const r = it.el.getBoundingClientRect();
+        if (r.width < 1 || r.bottom < 0 || r.top > vh) continue;
+        R[i * 4] = r.left; R[i * 4 + 1] = r.top; R[i * 4 + 2] = r.width; R[i * 4 + 3] = r.height; it.ok = true;
+      }
+    },
+    tick(t, dt) {
+      if (this.dir > 0 && this.sw < 1) this.sw = Math.min(1, this.sw + dt / .52);
+      if (this.dir < 0) { this.sw = Math.max(0, this.sw - dt / .42); if (this.sw <= 0) { this.off(); return false; } }
+      this.draw();
+      if (this.on && t - this.tT > 250) { this.tT = t; this.telemetry(false); }
+      return this.sw > 0 && this.sw < 1;
+    },
+    tone(y) { const z = Zones.toneAt(y + F.y); return z === 'paper' ? 0 : 1; },
+    col(tone, a) { return (tone ? PC.pap : PC.ikb) + a + ')'; },
+    draw() {
+      const c = this.c, W = F.vw, H = F.vh, e = this.sw, clipY = (e < 1 ? (1 - Math.pow(1 - e, 3)) : 1) * H;
+      c.setTransform(this.d, 0, 0, this.d, 0, 0);
+      c.clearRect(0, 0, W, H);
+      this.bandsAt(H);
+      c.save();
+      c.beginPath(); c.rect(0, 0, W, clipY); c.clip();
+      c.font = '500 9px "IBM Plex Mono", ui-monospace, monospace'; c.textBaseline = 'alphabetic';
+      if ('letterSpacing' in c) c.letterSpacing = '.6px';
+      this.grid(W, H);
+      this.sections(W);
+      this.elements();
+      this.margins(W, H);
+      this.redlines();
+      c.restore();
+      if (e < 1) {
+        c.font = '500 9px "IBM Plex Mono", ui-monospace, monospace';
+        c.fillStyle = PC.IKB; c.fillRect(0, clipY - 1, W, 1);
+        this.tag(W - 8, clipY - 4, `${this.dir > 0 ? 'Plotting' : 'Lifting'} · ${pad3(e * 100)}%`, this.tone(clipY - 2), true);
+      }
+    },
+    /* the viewport cut into runs of one tone (paper / ink or IKB), sampled every 4px */
+    bandsAt(H) {
+      const B = this.bands;
+      B.length = 0;
+      let y0 = 0, t0 = this.tone(0);
+      for (let y = 4; y <= H; y += 4) { const t = y >= H ? -1 : this.tone(y); if (t !== t0) { B.push(y0, y, t0); y0 = y; t0 = t; } }
+      if (y0 < H) B.push(y0, H, t0);
+    },
+    grid(W, H) {
+      const c = this.c, B = this.bands, cols = env.desk ? 12 : 4, gap = 16, cw = (W - this.gl - this.gr - gap * (cols - 1)) / cols;
+      for (let b = 0; b < B.length; b += 3) {
+        const y0 = B[b], h = B[b + 1] - B[b], t = B[b + 2];
+        c.fillStyle = this.col(t, .06);
+        c.fillRect(0, y0, this.gl, h); c.fillRect(W - this.gr, y0, this.gr, h);
+        for (let k = 1; k < cols; k++) c.fillRect(this.gl + k * cw + (k - 1) * gap, y0, gap, h);
+        c.fillStyle = this.col(t, .26);
+        for (let k = 0; k < cols; k++) { const x = this.gl + k * (cw + gap); c.fillRect(Math.round(x), y0, 1, h); c.fillRect(Math.round(x + cw) - 1, y0, 1, h); }
+        /* the 8px baseline grid, fixed to the document */
+        c.fillStyle = this.col(t, .07);
+        for (let y = y0 + ((8 - ((F.y + y0) % 8)) % 8); y < y0 + h; y += 8) c.fillRect(0, Math.round(y), W, 1);
+      }
+      this.cw = cw;
+    },
+    sections(W) {
+      const c = this.c, top = nav.getBoundingClientRect().bottom + 6;
+      for (const s of this.secs) {
+        if (!s.vis) continue;
+        const y = s.top - F.y, t = this.tone(Math.max(0, y) + 2);
+        c.strokeStyle = this.col(t, .5); c.lineWidth = 1;
+        c.strokeRect(s.x + .5, y + .5, s.w - 1, s.h - 1);
+        const ty = clamp(y + 15, top + 13, y + s.h - 6);
+        this.tag(s.x + this.gl, ty, `§${s.n} ${s.t} · ${Math.round(s.w)} × ${Math.round(s.h)}`, this.tone(ty - 6));
+      }
+    },
+    elements() {
+      const c = this.c, R = this.R;
+      for (let i = 0; i < this.items.length; i++) {
+        const it = this.items[i];
+        if (!it.ok) continue;
+        const x = R[i * 4], y = R[i * 4 + 1], w = R[i * 4 + 2], h = R[i * 4 + 3], t = this.tone(y + h / 2);
+        c.strokeStyle = this.col(t, .7); c.lineWidth = 1;
+        if (it.kind === 'tape') this.tape(i);
+        else {
+          c.strokeRect(Math.round(x) + .5, Math.round(y) + .5, Math.round(w) - 1, Math.round(h) - 1);
+          if (it.kind === 'canvas') { c.beginPath(); c.moveTo(x, y); c.lineTo(x + w, y + h); c.moveTo(x + w, y); c.lineTo(x, y + h); c.stroke(); }
+          if (it.kind === 'tile') { c.fillStyle = this.col(1, .6); c.fillRect(x, Math.round(y + h / 2), w, 1); }
+          if (it.kind === 'hero') this.chain(i);
+        }
+        if (it.tag && it.kind !== 'tape') this.tag(x, y > 30 ? y - 3 : y + h + 15, it.tag(), this.tone(y > 30 ? y - 8 : y + h + 8));
+      }
+      if (this.secs[4].vis && Thresh.live) this.origin();
+      if (this.secs[6].vis && Phys.live) this.hulls();
+      if (Work.vis && Work.shown > .05) {
+        c.strokeStyle = this.col(0, .8); c.strokeRect(Work.x + .5, Work.y + .5, CARD.w - 1, CARD.h - 1);
+        c.beginPath(); c.moveTo(Work.x, Work.y); c.lineTo(Work.x + CARD.w, Work.y + CARD.h); c.moveTo(Work.x + CARD.w, Work.y); c.lineTo(Work.x, Work.y + CARD.h); c.stroke();
+        this.tag(Work.x, Work.y + CARD.h + 30, 'Riso · 2 plates · canvas 2D · 1px out of register', 0);
+      }
+    },
+    /* FIG.1 as built: seven nodes on springs above the cap line, their live displacement */
+    chain(i) {
+      const c = this.c, ln = this.items[i].ref, y0 = this.R[i * 4 + 1] + ln.capY - 16;
+      c.strokeStyle = this.col(0, .75); c.fillStyle = PC.IKB;
+      c.beginPath();
+      for (let k = ln.i0; k < ln.i0 + ln.n - 1; k++) {
+        const ax = Hero.xc[k], ay = y0 - Hero.u[k] * 40, bx = Hero.xc[k + 1], by = y0 - Hero.u[k + 1] * 40, z = 8;
+        c.moveTo(ax, ay);
+        for (let s = 1; s < z; s++) { const f = s / z; c.lineTo(lerp(ax, bx, f), lerp(ay, by, f) + (s & 1 ? -3 : 3)); }
+        c.lineTo(bx, by);
+      }
+      c.stroke();
+      for (let k = ln.i0; k < ln.i0 + ln.n; k++) {
+        const x = Hero.xc[k], y = y0 - Hero.u[k] * 40, u = Hero.u[k];
+        c.fillRect(x - 3, y - 3, 6, 6);
+        c.fillRect(x, y + 3, 1, Math.max(0, y0 + 16 - y));
+        c.fillText(`${u < 0 ? '−' : '+'}${Math.abs(u).toFixed(2)}`, x - 13, y - 7);
+      }
+    },
+    /* a tape as the sim sees it: its nodes along the curve, every 3rd marked */
+    tape(i) {
+      const c = this.c, tp = this.items[i].ref;
+      if (!tp.d) return;
+      const ox = Strings.left + tp.x0, oy = Strings.topDoc - F.y + tp.y0, cs = tp.cos, sn = tp.sin;
+      c.beginPath();
+      for (let j = 0; j < tp.N; j++) { const s = j * tp.D, n = tp.nAt(s), x = ox + s * cs - n * sn, y = oy + s * sn + n * cs; if (j) c.lineTo(x, y); else c.moveTo(x, y); }
+      c.stroke();
+      c.fillStyle = PC.IKB;
+      let tx = -1, ty = 0;
+      for (let j = 0; j < tp.N; j += 3) {
+        const s = j * tp.D, n = tp.nAt(s), x = ox + s * cs - n * sn, y = oy + s * sn + n * cs;
+        c.fillRect(x - 2, y - 2, 4, 4);
+        if (tx < 0 && x > this.gl + 8 && y > 40 && y < F.vh - 120) { tx = x; ty = y; }
+      }
+      if (tx >= 0) this.tag(tx, ty - tp.h / 2 - 8, this.items[i].tag(), 0);   /* the tag rides the first node on screen */
+    },
+    /* the zoom origin inside the O's stroke, with the live scale */
+    origin() {
+      const c = this.c, pr = this.secs[4], p = Math.max(0, Thresh.p), q = smooth(.3, .9, p), k = smooth(.3, .72, p), s = Math.min(1 + 69 * q * q * q, 45);
+      const pinTop = clamp(F.y - pr.top, 0, Thresh.run) + pr.top - F.y;
+      const x = pr.x + Thresh.ox + (Thresh.pw / 2 - Thresh.ox) * k, y = pinTop + Thresh.oy + (Thresh.ph / 2 - Thresh.oy) * k, t = this.tone(y);
+      c.strokeStyle = this.col(t, .9);
+      c.beginPath(); c.moveTo(x - 26, y); c.lineTo(x + 26, y); c.moveTo(x, y - 26); c.lineTo(x, y + 26); c.stroke();
+      c.beginPath(); c.arc(x, y, 9, 0, TAU); c.stroke();
+      this.tag(x + 14, y - 12, `Zoom origin · ×${s.toFixed(1)}`, t);
+    },
+    /* FIG.4 as built: every sort's matter-js hull, and the home spring of any sort off its mark */
+    hulls() {
+      const c = this.c, ox = Phys.lx, oy = Phys.vy0;
+      c.strokeStyle = this.col(1, .75);
+      c.beginPath();
+      for (const g of Phys.G) {
+        if (!g.inW) continue;
+        const v = g.b.vertices;
+        c.moveTo(ox + v[0].x, oy + v[0].y);
+        for (let k = 1; k < v.length; k++) c.lineTo(ox + v[k].x, oy + v[k].y);
+        c.closePath();
+      }
+      c.stroke();
+      c.setLineDash([3, 3]); c.beginPath();
+      for (const g of Phys.G) {
+        if (!g.inW || g.state === 'wait') continue;
+        const p = g.b.position;
+        if (Math.abs(p.x - g.hx) + Math.abs(p.y - g.hy) > 3) { c.moveTo(ox + p.x, oy + p.y); c.lineTo(ox + g.hx, oy + g.hy); }
+      }
+      c.stroke(); c.setLineDash([]);
+    },
+    /* margin redlines: both margins, one gutter and a column, near the foot of the viewport */
+    margins(W, H) {
+      const c = this.c, y = H - (env.desk ? 30 : 70), t = this.tone(y), gl = this.gl, gr = this.gr, cw = this.cw;
+      c.fillStyle = c.strokeStyle = this.col(t, .95);
+      const dim = (x0, x1, lab) => {
+        c.fillRect(x0, y, x1 - x0, 1); c.fillRect(x0, y - 4, 1, 9); c.fillRect(x1 - 1, y - 4, 1, 9);
+        c.fillText(lab, (x0 + x1) / 2 - c.measureText(lab).width / 2, y - 6);
+      };
+      dim(0, gl, String(Math.round(gl)));
+      dim(W - gr, W, String(Math.round(gr)));
+      if (cw > 30) { dim(gl, gl + cw, `Col ${Math.round(cw)}`); dim(gl + cw, gl + cw + 16, '16'); }
+    },
+    /* hover redlines (fine pointers): distances from the element under the pointer to its section's edges */
+    redlines() {
+      if (!env.fine || !P.inside) return;
+      const R = this.R, c = this.c;
+      for (let i = 0; i < this.items.length; i++) {
+        const it = this.items[i];
+        if (!it.ok || it.sec < 0) continue;
+        const x = R[i * 4], y = R[i * 4 + 1], w = R[i * 4 + 2], h = R[i * 4 + 3];
+        if (P.x < x || P.x > x + w || P.y < y || P.y > y + h) continue;
+        const s = this.secs[it.sec], L = s.x + this.gl, Rr = s.x + s.w - this.gr, top = Math.max(s.top - F.y, 0), my = y + h / 2, mx = x + w / 2, t = this.tone(my);
+        c.fillStyle = this.col(t, 1);
+        const lab = (v, lx, ly) => { const s2 = String(Math.round(v)); c.fillText(s2, lx - c.measureText(s2).width / 2, ly); };
+        if (x - L > 2) { c.fillRect(L, my, x - L, 1); lab(x - L, (L + x) / 2, my - 5); }
+        if (Rr - x - w > 2) { c.fillRect(x + w, my, Rr - x - w, 1); lab(Rr - x - w, (x + w + Rr) / 2, my - 5); }
+        if (y - top > 2) { c.fillRect(mx, top, 1, y - top); lab(y - top, mx + 14, (top + y) / 2); }
+        break;
+      }
+    },
+    /* a spec tag: a filled mono slip, IKB on paper, paper on ink and IKB; right-anchored when asked */
+    tag(x, y, s, tone, right) {
+      const c = this.c, txt = s.toUpperCase(), w = c.measureText(txt).width + 10;
+      const x0 = clamp(right ? x - w : x, 2, F.vw - w - 2);
+      c.fillStyle = tone ? PC.PAPER : PC.IKB; c.fillRect(x0, y - 12, w, 13);
+      c.fillStyle = tone ? PC.INK : PC.PAPER; c.fillText(txt, x0 + 5, y - 3);
+    },
+    /* telemetry: the single loop made visible — frame time, who is awake, the pigment, the libraries */
+    telemetry(asleep) {
+      const st = S.stat, n = S.size, aw = asleep ? [] : st.awake, ms = asleep ? 0 : st.ms;
+      const pg = Pigment, pm = K2.pigment.mode, dye = pg.dye ? `${pg.dye.r.w}×${pg.dye.r.h}` : '—';
+      const libs = `Lenis ${lenis ? '✓' : '—'} · Matter ${typeof window.Matter === 'object' ? '✓' : '—'}`;
+      const s = env.desk
+        ? `Proof ⊞  frame ${ms ? ms.toFixed(1) + ' ms · ' + Math.round(1000 / ms) + ' fps' : '— · asleep'} · vol ${pad2(Mode.s.vol)}\n` +
+          `Awake ${pad2(aw.length)}/${pad2(n)}  ${aw.length ? aw.join(' · ') : 'the loop is asleep'}\n` +
+          `Pigment ${pm}${pg.gl ? ` · sim ${pg.simW}×${pg.simH} · dye ${dye}` : ''} · dpr ${pg.dpr} · ${pg.awake ? 'wet' : 'dry'}\n` +
+          `${libs} · scroll ${Math.round(F.y)}/${Math.round(F.max)} px`
+        : `${ms ? ms.toFixed(1) + ' ms' : 'asleep'} · awake ${pad2(aw.length)}/${pad2(n)} · ${pm} · vol ${pad2(Mode.s.vol)}`;
+      if (s !== this.tS) { this.tele.textContent = s; this.tS = s; }
+    }
+  };
+  K2.proof = { get on() { return Proof.on; }, spec: (el, fn) => Proof.spec(el, fn) };
+
+  /* ── 27 · Reader layer: live footnotes and the selection inspector ────────────
+     Footnote marks are working references: hover or focus shows the note in
+     the rig chip; a click turns to the colophon, rings the note in an IKB
+     proof ellipse and leaves an exact ↩ back. Phones get the note on a
+     paper slip first. Selecting text shows a design-tool spec chip; the
+     clipboard is never touched.                                          */
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const Notes = {
+    ol: $('#fns'), pop: $('#fnpop'), popT: $('#fnpop .fnpop-t'), popBtn: $('#fnpop button'), armed: null, ring: null, from: null,
+    init() {
+      K2.footnotes = $$('li', this.ol).map(li => [$('b', li).textContent, $('span', li).textContent]);
+      $$('.fnref').forEach(a => this.bind(a));
+      this.popBtn.addEventListener('click', () => { const a = this.armed; this.hidePop(); if (a) this.jump(a); });
+      document.addEventListener('pointerdown', e => { if (!this.pop.hidden && !this.pop.contains(e.target) && !e.target.closest('.fnref')) this.hidePop(); }, true);
+    },
+    li: a => document.getElementById(a.getAttribute('href').slice(1)),
+    bind(a) {
+      const li = this.li(a);
+      if (!li) return;
+      a.dataset.cursorLabel = li.textContent.trim().replace(/\s+/g, ' ');
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        if (!env.fine && this.armed !== a) { this.showPop(a); return; }   /* touch: the first tap reads, the second jumps */
+        this.hidePop(); this.jump(a);
+      });
+    },
+    showPop(a) {
+      const li = this.li(a), r = a.getBoundingClientRect();
+      this.armed = a; this.popT.textContent = li.textContent.trim().replace(/\s+/g, ' ');
+      this.pop.hidden = false;
+      const w = this.pop.offsetWidth;
+      this.pop.style.left = clamp(r.left - 12, 16, innerWidth - w - 16).toFixed(0) + 'px';
+      this.pop.style.top = (r.bottom + 8).toFixed(0) + 'px';
+      this.pop.classList.add('open');
+    },
+    hidePop() {
+      if (this.pop.hidden) return false;
+      this.pop.classList.remove('open'); this.pop.hidden = true; this.armed = null;
+      return true;
+    },
+    jump(a) {
+      const li = this.li(a);
+      this.clear();
+      this.from = { y: F.y, a, n: Chrome.n };
+      K2.scrollTo(li, { offset: -F.vh * .42, duration: 1.4, focus: li, onComplete: () => this.circle(li) });
+    },
+    /* the proofreader's ring: the note turns into a paper slip, an IKB ellipse draws round it */
+    circle(li) {
+      this.clear();
+      li.classList.add('ring');
+      const svg = document.createElementNS(SVGNS, 'svg'), el = document.createElementNS(SVGNS, 'ellipse');
+      svg.setAttribute('class', 'fn-ring'); svg.setAttribute('viewBox', '0 0 100 100'); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('aria-hidden', 'true');
+      for (const [k, v] of [['cx', 50], ['cy', 50], ['rx', 49], ['ry', 46], ['pathLength', 1], ['vector-effect', 'non-scaling-stroke']]) el.setAttribute(k, v);
+      svg.appendChild(el);
+      const back = mk('a', 'fn-back', `↩ back to p.${pad2(this.from ? this.from.n : 1)}`);
+      back.href = '#'; back.dataset.cursorLabel = 'Back';
+      back.addEventListener('click', e => { e.preventDefault(); this.back(); });
+      li.append(back, svg);
+      if (env.reduce || !el.animate) el.style.strokeDashoffset = '0';
+      else el.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 500, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' });
+      this.ring = li;
+      Sound.tick(.7);
+    },
+    back() {
+      const f = this.from;
+      this.clear(); this.from = null;
+      if (f) K2.scrollTo(f.y, { duration: 1.4, onComplete: () => f.a.focus({ preventScroll: true }) });
+    },
+    clear() {
+      const li = this.ring;
+      if (!li) return false;
+      li.classList.remove('ring');
+      $$('.fn-ring, .fn-back', li).forEach(e => e.remove());
+      this.ring = null;
+      return true;
+    },
+    /* K2.notes.add('§', 'text'): a new note flaps into the colophon (secrets, later stages) */
+    add(mark, text) {
+      const li = mk('li', 'new'), n = this.ol.children.length + 1;
+      li.id = 'fn-' + n; li.tabIndex = -1;
+      li.append(mk('b', '', mark), mk('span', '', text));
+      this.ol.appendChild(li);
+      K2.footnotes.push([mark, text]);
+      return li;
+    }
+  };
+  K2.notes = { add: (m, t) => Notes.add(m, t), jump: i => { const a = $$('.fnref')[i]; if (a) Notes.jump(a); } };
+
+  const Sel = {
+    name: 'sel', active: false,
+    el: $('.selchip'), T: 0, on: false, face: '', hid: false,
+    init() {
+      document.addEventListener('selectionchange', () => { clearTimeout(this.T); this.T = setTimeout(() => this.update(), 80); });
+      document.addEventListener('copy', () => {
+        const s = getSelection(), n = s ? s.toString().length : 0;
+        if (this.on && n) K2.toast(`Copied ${n} characters — set in ${this.face}`);
+      });
+    },
+    update() {
+      const s = getSelection();
+      if (!s || s.isCollapsed || !s.rangeCount) { this.hide(); return; }
+      const r = s.getRangeAt(0), n0 = r.startContainer, el = n0.nodeType === 1 ? n0 : n0.parentElement, txt = s.toString().trim();
+      if (!el || !txt || el.closest('input, textarea, [contenteditable], .rig, .selchip')) { this.hide(); return; }
+      const cs = getComputedStyle(el), fam = (cs.fontFamily.split(',')[0] || '').replace(/["']/g, '').trim();
+      const fs = Math.round(parseFloat(cs.fontSize)), lh = Math.round(parseFloat(cs.lineHeight) || fs * 1.2);
+      const m = /wdth"?\s*([\d.]+)\D+wght"?\s*([\d.]+)/.exec(cs.fontVariationSettings || '');
+      const words = txt.split(/\s+/).length, tops = new Set();
+      for (const b of r.getClientRects()) if (b.width > 1) tops.add(Math.round(b.top / 4));
+      this.face = `${fam} ${fs}/${lh}`;
+      let lab = `${this.face} · ${m ? `W ${pad3(+m[1])} · G ${pad3(+m[2])}` : 'G ' + cs.fontWeight} · ${pad2(words)} ${words === 1 ? 'word' : 'words'}`;
+      if (tops.size > 1) lab += ` · ${pad2(tops.size)} lines`;
+      if (el.closest('#email')) lab += ' · @ copies it too';
+      this.el.textContent = lab;
+      const coarse = !env.fine;
+      this.el.classList.toggle('dock', coarse);
+      if (!coarse) {
+        const b = r.getBoundingClientRect(), w = this.el.offsetWidth;
+        const x = clamp(b.left, 16, innerWidth - w - 16), y = b.top > 70 ? b.top - 30 : b.bottom + 10;
+        this.el.style.transform = `translate3d(${x.toFixed(0)}px,${y.toFixed(0)}px,0)`;
+      }
+      this.el.classList.add('on'); this.on = true; this.hid = false; this.active = true; S.wake();
+    },
+    hide() { if (!this.on) return; this.el.classList.remove('on'); this.on = false; this.active = false; },
+    /* the chip rides out a scroll hidden and re-measures when the page settles */
+    tick() {
+      if (F.dy) { if (!this.hid) { this.el.classList.remove('on'); this.hid = true; } }
+      else if (this.hid && !F.vel) { this.hid = false; this.update(); }
+      return this.hid;
+    }
+  };
+
+  /* ── 28 · Developer layer: the console colophon, K2.help(), the refit readout ── */
+  const HELP = [
+    ['K2.hero.strike(6)', 'strike the R'],
+    ['K2.strings.pluck(0, .5, 1)', 'pluck tape A at its middle'],
+    ['K2.pigment.burst(innerWidth / 2, innerHeight / 2)', 'a Klein burst'],
+    ["K2.loud.setWord('HIRE ME')", 'MAKE ___ LOUD'],
+    ['K2.mode.set({ vol: 11 })', 'this one goes to eleven'],
+    ['K2.mode.set({ vol: 0 })', 'whisper'],
+    ["K2.mode.toggle('proof')", 'show the working'],
+    ['K2.pages.turn(4)', 'turn to In Use'],
+    ['K2.keys.sheet()', 'the Key to the Specimen'],
+    ['K2.rewind.run()', 'play it again'],
+    ['console.table(K2.scheduler.systems())', 'the one loop, as data']
+  ];
+  const Dev = {
+    el: $('.rsz'), from: '', T: 0,
+    init() {
+      const big = 'font: 900 22px/1.15 Anybody, Impact, sans-serif; font-stretch: 150%; color: #1D2CF3; background: #E6E7E3; padding: 8px 12px 6px;';
+      const mono = 'font: 500 11px/1.6 "IBM Plex Mono", ui-monospace, monospace; color: #0E0E10; background: #E6E7E3; padding: 8px 12px 6px;';
+      console.log('%c4BOOSER VARIABLE%cSpecimen No. 02 · wdth 50–150 · wght 100–900 · one rAF, ' + S.size + ' systems', big, mono);
+      console.log('%cK2.help()%c lists the calls you can play.', mono + 'color: #1D2CF3;', 'font: 11px ui-monospace, monospace;');
+      K2.help = () => {
+        console.log('%cK2 — playable calls', mono + 'color: #1D2CF3;');
+        HELP.forEach(([c, d]) => console.log('%c' + c.padEnd(48) + '%c' + d, 'font: 11px ui-monospace, monospace; color: #1D2CF3;', 'font: 11px ui-monospace, monospace; color: #5C5F69;'));
+      };
+    },
+    /* a mono readout while the window resizes: what the fit engine re-set, and how long it took */
+    resizing() { if (!this.from) this.from = `${Math.round(F.vw)} × ${Math.round(F.vh)}`; },
+    report(ms) {
+      if (!this.from) return;
+      const glyphs = N + Loud.lines.reduce((k, l) => k + l.glyphs.length, 0) + Thresh.G.length;
+      const measures = Hero.lines.length + Loud.lines.length + 3 + Work.rows.length, pins = (Thresh.live ? 1 : 0) + (Board.live ? 1 : 0);
+      this.el.textContent = `${this.from} → ${innerWidth} × ${innerHeight} · refit ${measures} measures · ${glyphs} glyphs · ${pins} pins · ${ms.toFixed(1)} ms`;
+      this.el.classList.add('on'); this.from = '';
+      clearTimeout(this.T); this.T = setTimeout(() => this.el.classList.remove('on'), 1600);
+    }
+  };
+
+  /* ── 29 · Layout + boot ─────────────────────────────────────────────────── */
   let lastW = innerWidth;
   function layout() {
     env.desk = DESK.matches; env.fine = FINE.matches;
@@ -5182,6 +6636,7 @@ void main () {
     navMid = nav.offsetHeight / 2;
     Zones.measure();
     Pigment.measure();
+    Proof.size(); Proof.measure();
     K2.hooks.forEach(fn => fn());
     if (Intro.running) Hero.pending = true;
     else if (env.reduce) Hero.rest();
@@ -5189,13 +6644,16 @@ void main () {
   }
   K2.layout = layout;
   /* pinned sections cache their document offsets: refresh when content above them changes height */
-  function measurePins() { Thresh.measure(); Board.measure(); Pigment.measure(); Phys.pos(); }
+  function measurePins() { Thresh.measure(); Board.measure(); Pigment.measure(); Phys.pos(); Proof.measure(); }
   let rT = 0;
   addEventListener('resize', () => {
+    Dev.resizing();
     clearTimeout(rT);
     rT = setTimeout(() => {
+      const t0 = performance.now();
       if (innerWidth !== lastW || DESK.matches !== env.desk) { lastW = innerWidth; layout(); }
-      else { Zones.measure(); Hero.measure(); Strings.layout(); measurePins(); Pigment.resize(); }
+      else { Zones.measure(); Hero.measure(); Strings.layout(); measurePins(); Pigment.resize(); Proof.size(); }
+      Dev.report(performance.now() - t0);
       S.wake();
     }, 140);
   });
@@ -5216,6 +6674,8 @@ void main () {
   }, { rootMargin: '120px 0px' });
   const watch = (el, sys) => { el._sys = sys; io.observe(el); };
 
+  Faders.init();
+  Mode.init();
   Rig.init();
   initNav();
   Clock.init();
@@ -5233,9 +6693,17 @@ void main () {
   Ant.init();
   Pigment.init();
   Rewind.init();
+  Seal.init();
+  Pages.init();
+  Keys.init();
+  Proof.init();
+  Notes.init();
+  Sel.init();
   syncSound();
-  [LenisSys, ScrollTween, PointerSys, Intro, Hero, Strings, Text, Work, Case, Thresh, Board, Pigment, Phys, Ant, Mail, Rewind, Chrome, Rig].forEach(s => S.add(s));
+  [LenisSys, ScrollTween, PointerSys, Vol, Intro, Hero, Strings, Text, Work, Case, Thresh, Board, Pigment, Phys, Ant, Mail, Rewind, Chrome, Rig, Sel, Proof].forEach(s => S.add(s));
+  Dev.init();
   layout();
+  if (Mode.s.proof) Proof.toggle(true, true);   /* proof marks survive a reload in the same session */
   watch($('.hero'), Hero); watch(Strings.field, Strings); watch(Text.sec, Text);
   watch(Work.sec, Work); watch(Thresh.sec, Thresh); watch(Board.sec, Board); watch(Ant.el, Ant); watch(Loud.el, Phys);
 
