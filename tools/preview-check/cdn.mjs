@@ -1,8 +1,8 @@
 // Shared helper: serve pinned jsDelivr npm URLs from the local node_modules copy (the sandbox proxy blocks CDNs).
 // Usage in any Playwright script:  import { routeCdn, wrapFragment, launch } from './cdn.mjs'
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
-import fs from 'fs'; import path from 'path';
-const NM = new URL('./node_modules/', import.meta.url).pathname;
+import fs from 'fs'; import path from 'path'; import { fileURLToPath } from 'url';
+const NM = fileURLToPath(new URL('./node_modules/', import.meta.url));
 export async function routeCdn(ctx, log = []) {
   await ctx.route(/^https:\/\/cdn\.jsdelivr\.net\/npm\/.*/, async route => {
     const m = route.request().url().match(/^https:\/\/cdn\.jsdelivr\.net\/npm\/((?:@[^/]+\/)?[^@/]+)@([^/]+)\/(.+)$/);
