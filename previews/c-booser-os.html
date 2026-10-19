@@ -1,5 +1,6 @@
 <title>Booser OS</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Silkscreen:wght@400;700&display=swap">
@@ -33,7 +34,7 @@
 
 *,*::before,*::after{box-sizing:border-box}
 html{height:100%;box-sizing:border-box}
-body{height:100%;overflow:hidden;background:var(--panel);color:var(--ink);font-family:var(--font-mono);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+body{margin:0;height:100%;overflow:hidden;background:var(--panel);color:var(--ink);font-family:var(--font-mono);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 button,input{font:inherit;color:inherit}
 p{margin:0}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -46,14 +47,16 @@ p{margin:0}
 .px .k{fill:var(--ink)} .px .a{fill:var(--accent)} .px .w{fill:var(--paper)} .px .g{fill:var(--panel-2)} .px .p{fill:var(--panel)}
 
 /* ---------- OS shell ---------- */
-#os{position:fixed;inset:0;overflow:hidden;background:var(--panel);isolation:isolate;user-select:none;-webkit-user-select:none}
+#os{position:fixed;inset:0;overflow:hidden;background:var(--panel);isolation:isolate;user-select:none;-webkit-user-select:none;padding-left: max(16px, env(safe-area-inset-left, 0px));padding-right: max(16px, env(safe-area-inset-right, 0px))}
 #wall{position:absolute;left:0;top:0;image-rendering:pixelated;z-index:0}
 
 .menubar{position:absolute;top:0;left:0;right:0;z-index:5000;height:calc(var(--menu-h) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:2px;background:var(--paper);border-bottom:2px solid var(--ink)}
 .mb-btn{height:24px;padding:0 9px;border:0;background:none;border-radius:4px;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .mb-btn:hover,.mb-btn[aria-expanded="true"]{background:var(--ink);color:var(--paper)}
 .mb-logo{font-family:var(--font-pixel);font-size:12px;padding-left:4px}
-.mark{width:18px;height:18px;flex:none;background:var(--accent);border:2px solid var(--ink);display:grid;place-items:center;font:700 8px/1 var(--font-pixel);color:var(--on-accent)}
+.mark{width:18px;height:18px;flex:none;background:var(--accent);border:2px solid var(--ink);display:grid;place-items:center;font:400 8px/1 var(--font-pixel);color:var(--on-accent)}
+/* Silkscreen Bold draws "4" like a flag, so bold pixel text swaps it for this 5x5 glyph on the same grid */
+.g4{display:inline-block;width:.625em;height:.625em;margin:0 .125em;vertical-align:baseline;fill:currentColor}
 .mb-app{font-weight:800;font-size:12px;padding:0 10px 0 4px;white-space:nowrap}
 .mb-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;white-space:nowrap}
 .mb-cpu{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
@@ -69,7 +72,7 @@ p{margin:0}
 /* desktop layer */
 .home{position:absolute;inset:0;z-index:1;pointer-events:none}
 .home>*{pointer-events:auto}
-.icons{position:absolute;top:calc(var(--menu-h) + env(safe-area-inset-top,0px) + 18px);left:max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:4px 8px;max-height:calc(100% - 150px)}
+.icons{position:absolute;top:calc(var(--menu-h) + env(safe-area-inset-top,0px) + 18px);left:max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:4px 8px;max-height:calc(100% - var(--menu-h) - 130px)}
 .dicon{width:96px;display:grid;justify-items:center;gap:5px;padding:8px 4px 6px;border:0;background:none;cursor:pointer;border-radius:8px}
 .dicon-img{width:48px;height:48px;filter:drop-shadow(3px 3px 0 color-mix(in srgb,var(--ink) 40%,transparent));transition:translate .15s}
 .dicon:hover .dicon-img{translate:0 -3px}
@@ -93,19 +96,26 @@ p{margin:0}
 .ticker .track span{padding-right:1.5em}
 .w-status{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;padding:0 4px}
 .dot{width:9px;height:9px;flex:none;border-radius:50%;background:var(--accent);border:2px solid var(--ink);animation:pulse 1.6s ease-out infinite}
-.knobs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:2px solid var(--ink);padding-top:12px}
+.knobs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;border-top:2px solid var(--ink);padding-top:12px}
 .knob-wrap{display:grid;justify-items:center;gap:4px}
 .knob{--rot:0deg;width:48px;height:48px;border-radius:50%;border:2px solid var(--ink);background:var(--paper);box-shadow:3px 3px 0 var(--ink);position:relative;cursor:ns-resize;touch-action:none}
 .knob::before{content:"";position:absolute;inset:-9px;border-radius:50%;background:repeating-conic-gradient(from -135deg,var(--ink) 0 2deg,transparent 2deg 27deg);-webkit-mask:radial-gradient(circle,transparent 30px,#000 31px 33px,transparent 34px);mask:radial-gradient(circle,transparent 30px,#000 31px 33px,transparent 34px);clip-path:polygon(50% 50%,0 100%,0 0,100% 0,100% 100%);opacity:.55}
-.knob-cap{position:absolute;inset:4px;border-radius:50%;transform:rotate(var(--rot));transition:transform .08s}
+.knob-cap{position:absolute;inset:4px;border-radius:50%;transform:rotate(calc(var(--rot) + var(--wob,0deg)));transition:transform .08s}
 .knob-cap::after{content:"";position:absolute;left:50%;top:2px;width:4px;height:13px;margin-left:-2px;border-radius:2px;background:var(--ink)}
 .knob.k1 .knob-cap{background:var(--accent)}
 .knob.k3 .knob-cap{background:var(--ink)} .knob.k3 .knob-cap::after{background:var(--paper)}
 .knob-lbl{font:400 9px var(--font-pixel);letter-spacing:.06em}
 .knob-val{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* the main action key: orange, with 4px of travel */
+.hire-key{width:52px;height:48px;margin-top:-2px;display:grid;place-items:center;align-content:center;gap:6px;padding:0;border:2px solid var(--ink);border-radius:9px;background:var(--accent);color:var(--on-accent);box-shadow:0 4px 0 var(--ink);font:400 10px/1 var(--font-pixel);letter-spacing:.06em;cursor:pointer;transition:translate .06s,box-shadow .06s}
+.hire-key:hover{background:color-mix(in srgb,var(--accent) 88%,var(--paper))}
+.hire-key:active,.hire-key.down{translate:0 4px;box-shadow:0 0 0 var(--ink)}
+.led{width:8px;height:8px;border-radius:50%;border:2px solid var(--ink);background:color-mix(in srgb,var(--ink) 55%,var(--accent));animation:blink 2.4s steps(1) infinite}
+.led.on{background:var(--paper);box-shadow:0 0 8px var(--paper);animation:none}
+.hire-wide{display:none}
 
 .plate{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1;background:var(--ink);color:var(--panel);font:400 9px/1.6 var(--font-pixel);letter-spacing:.05em;padding:8px 12px;border-radius:6px;display:grid;box-shadow:3px 3px 0 color-mix(in srgb,var(--ink) 40%,transparent)}
-.plate b{color:var(--accent);font-weight:700;font-size:10px}
+.plate b{color:var(--accent);font-weight:400;font-size:10px}
 
 .marquee{position:absolute;z-index:5;border:2px dashed var(--ink);background:color-mix(in srgb,var(--accent) 18%,transparent);pointer-events:none}
 .zoomrect{position:absolute;z-index:4500;border:2px dashed var(--ink);pointer-events:none}
@@ -147,12 +157,14 @@ p{margin:0}
 
 /* about */
 .about{padding:20px 22px 22px;display:grid;gap:16px}
-.about-top{display:flex;gap:16px;align-items:center}
-.avatar{width:104px;height:104px;flex:none;image-rendering:pixelated;border:2px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);background:var(--ink)}
-.about-id{min-width:0;display:grid;gap:4px}
-.about-name{font:700 34px/1 var(--font-pixel);margin:2px 0 2px;letter-spacing:-.01em}
+.win[data-id="about"] .win-body{container-type:inline-size}
+.about-top{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.avatar{width:100px;height:100px;flex:none;image-rendering:pixelated;border:2px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);background:var(--ink)}
+.about-id{flex:1 1 210px;min-width:0;display:grid;gap:4px}
+.about-name{font:700 32px/1 var(--font-pixel);margin:2px 0 2px;letter-spacing:-.01em}
+@container (max-width:340px){.about-name{font-size:24px}.tagline{font-size:24px}}
 .about-role{color:var(--muted);font-size:12px}
-.avail{justify-self:start;display:inline-flex;align-items:center;gap:8px;margin-top:4px;padding:3px 10px 3px 6px;border:2px solid var(--ink);border-radius:999px;font-size:11px;font-weight:700;background:var(--plate)}
+.avail{justify-self:start;max-width:100%;display:inline-flex;align-items:center;gap:8px;margin-top:4px;padding:3px 10px 3px 6px;border:2px solid var(--ink);border-radius:999px;font-size:11px;font-weight:700;background:var(--plate)}
 .tagline{font-size:28px;font-weight:800;line-height:1.1;letter-spacing:-.03em;text-wrap:balance}
 .mv span{display:inline-block;color:var(--accent);-webkit-text-stroke:1px var(--ink);animation:hop 1.1s steps(2,jump-none) infinite;animation-delay:calc(var(--i) * .12s)}
 .bio{max-width:62ch}
@@ -188,13 +200,14 @@ p{margin:0}
 .fm-item:hover .thumb{translate:-2px -2px;box-shadow:5px 5px 0 var(--ink)}
 .fm-name{font-weight:800;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fm-meta{font-size:11px;color:var(--muted)}
-.fm-status{border-top:2px solid var(--ink);padding:6px 12px;font-size:11px;color:var(--muted);background:var(--plate)}
+.fm-status{border-top:2px solid var(--ink);padding:6px 12px;font-size:11px;color:var(--muted);background:var(--plate);position:sticky;bottom:0;z-index:1}
+.t-touch{display:none}
 
 /* project viewer */
 .proj{padding:16px 18px 18px;display:grid;gap:12px}
 .proj-cover{width:100%;max-width:100%;aspect-ratio:2/1;image-rendering:pixelated;border:2px solid var(--ink);border-radius:10px;display:block;box-shadow:4px 4px 0 var(--ink)}
 .proj-head{display:flex;align-items:baseline;gap:10px;margin-top:4px}
-.proj-n{font:700 16px var(--font-pixel);color:var(--paper);background:var(--ink);padding:2px 6px;border-radius:4px}
+.proj-n{font:400 16px var(--font-pixel);color:var(--paper);background:var(--ink);padding:2px 6px;border-radius:4px}
 .proj h2{margin:0;font-size:28px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
 .proj-kind{color:var(--muted)}
 .proj-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:2px solid var(--ink);border-radius:10px;margin:0;background:var(--plate)}
@@ -217,7 +230,7 @@ p{margin:0}
 .term-ps{white-space:nowrap}
 .term-in{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--paper);font:inherit;font-weight:700;caret-color:var(--accent);padding:0}
 .term-in:focus-visible{outline:none}
-.matrix{position:absolute;left:0;z-index:3;display:block}
+.matrix{position:absolute;left:0;z-index:3;display:block;cursor:pointer}
 .term-chips{display:none;flex-wrap:wrap;gap:8px;margin-top:14px}
 .term-chip{border:1px solid var(--term-dim);background:none;color:var(--accent);border-radius:999px;padding:4px 12px;font-size:12px;cursor:pointer}
 .term-chip:active{background:var(--accent);color:var(--on-accent)}
@@ -284,6 +297,16 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;background:var(--acce
 .trash-note{margin:0 12px 12px;padding:12px 14px;border:2px dashed var(--ink);border-radius:10px;background:var(--plate);display:grid;gap:6px}
 .trash-foot{margin-top:auto;padding:10px 12px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;background:var(--plate)}
 
+/* get info */
+.info{padding:14px;display:grid;gap:12px}
+.info-thumb{position:relative;width:228px;height:132px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;box-shadow:3px 3px 0 var(--ink)}
+.info-thumb canvas{display:block;width:224px;height:128px;image-rendering:pixelated}
+.info-thumb .px{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;filter:drop-shadow(3px 3px 0 var(--ink))}
+.info-name{font-weight:800;font-size:15px}
+.win[data-id="info"] .stripes{display:none}   /* narrow window: the title ("Player.app Info") gets the room instead */
+.info-rows{margin:0;display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 10px;font-size:12px;border-top:2px dashed var(--ink);padding-top:10px}
+.info-rows dt{color:var(--muted)} .info-rows dd{margin:0;font-weight:700}
+
 /* dock */
 .dock{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:4000;display:flex;align-items:flex-end;gap:8px;padding:8px 10px 13px;background:var(--plate);border:2px solid var(--ink);border-radius:18px;box-shadow:var(--shadow)}
 .dock-btn{--s:1;position:relative;width:calc(var(--dock-icon) * var(--s));height:calc(var(--dock-icon) * var(--s));transition:width .14s ease-out,height .14s ease-out;padding:0;border:0;background:none;cursor:pointer;flex:none}
@@ -293,7 +316,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;background:var(--acce
 .dock-btn::after{content:"";position:absolute;bottom:-9px;left:50%;width:5px;height:5px;margin-left:-2.5px;background:var(--ink);opacity:0;transition:opacity .2s}
 .dock-btn.running::after{opacity:1}
 .dock-tip{position:absolute;bottom:calc(100% + 12px);left:50%;translate:-50% 4px;background:var(--ink);color:var(--paper);font:400 10px var(--font-pixel);padding:4px 8px;border-radius:4px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s,translate .12s}
-.dock-btn:hover .dock-tip,.dock-btn:focus-visible .dock-tip{opacity:1;translate:-50% 0}
+.dock-btn:focus-visible .dock-tip{opacity:1;translate:-50% 0}
+@media (hover:hover){.dock-btn:hover .dock-tip{opacity:1;translate:-50% 0}}
 .dock-sep{width:2px;align-self:stretch;background:var(--ink);opacity:.25;margin:0 3px 0}
 
 /* menus */
@@ -342,9 +366,17 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;background:var(--acce
 @keyframes flash{0%,100%{background:transparent}25%{background:color-mix(in srgb,var(--accent) 35%,transparent)}}
 
 @media (max-width:1000px){.plate{display:none}}
+/* short laptop screens: no serial plate, tighter icons, so all six icons fit in one column */
+@media (max-height:760px){
+  .plate{display:none}
+  .icons{max-height:calc(100% - var(--menu-h) - 40px);gap:2px 8px}
+  .dicon{padding:4px 4px 3px}
+}
+/* touch: hints say tap */
+@media (max-width:719px),(max-height:520px),(pointer:coarse){.t-desk{display:none}.t-touch{display:inline}}
 
-/* ---------- handheld (phones) ---------- */
-@media (max-width:719px){
+/* ---------- handheld (phones, portrait or landscape) ---------- */
+@media (max-width:719px),(max-height:520px){
   :root{--menu-h:38px}
   .mb-item,.mb-app,.mb-cpu,.mb-date{display:none}
   .mb-logo{font-size:12px}
@@ -353,6 +385,13 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;background:var(--acce
   .widget,.icons{position:static;width:auto;max-height:none}
   .widget{transform-origin:50% 0}
   .icons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 6px}
+  .knobs{grid-template-columns:repeat(3,1fr)}
+  .kw-hire{display:none}
+  .hire-wide{flex:none;display:flex;align-items:center;gap:14px;min-height:64px;padding:0 20px;border:2px solid var(--ink);border-radius:16px;background:var(--accent);color:var(--on-accent);box-shadow:0 5px 0 var(--ink);font:800 15px/1.2 var(--font-mono);text-align:left;cursor:pointer;transition:translate .06s,box-shadow .06s;margin-bottom:5px}
+  .hire-wide:active,.hire-wide.down{translate:0 5px;box-shadow:0 0 0 var(--ink)}
+  .hire-wide .hw-main{flex:1;min-width:0}
+  .hire-wide small{display:block;font:400 10px var(--font-pixel);letter-spacing:.06em;opacity:.85}
+  .hire-wide .hw-go{font:400 18px var(--font-pixel)}
   .dicon{width:auto;padding:6px 0}
   .dicon-img{width:56px;height:56px;background:var(--plate);border:2px solid var(--ink);border-radius:14px;padding:8px;filter:none;box-shadow:3px 3px 0 var(--ink)}
   .dicon-label{font-size:10px;padding:0 5px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
@@ -366,18 +405,31 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;background:var(--acce
   .win-bar{height:46px;cursor:default;border-radius:16px 16px 0 0}
   .win-body{border-radius:0;padding-bottom:env(safe-area-inset-bottom,0px)}
   .wb,.win-resize{display:none}
-  .wb-back{display:inline-flex}
+  .wb-back{display:inline-flex;align-items:center;min-height:44px;padding:0 12px}
   .wb-spacer{width:66px}
   .win-title{font-size:13px}
   .about{padding:18px 16px 24px}
-  .avatar{width:84px;height:84px}
-  .about-name{font-size:28px}
   .tagline{font-size:24px}
   .term{font-size:12px}
   .term-chips{display:flex}
-  #toasts{bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+  .term-chip{min-height:44px;padding:0 16px}
+  .link-btn{min-height:44px;padding:0 12px}
+  /* content never sits closer than 16px (or the safe area) to the screen edge */
+  .fm-bar,.fm-status,.term,.fm-grid,.about,.proj,.settings,.player,.trash-foot,.info{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .trash-note{margin:0 max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px))}
+  /* toasts drop from the top here, so they never cover the contact block a sheet just scrolled to */
+  #toasts{bottom:auto;top:calc(var(--menu-h) + env(safe-area-inset-top,0px) + 62px)}
 }
 @keyframes riseInM{from{translate:0 100%}}
+/* landscape phone: widget on the left, apps + hire key on the right */
+@media (max-height:520px) and (min-width:600px){
+  .home{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);grid-template-rows:auto 1fr;align-items:start;gap:16px 20px}
+  .widget{grid-row:span 2}
+  .home{padding-top:12px}
+  .icons{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 6px}
+  .dicon{padding:2px 0}
+  .hire-wide{align-self:end;min-height:56px}
+}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
@@ -404,7 +456,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;background:var(--acce
 
   <div class="home" id="home">
     <aside class="widget" aria-label="Status">
-      <div class="w-head"><b>4BOOSER</b><span>BX-26 · CREATIVE DEV</span></div>
+      <div class="w-head"><span class="sr-only">4booser</span><b aria-hidden="true"><svg class="g4" viewBox="0 0 5 5" aria-hidden="true" focusable="false" shape-rendering="crispEdges"><path d="M0 0h2v3H0zM3 0h2v5H3zM2 2h1v1H2z"/></svg>BOOSER</b><span>BX-26 · CREATIVE DEV</span></div>
       <div class="w-screen">
         <div class="w-time" aria-label="Local time"><span id="w-hh">00</span><span class="colon">:</span><span id="w-mm">00</span><small id="w-ss">00</small></div>
         <div class="w-date" id="w-date">MON 19 OCT 2026</div>
@@ -415,9 +467,11 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;background:var(--acce
         <div class="knob-wrap"><div class="knob k1" id="k-speed" role="slider" tabindex="0" aria-label="Wallpaper speed" aria-valuemin="0" aria-valuemax="2"><i class="knob-cap"></i></div><span class="knob-lbl">SPEED</span><span class="knob-val"></span></div>
         <div class="knob-wrap"><div class="knob k2" id="k-scale" role="slider" tabindex="0" aria-label="Dither size" aria-valuemin="2" aria-valuemax="8"><i class="knob-cap"></i></div><span class="knob-lbl">SCALE</span><span class="knob-val"></span></div>
         <div class="knob-wrap"><div class="knob k3" id="k-blob" role="slider" tabindex="0" aria-label="Cursor light size" aria-valuemin="0" aria-valuemax="1"><i class="knob-cap"></i></div><span class="knob-lbl">LIGHT</span><span class="knob-val"></span></div>
+        <div class="knob-wrap kw-hire"><button class="hire-key" id="k-hire" type="button" aria-label="Hire 4booser: run sudo hire-me"><i class="led" aria-hidden="true"></i>HIRE</button><span class="knob-lbl">ENTER</span><span class="knob-val">contact</span></div>
       </div>
     </aside>
     <div class="icons" id="icons" role="group" aria-label="Desktop"></div>
+    <button class="hire-wide" id="hire-wide" type="button"><i class="led" aria-hidden="true"></i><span class="hw-main">Hire 4booser<small>COPIES THE EMAIL · OPENS CONTACT</small></span><span class="hw-go" aria-hidden="true">→</span></button>
   </div>
 
   <div class="plate" aria-hidden="true"><b>MODEL 4B-OS</b><span>SER. NO. 2026-1019</span><span>DESIGNED FOR CLIENTS</span><span>INPUT 100–240V IDEAS</span></div>
@@ -460,9 +514,12 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const cap = s => s[0].toUpperCase() + s.slice(1);
 const root = document.documentElement;
 const os = $('#os'), wall = $('#wall'), winsEl = $('#wins'), dock = $('#dock'), homeEl = $('#home'), iconsEl = $('#icons'), menuEl = $('#menu');
+const kSpeedEl = $('#k-speed'), kBlobEl = $('#k-blob');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const mobileMQ = matchMedia('(max-width: 719px)');
+const mobileMQ = matchMedia('(max-width: 719px), (max-height: 520px)');
 const isMobile = () => mobileMQ.matches;
+const coarseMQ = matchMedia('(pointer: coarse)');
+const touchUI = () => isMobile() || coarseMQ.matches;
 const EMAIL = 'hello@4booser.dev';
 const TRACK = '4booser — interfaces_that_move.wav';
 
@@ -477,7 +534,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && lo
 const state = { accent: 'orange', wall: 'plasma', speed: 1, scale: 4, blob: .6, motion: !reduced, sound: true, muted: false, vol: .7, tone: .75 };
 const subs = [];
 function setState(patch) { Object.assign(state, patch); subs.forEach(fn => fn(state, patch)); }
-function sub(fn) { subs.push(fn); fn(state, state); }
+function sub(fn) { subs.push(fn); fn(state, state); return () => { const i = subs.indexOf(fn); if (i >= 0) subs.splice(i, 1); }; }
 
 /* ---------- palette ---------- */
 const css = name => getComputedStyle(root).getPropertyValue(name).trim();
@@ -517,6 +574,7 @@ const SVG_PLAY = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3l12 7
 const SVG_PAUSE = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h4v14H4zM12 3h4v14h-4z" fill="currentColor"/></svg>';
 const SVG_STOP = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4h12v12H4z" fill="currentColor"/></svg>';
 const SVG_VOL = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 6h3l4-3v10l-4-3H1z"/><path fill="none" stroke="currentColor" stroke-width="1.5" d="M10.5 5.5c1.2 1.4 1.2 3.6 0 5M12.8 3.4c2.3 2.6 2.3 6.6 0 9.2"/></svg>';
+const G4 = '<svg class="g4" viewBox="0 0 5 5" aria-hidden="true" focusable="false" shape-rendering="crispEdges"><path d="M0 0h2v3H0zM3 0h2v5H3zM2 2h1v1H2z"/></svg>';
 const SVG_MUTE = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 6h3l4-3v10l-4-3H1z"/><path fill="none" stroke="currentColor" stroke-width="1.5" d="M10.5 5.5l4.5 5M15 5.5l-4.5 5"/></svg>';
 
 /* ---------- content ---------- */
@@ -537,15 +595,18 @@ function toast(msg) {
   setTimeout(() => { if (reduced) return t.remove(); t.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }).onfinish = () => t.remove(); }, 2200);
 }
 function copyEmail(btn, codeEl) {
-  const fallback = () => { const r = document.createRange(); r.selectNodeContents(codeEl); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Selected. Press Ctrl+C to copy'); };
+  const fallback = () => {
+    if (!codeEl || !codeEl.isConnected) return toast(EMAIL + ': select it to copy');
+    const r = document.createRange(); r.selectNodeContents(codeEl); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Selected. Press Ctrl+C to copy');
+  };
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(EMAIL).then(() => { toast('Copied'); btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); }, fallback);
+      navigator.clipboard.writeText(EMAIL).then(() => { toast('Copied ' + EMAIL); if (btn) { btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); } }, fallback);
     } else fallback();
   } catch (e) { fallback(); }
 }
 
-const audio = { ctx: null, master: null, filter: null, an: null, noise: null, playing: false, timer: 0, next: 0, step: 0, startAt: 0, data: null };
+const audio = { ctx: null, master: null, filter: null, an: null, noise: null, playing: false, timer: 0, next: 0, step: 0, startAt: 0, data: null, idleT: 0, kickAt: 0 };
 function ensureAudio() {
   if (!audio.ctx) {
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
@@ -554,13 +615,20 @@ function ensureAudio() {
     audio.master = c.createGain(); audio.master.gain.value = state.muted ? 0 : state.vol;
     audio.filter = c.createBiquadFilter(); audio.filter.type = 'lowpass'; audio.filter.frequency.value = toneHz(state.tone); audio.filter.Q.value = 2;
     audio.an = c.createAnalyser(); audio.an.fftSize = 256; audio.an.smoothingTimeConstant = .72;
-    audio.filter.connect(audio.master); audio.master.connect(audio.an); audio.an.connect(c.destination);
+    /* analyser sits before the master gain, so the visualizer (and the wallpaper) still react while muted */
+    audio.filter.connect(audio.an); audio.an.connect(audio.master); audio.master.connect(c.destination);
     const len = c.sampleRate * .5, nb = c.createBuffer(1, len, c.sampleRate), d = nb.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     audio.noise = nb; audio.data = new Uint8Array(audio.an.frequencyBinCount);
   }
+  clearTimeout(audio.idleT);
   if (audio.ctx.state === 'suspended') audio.ctx.resume();
   return audio.ctx;
+}
+/* let the audio thread sleep once nothing is playing (also releases the iOS audio session) */
+function idleAudio(ms) {
+  clearTimeout(audio.idleT);
+  audio.idleT = setTimeout(() => { if (audio.ctx && !audio.playing && audio.ctx.state === 'running') audio.ctx.suspend(); }, ms || 400);
 }
 const toneHz = t => 300 * Math.pow(2, t * 6);
 function blip(f = 520, d = .06) {
@@ -572,24 +640,28 @@ function blip(f = 520, d = .06) {
   o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.5, t + d);
   g.gain.setValueAtTime(.06, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
   o.connect(g).connect(c.destination); o.start(t); o.stop(t + d + .02);
+  if (!audio.playing) idleAudio(400);
 }
 
 /* ---------- wallpaper ---------- */
 const wctx = wall.getContext('2d', { alpha: false });
-let WW = 0, WH = 0, PS = 4, wimg = null, wbuf = null, colA, rowA, diagA, wt = 0, wlast = 0, wallDirty = true;
+let WW = 0, WH = 0, PS = 4, wimg = null, wbuf = null, colA, rowA, diagA, wt = 0, wlast = 0, wallDirty = true, wallDrag = false;
+let wBoost = 0, wSig = 0, bass = 0, kick = 0, kickSign = 1, wobOn = false;
+const WALL_MAX_PX = 150000;   /* per-pixel cost cap: the buffer never exceeds ~150k cells, whatever the screen or SCALE */
+const minScale = () => Math.ceil(Math.sqrt(((os.clientWidth || innerWidth) * (os.clientHeight || innerHeight)) / WALL_MAX_PX));
 const mouse = { x: innerWidth * .6, y: innerHeight * .4, tx: innerWidth * .6, ty: innerHeight * .4 };
 function sizeWall() {
-  PS = state.scale;
+  PS = Math.max(state.scale, minScale());
   const W = os.clientWidth || innerWidth, H = os.clientHeight || innerHeight;
   WW = Math.ceil(W / PS); WH = Math.ceil(H / PS);
   wall.width = WW; wall.height = WH; wall.style.width = WW * PS + 'px'; wall.style.height = WH * PS + 'px';
   wimg = wctx.createImageData(WW, WH); wbuf = new Uint32Array(wimg.data.buffer);
   colA = new Float32Array(WW); rowA = new Float32Array(WH); diagA = new Float32Array(WW + WH);
-  wallDirty = true;
+  wakeWall();
 }
 function renderWall(t) {
   const W = WW, H = WH, ps = PS, pal = PAL_WALL, buf = wbuf, mode = state.wall;
-  const mx = mouse.x, my = mouse.y, sig = 60 + 170 * state.blob, inv = 1 / (2 * sig * sig), R2 = 9 * sig * sig;
+  const mx = mouse.x, my = mouse.y, sig = 60 + 170 * state.blob + wSig, inv = 1 / (2 * sig * sig), R2 = 9 * sig * sig, boost = wBoost;
   const Wp = W * ps, Hp = H * ps;
   let cx = 0, cy = 0, c2x = 0, c2y = 0;
   if (mode === 'plasma') {
@@ -622,6 +694,7 @@ function renderWall(t) {
         n = .5 + .25 * (S(d1 * .034 - t * 2.2) + S(d2 * .027 - t * 1.7));
         n = (n - .22) * 1.2;
       }
+      n += boost;
       const dmx = X - mx, d2m = dmx * dmx + dmy2;
       if (d2m < R2) { const g = Math.exp(-d2m * inv); n = n * (1 - g) + 1.1 * g * (1 - g); }
       const q = (n * 3 + BAYER[by | (x & 7)]) | 0;
@@ -630,12 +703,36 @@ function renderWall(t) {
   }
   wctx.putImageData(wimg, 0, 0);
 }
+/* the wallpaper is hidden under a maximized window, or under any sheet on the handheld layout */
+function wallCovered() { for (const w of wins.values()) if (!w.min && !w.closing && (w.max || isMobile())) return true; return false; }
+/* the loop leaves the frame scheduler when there is nothing to animate, and comes back on any change */
+function wakeWall() { wallDirty = true; addLoop(wallLoop); }
+function setWob(deg) {
+  if (!deg && !wobOn) return;
+  wobOn = !!deg; const v = deg ? deg.toFixed(1) + 'deg' : '0deg';
+  kSpeedEl.style.setProperty('--wob', v); kBlobEl.style.setProperty('--wob', '' + (-deg).toFixed(1) + 'deg');
+}
 function wallLoop(now) {
-  const live = state.motion && !reduced;
-  if (!live) { if (wallDirty) { renderWall(wt); wallDirty = false; } return; }
-  if (now - wlast < 33) return;
+  const live = state.motion && !reduced, covered = wallCovered();
+  if (!live || covered) {
+    if (wallDirty && !covered) { renderWall(wt); wallDirty = false; }
+    bass = kick = wBoost = wSig = 0; setWob(0); wlast = 0;
+    removeLoop(wallLoop); return;
+  }
+  if (now - wlast < (wallDrag ? 50 : 33)) return;
   const dt = wlast ? Math.min(.1, (now - wlast) / 1000) : .016; wlast = now;
-  wt += dt * state.speed;
+  /* audio-reactive: the low bins push the plasma, widen the cursor light and wobble the knobs on the kick */
+  let b = 0;
+  if (audio.playing && audio.an) {
+    audio.an.getByteFrequencyData(audio.data);
+    for (let i = 1; i <= 6; i++) b += audio.data[i];
+    b /= 6 * 255;
+    if (audio.kickAt && audio.ctx.currentTime >= audio.kickAt) { audio.kickAt = 0; kick = 1; kickSign = -kickSign; }
+  }
+  bass = lerp(bass, b, b > bass ? .5 : .12); kick *= .78; if (kick < .01) kick = 0;
+  wBoost = bass * .05 + kick * .1; wSig = bass * 80;
+  setWob(kick > .02 ? kick * 12 * kickSign : 0);
+  wt += dt * (state.speed + bass * .6);
   mouse.x += (mouse.tx - mouse.x) * .16; mouse.y += (mouse.ty - mouse.y) * .16;
   renderWall(wt); wallDirty = false;
 }
@@ -695,11 +792,47 @@ function drawAvatar(cv, t) {
   ctx.putImageData(im, 0, 0);
 }
 
+/* ---------- crisp pixels: canvases scale by a whole number ---------- */
+/* each canvas gets cols x rows cells sized from its parent box, and a CSS size of exactly cells * k */
+const fitFns = new Map();
+const fitRO = 'ResizeObserver' in window ? new ResizeObserver(ents => requestAnimationFrame(() => ents.forEach(en => { const f = fitFns.get(en.target); if (f) f(); }))) : null;
+function fitCanvas(cv, k, rows, draw) {
+  const run = () => {
+    const p = cv.parentElement; if (!p || !cv.isConnected) return;
+    const cs = getComputedStyle(p), bw = cv.offsetWidth - cv.clientWidth;
+    const avail = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - bw;
+    if (avail < k * 8) return;
+    const cols = Math.floor(avail / k), rw = typeof rows === 'function' ? rows(cols) : rows;
+    if (cv.width !== cols || cv.height !== rw) { cv.width = cols; cv.height = rw; cv._im = cv._b = null; }
+    cv.style.width = cols * k + bw + 'px'; cv.style.height = rw * k + bw + 'px';
+    draw();
+  };
+  if (fitRO) { fitFns.set(cv.parentElement, run); fitRO.observe(cv.parentElement); }
+  return run;
+}
+
+/* ---------- dither dissolve: windows appear and vanish through the same 8x8 Bayer matrix ---------- */
+const DMASK = (() => {
+  const k = 4, c = document.createElement('canvas'); c.width = c.height = 8 * k; const x = c.getContext('2d'), out = [];
+  for (let st = 1; st <= 8; st++) {
+    x.clearRect(0, 0, 8 * k, 8 * k); x.fillStyle = '#000';
+    for (let i = 0; i < 64; i++) if (BAYER[i] < st / 8) x.fillRect((i & 7) * k, (i >> 3) * k, k, k);
+    const u = c.toDataURL(); new Image().src = u; out.push(`url(${u})`);
+  }
+  return out;
+})();
+const DCLEAR = 'linear-gradient(transparent,transparent)';
+function ditherFrames(dir, scale) {
+  const steps = dir > 0 ? DMASK : [...DMASK].reverse().concat(DCLEAR), n = steps.length;
+  return steps.map((m, i) => ({ maskImage: m, maskSize: '32px 32px', transform: `scale(${lerp(dir > 0 ? scale : 1, dir > 0 ? 1 : scale, i / (n - 1)).toFixed(3)})` }));
+}
+
 /* ---------- window manager ---------- */
 const APPS = {};
 const wins = new Map();
-let zTop = 10, focused = null, lastPT = 'mouse';
-document.addEventListener('pointerdown', e => { lastPT = e.pointerType || 'mouse'; }, true);
+let zTop = 10, focused = null, lastPT = 'mouse', preFocus = null;
+/* remember focus before a click moves it, so a menu dismissed with Esc can hand it back */
+document.addEventListener('pointerdown', e => { lastPT = e.pointerType || 'mouse'; if (!menuEl.contains(document.activeElement)) preFocus = document.activeElement; }, true);
 
 function deskBounds() {
   const W = os.clientWidth, H = os.clientHeight;
@@ -715,6 +848,21 @@ function defaultRect(spec) {
   return { x, y, w, h: hh };
 }
 function topWin() { let best = null; wins.forEach(o => { if (!o.min && !o.closing && (!best || +o.el.style.zIndex > +best.el.style.zIndex)) best = o; }); return best; }
+const SHORT = { about: 'About', projects: 'Projects', project: 'Viewer', terminal: 'Terminal', player: 'Player', settings: 'Settings', trash: 'Trash', info: 'Info' };
+/* handheld back buttons name the sheet underneath */
+function updateBackLabels() {
+  const list = [...wins.values()].filter(o => !o.closing).sort((a, b) => +a.el.style.zIndex - +b.el.style.zIndex);
+  list.forEach((o, i) => { const under = list[i - 1], name = under ? SHORT[under.id] : 'Home'; o.back.textContent = '‹ ' + name; o.back.setAttribute('aria-label', 'Back to ' + name); });
+}
+/* after a window goes away, keyboard focus lands on the next window, or on the thing that opens it again */
+function refocus(id) {
+  const t = topWin();
+  if (t) return focusWin(t, true);
+  const app = id === 'project' ? 'projects' : id;
+  const b = (!isMobile() && dockBtnFor(app)) || iconsEl.querySelector(`[data-app="${app}"]`) || dock.querySelector('.dock-btn');
+  if (b && b.offsetParent) b.focus({ preventScroll: true });
+}
+const lostFocus = el => { const a = document.activeElement; return !a || a === document.body || el.contains(a); };
 function dockBtnFor(id) { return dock.querySelector(`[data-app="${id === 'project' ? 'projects' : id}"]`); }
 
 function focusWin(w, moveFocus) {
@@ -744,7 +892,7 @@ function openApp(id, opts = {}) {
   if (w && !w.closing) { if (w.min) restoreWin(w); else focusWin(w, true); return w; }
   if (!spec.node) spec.node = spec.build();
   const title = h('span', { class: 'win-title', id: 'wt-' + id }, spec.title);
-  const back = h('button', { class: 'wb-back', type: 'button', 'aria-label': 'Back to home' }, '‹ Home');
+  const back = h('button', { class: 'wb-back', type: 'button', 'aria-label': 'Back to Home' }, '‹ Home');
   const bClose = h('button', { class: 'wb wb-close', type: 'button', 'aria-label': 'Close', html: SVG_X });
   const bMin = h('button', { class: 'wb wb-min', type: 'button', 'aria-label': 'Minimize', html: SVG_MIN });
   const bMax = h('button', { class: 'wb wb-max', type: 'button', 'aria-label': 'Maximize', html: SVG_MAX });
@@ -755,7 +903,7 @@ function openApp(id, opts = {}) {
   const r = opts.rect || defaultRect(spec);
   Object.assign(el.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
   winsEl.append(el);
-  w = { id, el, bar, body, title, spec, min: false, max: false, prev: null, closing: false };
+  w = { id, el, bar, body, title, back, spec, min: false, max: false, prev: null, closing: false };
   wins.set(id, w);
   back.onclick = bClose.onclick = () => closeWin(w);
   bMin.onclick = () => minimizeWin(w);
@@ -766,11 +914,11 @@ function openApp(id, opts = {}) {
     if (isMobile()) el.animate([{ transform: 'translateY(100%)' }, { transform: 'none' }], { duration: 360, easing: 'cubic-bezier(.2,.85,.2,1)' });
     else {
       if (opts.from) zoomRects(opts.from, el.getBoundingClientRect());
-      el.animate([{ opacity: 0, transform: 'scale(.88)' }, { opacity: 1, transform: 'scale(1.015)', offset: .7 }, { opacity: 1, transform: 'none' }], { duration: 300, delay: opts.from ? 110 : 0, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+      el.animate(ditherFrames(1, .94), { duration: 260, delay: opts.from ? 110 : 0, fill: 'backwards' });
     }
   }
   if (spec.onOpen) spec.onOpen(w);
-  updateDock(); bounce(id);
+  updateDock(); bounce(id); wakeWall();
   if (!opts.silent) blip(660, .05);
   return w;
 }
@@ -778,16 +926,22 @@ function closeWin(w) {
   if (!w || w.closing) return;
   w.closing = true;
   const el = w.el;
-  const done = () => { el.remove(); if (wins.get(w.id) === w) wins.delete(w.id); if (w.spec.onClose) w.spec.onClose(w); if (focused === w || !focused) focusWin(topWin(), false); updateDock(); };
+  const done = () => {
+    const lost = lostFocus(el);
+    el.remove(); if (wins.get(w.id) === w) wins.delete(w.id); if (w.spec.onClose) w.spec.onClose(w);
+    if (focused === w || !focused) focusWin(topWin(), false);
+    if (lost) refocus(w.id);
+    updateDock(); wakeWall();
+  };
   blip(330, .05);
   if (reduced || el.hidden) return done();
-  const kf = isMobile() ? [{ transform: 'none' }, { transform: 'translateY(105%)' }] : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.92)' }];
-  el.animate(kf, { duration: isMobile() ? 260 : 170, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' }).onfinish = done;
+  if (isMobile()) el.animate([{ transform: 'none' }, { transform: 'translateY(105%)' }], { duration: 260, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' }).onfinish = done;
+  else el.animate(ditherFrames(-1, .96), { duration: 220, fill: 'forwards' }).onfinish = done;
 }
 function minimizeWin(w) {
   if (isMobile()) return closeWin(w);
   const t = dockBtnFor(w.id), el = w.el; w.min = true;
-  const done = () => { el.hidden = true; el.style.transformOrigin = ''; focusWin(topWin(), false); updateDock(); };
+  const done = () => { const lost = lostFocus(el); el.hidden = true; el.style.transformOrigin = ''; focusWin(topWin(), false); if (lost) refocus(w.id); updateDock(); wakeWall(); };
   blip(440, .07);
   if (reduced || !t) return done();
   const r = el.getBoundingClientRect(), tr = t.getBoundingClientRect();
@@ -813,7 +967,7 @@ function toggleMax(w) {
     Object.assign(el.style, { left: '12px', top: top + 'px', width: (W - 30) + 'px', height: (bottom - top) + 'px' });
     w.max = true;
   } else { Object.assign(el.style, w.prev); w.max = false; }
-  setTimeout(() => el.classList.remove('anim'), 340);
+  setTimeout(() => { el.classList.remove('anim'); wakeWall(); }, 340);
 }
 function wireWin(w, grip) {
   const { el, bar } = w;
@@ -824,39 +978,45 @@ function wireWin(w, grip) {
     if (e.button !== 0 || e.target.closest('button') || isMobile() || w.max) return;
     e.preventDefault();
     bar.setPointerCapture(e.pointerId);
-    const sx = e.clientX, sy = e.clientY, ox = el.offsetLeft, oy = el.offsetTop;
+    const sx = e.clientX, sy = e.clientY, ox = el.offsetLeft, oy = el.offsetTop, ew = el.offsetWidth;
+    const { W, top, bottom } = deskBounds();   /* measured once, not on every move */
     let lastX = sx, rot = 0, moved = false;
     const move = ev => {
-      const { W, H, top } = deskBounds();
-      if (!moved) { moved = true; el.classList.add('dragging'); }
-      el.style.left = clamp(ox + ev.clientX - sx, -el.offsetWidth + 120, W - 120) + 'px';
-      el.style.top = clamp(oy + ev.clientY - sy, top - 10, H - 46) + 'px';
+      if (!moved) { moved = true; el.classList.add('dragging'); wallDrag = true; }
+      el.style.left = clamp(ox + ev.clientX - sx, -ew + 120, W - 120) + 'px';
+      el.style.top = clamp(oy + ev.clientY - sy, top - 10, bottom - 36) + 'px';
       if (!reduced) { rot = clamp(lerp(rot, (ev.clientX - lastX) * .45, .35), -7, 7); el.style.rotate = rot.toFixed(2) + 'deg'; }
       lastX = ev.clientX;
     };
-    const up = () => { bar.removeEventListener('pointermove', move); bar.removeEventListener('pointerup', up); bar.removeEventListener('pointercancel', up); el.classList.remove('dragging'); el.style.rotate = '0deg'; };
+    const up = () => { bar.removeEventListener('pointermove', move); bar.removeEventListener('pointerup', up); bar.removeEventListener('pointercancel', up); el.classList.remove('dragging'); el.style.rotate = '0deg'; wallDrag = false; };
     bar.addEventListener('pointermove', move); bar.addEventListener('pointerup', up); bar.addEventListener('pointercancel', up);
   });
   grip.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
     e.preventDefault(); e.stopPropagation();
     grip.setPointerCapture(e.pointerId);
-    const sx = e.clientX, sy = e.clientY, sw = el.offsetWidth, sh = el.offsetHeight;
-    w.max = false;
-    const move = ev => { const { W, H } = deskBounds(); el.style.width = clamp(sw + ev.clientX - sx, 280, W - el.offsetLeft - 8) + 'px'; el.style.height = clamp(sh + ev.clientY - sy, 180, H - el.offsetTop - 8) + 'px'; };
-    const up = () => { grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', up); grip.removeEventListener('pointercancel', up); };
+    const sx = e.clientX, sy = e.clientY, sw = el.offsetWidth, sh = el.offsetHeight, ol = el.offsetLeft, ot = el.offsetTop;
+    const { W, H } = deskBounds();
+    if (w.max) { w.max = false; wakeWall(); }
+    wallDrag = true;
+    const move = ev => { el.style.width = clamp(sw + ev.clientX - sx, 280, W - ol - 8) + 'px'; el.style.height = clamp(sh + ev.clientY - sy, 180, H - ot - 8) + 'px'; };
+    const up = () => { grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', up); grip.removeEventListener('pointercancel', up); wallDrag = false; };
     grip.addEventListener('pointermove', move); grip.addEventListener('pointerup', up); grip.addEventListener('pointercancel', up);
   });
 }
 
 /* click = select, double-click = open; keyboard, touch and phone layout open on a single activation */
+let dblHinted = false;
 function activate(el, open, group) {
+  let hintT = 0;
   el.addEventListener('click', e => {
     if (e.detail === 0 || lastPT !== 'mouse' || isMobile()) { open(); return; }
     $$('.sel', group || document).forEach(x => x.classList.remove('sel'));
     el.classList.add('sel');
+    /* the first lone click gets a one-time nudge */
+    if (!dblHinted && e.detail === 1) { clearTimeout(hintT); hintT = setTimeout(() => { if (!dblHinted) { dblHinted = true; toast('Double-click to open'); } }, 520); }
   });
-  el.addEventListener('dblclick', () => { if (lastPT === 'mouse' && !isMobile()) open(); });
+  el.addEventListener('dblclick', () => { clearTimeout(hintT); dblHinted = true; if (lastPT === 'mouse' && !isMobile()) open(); });
 }
 
 /* ---------- dock ---------- */
@@ -873,7 +1033,7 @@ DOCK.forEach(d => {
   });
   dock.append(b);
 });
-function updateDock() { $$('.dock-btn', dock).forEach(b => { const id = b.dataset.app; b.classList.toggle('running', wins.has(id) || (id === 'projects' && wins.has('project'))); }); }
+function updateDock() { $$('.dock-btn', dock).forEach(b => { const id = b.dataset.app; b.classList.toggle('running', wins.has(id) || (id === 'projects' && wins.has('project'))); }); updateBackLabels(); }
 function bounce(id) { const b = dockBtnFor(id); if (!b || reduced) return; b.querySelector('.tile').animate([{ translate: '0 0' }, { translate: '0 -20px' }, { translate: '0 0' }, { translate: '0 -8px' }, { translate: '0 0' }], { duration: 650, easing: 'ease-out' }); }
 let dockOffsets = null;
 function measureDock() {
@@ -916,26 +1076,67 @@ os.addEventListener('pointerdown', e => {
   const up = () => { box.remove(); os.removeEventListener('pointermove', move); os.removeEventListener('pointerup', up); };
   os.addEventListener('pointermove', move); os.addEventListener('pointerup', up);
 });
+/* right-click anywhere gets an OS menu; text fields, links and selected text keep the browser's own */
+const DESK_MENU = () => [
+  { label: 'Open Terminal', act: () => openApp('terminal') },
+  { label: 'Open Projects', act: () => openApp('projects') },
+  '-',
+  { label: 'Next wallpaper', act: () => setState({ wall: next(['plasma', 'waves', 'rings'], state.wall) }) },
+  { label: 'Next accent color', act: () => setState({ accent: next(['orange', 'blue', 'green'], state.accent) }) },
+  '-',
+  { label: 'Settings…', act: () => openApp('settings') }
+];
+const WIN_MENU = w => [
+  { label: 'Minimize', act: () => minimizeWin(w) },
+  { label: w.max ? 'Unzoom' : 'Zoom', act: () => toggleMax(w) },
+  '-',
+  { label: 'Close', key: 'Esc', act: () => closeWin(w) }
+];
 os.addEventListener('contextmenu', e => {
-  if (!isBg(e.target) || isMobile()) return;
+  if (isMobile()) return;
+  const t = e.target;
+  /* selected text keeps the native menu only where you right-click on it; a stale selection elsewhere must not disable the OS menu */
+  const sel = getSelection();
+  if (t.closest('input, textarea, a, .email') || (sel && !sel.isCollapsed && String(sel) && sel.containsNode(t, true))) return;
   e.preventDefault();
-  showMenu([
-    { label: 'Open Terminal', act: () => openApp('terminal') },
-    { label: 'Open Projects', act: () => openApp('projects') },
-    '-',
-    { label: 'Next wallpaper', act: () => setState({ wall: next(['plasma', 'waves', 'rings'], state.wall) }) },
-    { label: 'Next accent color', act: () => setState({ accent: next(['orange', 'blue', 'green'], state.accent) }) },
-    '-',
-    { label: 'Settings…', act: () => openApp('settings') }
-  ], e.clientX, e.clientY);
+  if (t.closest('#menu')) return;
+  let x = e.clientX, y = e.clientY;
+  if (!x && !y) { const r = t.getBoundingClientRect(); x = r.left + 8; y = r.bottom - 4; }   /* keyboard: Shift+F10 / menu key */
+  const di = t.closest('.dicon'), db = t.closest('.dock-btn'), we = t.closest('.win'), w = we && wins.get(we.dataset.id);
+  let items;
+  if (di) {
+    const id = di.dataset.app, img = di.querySelector('.dicon-img');
+    $$('.dicon.sel').forEach(o => o.classList.remove('sel')); di.classList.add('sel');
+    items = [{ label: 'Open', act: () => openApp(id, { from: img.getBoundingClientRect() }) }, { label: 'Get Info…', act: () => getInfo(id) }];
+  } else if (db) {
+    const id = db.dataset.app, ws = [wins.get(id), id === 'projects' && wins.get('project')].filter(Boolean);
+    items = [
+      { label: 'Open', act: () => db.click() },
+      { label: 'Quit', disabled: !ws.length, act: () => ws.forEach(closeWin) },
+      '-',
+      { label: 'Keep in Dock', kind: 'check', check: true, act: () => toast('It stays. It likes it here.') },
+      { label: 'Get Info…', act: () => getInfo(id) }
+    ];
+  } else if (w && w.id === 'terminal' && !t.closest('.win-bar') && term) {
+    items = [
+      { label: 'Clear', key: '^L', act: () => term.clear() },
+      { label: 'Copy email', act: () => copyEmail(null, null) },
+      { label: 'sudo hire-me', act: () => termRun('sudo hire-me') },
+      '-',
+      ...WIN_MENU(w)
+    ];
+  } else if (w) items = WIN_MENU(w);
+  else items = DESK_MENU();
+  showMenu(items, x, y);
 });
 const next = (arr, v) => arr[(arr.indexOf(v) + 1) % arr.length];
 
 /* ---------- menus ---------- */
-let menuAnchor = null;
+let menuAnchor = null, menuPrev = null;
 function showMenu(items, x, y, anchor) {
+  if (menuEl.hidden) { const a = document.activeElement; menuPrev = a && a !== document.body ? a : preFocus; }
   menuEl.replaceChildren(...items.map(it => it === '-' ? h('div', { class: 'menu-sep', role: 'separator' }) :
-    h('button', { class: 'menu-it', type: 'button', role: 'menuitem', disabled: !!it.disabled, onclick: () => { hideMenu(); if (it.act) it.act(); } },
+    h('button', { class: 'menu-it', type: 'button', role: it.kind === 'radio' ? 'menuitemradio' : it.kind === 'check' ? 'menuitemcheckbox' : 'menuitem', 'aria-checked': it.kind ? String(!!it.check) : null, disabled: !!it.disabled, onclick: () => { hideMenu(); if (it.act) it.act(); } },
       h('span', {}, h('span', { class: 'chk', 'aria-hidden': 'true' }, it.check ? '✓' : ''), it.label), it.key ? h('kbd', {}, it.key) : null)));
   menuEl.hidden = false;
   menuEl.style.left = clamp(x, 8, os.clientWidth - menuEl.offsetWidth - 8) + 'px';
@@ -946,13 +1147,19 @@ function showMenu(items, x, y, anchor) {
   const first = menuEl.querySelector('.menu-it:not(:disabled)'); if (first) first.focus({ preventScroll: true });
   if (!reduced) menuEl.animate([{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }], { duration: 120, easing: 'ease-out' });
 }
-function hideMenu() { if (menuEl.hidden) return; menuEl.hidden = true; if (menuAnchor) menuAnchor.setAttribute('aria-expanded', 'false'); menuAnchor = null; }
+function hideMenu() {
+  if (menuEl.hidden) return;
+  /* if focus was in the menu, hand it back to the button or element that opened it */
+  const back = menuEl.contains(document.activeElement) ? (menuAnchor || menuPrev) : null;
+  menuEl.hidden = true; if (menuAnchor) menuAnchor.setAttribute('aria-expanded', 'false'); menuAnchor = null; menuPrev = null;
+  if (back && back.isConnected && back !== document.body && !back.closest('[hidden]')) back.focus({ preventScroll: true });
+}
 document.addEventListener('pointerdown', e => { if (!menuEl.hidden && !menuEl.contains(e.target) && !e.target.closest('.mb-btn[data-menu]')) hideMenu(); }, true);
 menuEl.addEventListener('keydown', e => {
   const items = $$('.menu-it:not(:disabled)', menuEl), i = items.indexOf(document.activeElement);
   if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
-  else if (e.key === 'Escape') { e.preventDefault(); const a = menuAnchor; hideMenu(); if (a) a.focus(); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); hideMenu(); }   /* Esc closes the menu only, never the window behind it */
   else if (e.key === 'Tab') hideMenu();
 });
 const MENUS = {
@@ -971,11 +1178,12 @@ const MENUS = {
     { label: 'Close window', key: 'Esc', disabled: !focused, act: () => closeWin(focused) }
   ],
   view: () => [
-    ...['plasma', 'waves', 'rings'].map(m => ({ label: 'Wallpaper: ' + cap(m), check: state.wall === m, act: () => setState({ wall: m }) })),
+    ...['plasma', 'waves', 'rings'].map(m => ({ label: 'Wallpaper: ' + cap(m), kind: 'radio', check: state.wall === m, act: () => setState({ wall: m }) })),
     '-',
-    ...['orange', 'blue', 'green'].map(c => ({ label: 'Accent: ' + cap(c), check: state.accent === c, act: () => setState({ accent: c }) })),
+    ...['orange', 'blue', 'green'].map(c => ({ label: 'Accent: ' + cap(c), kind: 'radio', check: state.accent === c, act: () => setState({ accent: c }) })),
     '-',
-    { label: 'Animate wallpaper', check: state.motion, act: () => setState({ motion: !state.motion }) }
+    reduced ? { label: 'Animate wallpaper (off: reduced motion)', kind: 'check', check: false, disabled: true }
+      : { label: 'Animate wallpaper', kind: 'check', check: state.motion, act: () => setState({ motion: !state.motion }) }
   ],
   go: () => DESK.map(([id, label]) => ({ label, act: () => openApp(id) })),
   help: () => [
@@ -993,7 +1201,7 @@ $$('.mb-btn[data-menu]').forEach(b => {
 /* ---------- menu bar: cpu, clock, volume ---------- */
 const cpuC = $('#cpu'), cpuX = cpuC.getContext('2d'), cpuH = Array(30).fill(18); let cpuV = 18;
 function cpuTick() {
-  cpuV = clamp(cpuV + (Math.random() - .5) * 26 + (audio.playing ? 6 : 0) - (cpuV - 22) * .15, 3, 97);
+  cpuV = clamp(cpuV + (Math.random() - .5) * 26 + (audio.playing ? 6 + bass * 40 + kick * 30 : 0) - (cpuV - 22) * .15, 3, 97);
   cpuH.push(cpuV); cpuH.shift();
   cpuX.clearRect(0, 0, 60, 16);
   cpuH.forEach((v, i) => { const hh = Math.max(1, Math.round(v / 100 * 15)); cpuX.fillStyle = v > 70 ? COL.accent : COL.ink; cpuX.fillRect(i * 2, 16 - hh, 1, hh); });
@@ -1034,9 +1242,22 @@ function makeKnob(el, min, max, step, key, fmt) {
   });
   knobRenders.push(render);
 }
-makeKnob($('#k-speed'), 0, 2, .1, 'speed', v => v.toFixed(1) + '×');
-makeKnob($('#k-scale'), 2, 8, 1, 'scale', v => v + 'px');
-makeKnob($('#k-blob'), 0, 1, .1, 'blob', v => Math.round(v * 100) + '%');
+makeKnob(kSpeedEl, 0, 2, .1, 'speed', v => v.toFixed(1) + '×');
+makeKnob($('#k-scale'), 2, 8, 1, 'scale', v => Math.max(v, minScale()) + 'px');
+makeKnob(kBlobEl, 0, 1, .1, 'blob', v => Math.round(v * 100) + '%');
+
+/* ---------- the HIRE key ---------- */
+function hireNow(key) {
+  blip(180, .12);
+  const led = key.querySelector('.led');
+  if (led) { led.classList.add('on'); setTimeout(() => led.classList.remove('on'), 110); }
+  if (!isMobile()) { termRun('sudo hire-me'); return; }
+  /* phones: open the About sheet at the contact block and copy the email, still inside the tap */
+  openApp('about');
+  if (aboutEls) copyEmail(aboutEls.copyBtn, aboutEls.email);
+  setTimeout(flashContact, reduced ? 0 : 380);
+}
+['#k-hire', '#hire-wide'].forEach(sel => { const k = $(sel); k.addEventListener('click', () => hireNow(k)); });
 
 /* ---------- confetti ---------- */
 function confetti() {
@@ -1057,7 +1278,8 @@ function confetti() {
 /* =================== APPS =================== */
 
 /* ---- About ---- */
-let avLast = 0;
+let avLast = 0, avatarCv = null, aboutEls = null;
+const avatarLoop = now => { if (!avatarCv || !avatarCv.isConnected || now - avLast < 80) return; const w = avatarCv.closest('.win'); if (w && w.hidden) return; avLast = now; drawAvatar(avatarCv, now / 1000); };
 APPS.about = {
   title: 'About.txt', app: 'TextEdit', w: 540, h: 520,
   build() {
@@ -1065,12 +1287,13 @@ APPS.about = {
     const email = h('code', { class: 'email' }, EMAIL);
     const copyBtn = h('button', { class: 'btn btn-accent', type: 'button' }, 'Copy');
     copyBtn.addEventListener('click', () => copyEmail(copyBtn, email));
+    aboutEls = { email, copyBtn };
     const li = (k, v) => h('li', {}, h('span', { class: 'k' }, k), v);
     const stat = (k, v) => h('div', {}, h('dt', {}, k), h('dd', {}, v));
     const node = h('div', { class: 'about' },
       h('div', { class: 'about-top' }, av, h('div', { class: 'about-id' },
         h('p', { class: 'eyebrow' }, 'ABOUT.TXT · README'),
-        h('h2', { class: 'about-name' }, '4booser'),
+        h('h2', { class: 'about-name', 'aria-label': '4booser' }, h('span', { html: G4, 'aria-hidden': 'true' }), 'booser'),
         h('p', { class: 'about-role' }, 'Creative Developer · Remote — worldwide'),
         h('p', { class: 'avail' }, h('span', { class: 'dot', 'aria-hidden': 'true' }), 'Available for freelance — Q1 2027'))),
       h('p', { class: 'tagline' }, 'I build interfaces that ', h('span', { class: 'mv' }, ...'move'.split('').map((ch, i) => h('span', { style: `--i:${i}` }, ch))), '.'),
@@ -1085,10 +1308,12 @@ APPS.about = {
           li('Telegram', h('span', {}, '@4booser')),
           li('Dribbble', h('span', {}, 'dribbble.com/4booser')))),
       h('p', { class: 'demo-note' }, '※ Demo content. The name, numbers, projects and links are placeholders.'));
-    drawAvatar(av, 0);
-    addLoop(now => { if (reduced || !av.isConnected || now - avLast < 80) return; const w = av.closest('.win'); if (w && w.hidden) return; avLast = now; drawAvatar(av, now / 1000); });
+    drawAvatar(av, 0); avatarCv = av;
     return node;
-  }
+  },
+  /* the avatar only animates while About is open */
+  onOpen() { if (!reduced) addLoop(avatarLoop); },
+  onClose() { removeLoop(avatarLoop); }
 };
 function flashContact() {
   const c = $('#about-contact'); if (!c) return;
@@ -1106,7 +1331,9 @@ APPS.projects = {
       const b = h('button', { class: 'fm-item', type: 'button', 'aria-label': `${p.name}, ${p.year}` }, cv, h('span', { class: 'fm-name' }, p.file), h('span', { class: 'fm-meta' }, `${p.year} · ${p.kind}`));
       activate(b, () => openProject(i, cv.getBoundingClientRect()), grid);
       let anim = null; const t0 = i * 1.3 + .5;
-      b.addEventListener('pointerenter', () => { if (reduced || anim) return; const s = performance.now(); let last = 0; anim = now => { if (now - last < 60) return; last = now; drawField(cv, p.field, t0 + (now - s) / 1000 * 1.6); }; addLoop(anim); });
+      fitCanvas(cv, 3, cols => Math.round(cols * .625), () => drawField(cv, p.field, t0));
+      /* a window closed under the pointer never sends pointerleave, so the hover loop also ends itself once its canvas is gone */
+      b.addEventListener('pointerenter', () => { if (reduced || anim) return; const s = performance.now(); let last = 0; anim = now => { if (!cv.isConnected) { removeLoop(anim); anim = null; return; } if (now - last < 60) return; last = now; drawField(cv, p.field, t0 + (now - s) / 1000 * 1.6); }; addLoop(anim); });
       b.addEventListener('pointerleave', () => { if (anim) removeLoop(anim); anim = null; });
       thumbs.push({ cv, p });
       grid.append(b);
@@ -1115,17 +1342,38 @@ APPS.projects = {
     return h('div', { class: 'fm' },
       h('div', { class: 'fm-bar' }, h('span', { class: 'fm-path' }, '~/projects'), h('span', { class: 'fm-count' }, `${PROJECTS.length} items`)),
       grid,
-      h('div', { class: 'fm-status' }, 'Double-click a file to open it · 2.4 GB free of ideas'));
+      h('div', { class: 'fm-status' }, h('span', { class: 't-desk' }, 'Double-click a file to open it'), h('span', { class: 't-touch' }, 'Tap a file to open it'), ' · 2.4 GB free of ideas'));
   }
 };
 
 /* ---- Project viewer ---- */
-let projIdx = 0, coverCv = null, projNode = null, coverLast = 0;
-const coverLoop = now => { if (reduced || !coverCv || !coverCv.isConnected || now - coverLast < 70) return; const w = coverCv.closest('.win'); if (w && w.hidden) return; coverLast = now; drawField(coverCv, PROJECTS[projIdx].field, now / 1000); };
+let projIdx = 0, coverCv = null, projNode = null, projEls = null, coverLast = 0;
+const coverLoop = now => { if (!coverCv || !coverCv.isConnected || now - coverLast < 70) return; const w = coverCv.closest('.win'); if (w && w.hidden) return; coverLast = now; drawField(coverCv, PROJECTS[projIdx].field, now / 1000); };
 APPS.project = {
   title: PROJECTS[0].file, app: 'Viewer', w: 540, h: 600,
-  build() { projNode = h('article', { class: 'proj' }); return projNode; },
-  onOpen() { addLoop(coverLoop); },
+  /* built once; paging only swaps text, so the focused prev/next button survives */
+  build() {
+    coverCv = h('canvas', { class: 'proj-cover', width: 120, height: 60, 'aria-hidden': 'true' });
+    const go = d => () => { projIdx = (projIdx + d + PROJECTS.length) % PROJECTS.length; renderProject(); blip(d > 0 ? 700 : 500, .04); };
+    const dd = () => h('dd');
+    projEls = { n: h('span', { class: 'proj-n' }), name: h('h2'), kind: h('p', { class: 'proj-kind' }), year: dd(), role: dd(), stack: dd(), desc: h('p', { class: 'proj-desc' }), count: h('span', { class: 'proj-count', 'aria-live': 'polite' }) };
+    projNode = h('article', { class: 'proj' },
+      coverCv,
+      h('div', { class: 'proj-head' }, projEls.n, projEls.name),
+      projEls.kind,
+      h('dl', { class: 'proj-meta' }, h('div', {}, h('dt', {}, 'YEAR'), projEls.year), h('div', {}, h('dt', {}, 'ROLE'), projEls.role), h('div', {}, h('dt', {}, 'STACK'), projEls.stack)),
+      projEls.desc,
+      h('div', { class: 'proj-actions' },
+        h('button', { class: 'btn btn-accent', type: 'button', onclick: () => toast('Demo build: the live link goes here') }, 'Launch demo ↗'),
+        h('button', { class: 'btn', type: 'button', onclick: () => toast('The case study ships with the real site') }, 'Read case study')),
+      h('div', { class: 'proj-nav' },
+        h('button', { class: 'link-btn', type: 'button', 'aria-label': 'Previous project', onclick: go(-1) }, '← prev'),
+        projEls.count,
+        h('button', { class: 'link-btn', type: 'button', 'aria-label': 'Next project', onclick: go(1) }, 'next →')));
+    fitCanvas(coverCv, 4, cols => Math.round(cols / 2), () => drawField(coverCv, PROJECTS[projIdx].field, 0));
+    return projNode;
+  },
+  onOpen() { if (!reduced) addLoop(coverLoop); },
   onClose() { removeLoop(coverLoop); }
 };
 function openProject(i, from) {
@@ -1137,24 +1385,12 @@ function openProject(i, from) {
   else openApp('project', { from });
 }
 function renderProject() {
-  const p = PROJECTS[projIdx];
+  const p = PROJECTS[projIdx], e = projEls;
   APPS.project.title = p.file;
   const w = wins.get('project'); if (w) w.title.textContent = p.file;
-  coverCv = h('canvas', { class: 'proj-cover', width: 120, height: 60, 'aria-hidden': 'true' });
-  const go = d => () => { projIdx = (projIdx + d + PROJECTS.length) % PROJECTS.length; renderProject(); blip(d > 0 ? 700 : 500, .04); };
-  projNode.replaceChildren(
-    coverCv,
-    h('div', { class: 'proj-head' }, h('span', { class: 'proj-n' }, p.n), h('h2', {}, p.name)),
-    h('p', { class: 'proj-kind' }, p.kind),
-    h('dl', { class: 'proj-meta' }, ...[['YEAR', p.year], ['ROLE', p.role], ['STACK', p.stack.join(', ')]].map(([k, v]) => h('div', {}, h('dt', {}, k), h('dd', {}, String(v))))),
-    h('p', { class: 'proj-desc' }, p.desc),
-    h('div', { class: 'proj-actions' },
-      h('button', { class: 'btn btn-accent', type: 'button', onclick: () => toast('Demo build: the live link goes here') }, 'Launch demo ↗'),
-      h('button', { class: 'btn', type: 'button', onclick: () => toast('The case study ships with the real site') }, 'Read case study')),
-    h('div', { class: 'proj-nav' },
-      h('button', { class: 'link-btn', type: 'button', onclick: go(-1) }, '← prev'),
-      h('span', { class: 'proj-count' }, `${p.n} / ${p2(PROJECTS.length)}`),
-      h('button', { class: 'link-btn', type: 'button', onclick: go(1) }, 'next →')));
+  e.n.textContent = p.n; e.name.textContent = p.name; e.kind.textContent = p.kind;
+  e.year.textContent = String(p.year); e.role.textContent = p.role; e.stack.textContent = p.stack.join(', ');
+  e.desc.textContent = p.desc; e.count.textContent = `${p.n} / ${p2(PROJECTS.length)}`;
   drawField(coverCv, p.field, 0);
 }
 
@@ -1164,13 +1400,16 @@ const C = (t, c) => ({ t, c });
 APPS.terminal = {
   title: 'Terminal', app: 'Terminal', w: 660, h: 410,
   focusEl: () => term && term.input,
+  onClose() { if (term) term.stopMatrix(); },
   build() {
     const node = h('div', { class: 'term' });
-    const out = h('div', { class: 'term-out', role: 'log', 'aria-live': 'polite' });
+    /* lines type in character by character, so screen readers get a quiet mirror of finished lines instead */
+    const out = h('div', { class: 'term-out', 'aria-hidden': 'true' });
+    const srOut = h('div', { class: 'sr-only', role: 'log', 'aria-live': 'polite', 'aria-label': 'Terminal output' });
     const input = h('input', { class: 'term-in', id: 'term-input', type: 'text', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', enterkeyhint: 'send', 'aria-label': 'Terminal command' });
     const ps = h('span', { class: 'term-ps', 'aria-hidden': 'true' }, h('span', { class: 'tacc' }, 'guest@booser-os'), ':', h('span', { class: 'tb' }, '~'), '$');
     const chips = h('div', { class: 'term-chips', 'aria-label': 'Quick commands' }, ...['help', 'projects', 'neofetch', 'contact', 'sudo hire-me'].map(c => h('button', { class: 'term-chip', type: 'button', onclick: () => type(c) }, c)));
-    node.append(out, h('div', { class: 'term-row' }, ps, input), chips);
+    node.append(out, srOut, h('div', { class: 'term-row' }, ps, input), chips);
     node.addEventListener('pointerup', () => { if (!String(getSelection())) input.focus({ preventScroll: true }); });
 
     const hist = []; let hi = 0;
@@ -1190,7 +1429,7 @@ APPS.terminal = {
       const parts = (typeof item.ln === 'string' ? [item.ln] : Array.isArray(item.ln) ? item.ln : [item.ln]).map(p => typeof p === 'string' ? { t: p, c: '' } : p).filter(p => p && p.t !== '');
       const spans = parts.map(p => { const s = h('span', p.c ? { class: p.c } : null); div.append(s); return { s, t: p.t, i: 0 }; });
       if (item.instant || reduced) spans.forEach(sp => { sp.s.textContent = sp.t; sp.i = sp.t.length; });
-      return { spans, k: 0 };
+      return { spans, k: 0, div };
     }
     function pump() {
       if (wait > 0) { wait--; return; }
@@ -1204,7 +1443,11 @@ APPS.terminal = {
           cur = startLine(item);
         }
         const sp = cur.spans[cur.k];
-        if (!sp) { cur = null; budget -= 2; continue; }
+        if (!sp) {
+          srOut.append(h('div', {}, cur.div.textContent || ' '));
+          while (srOut.childElementCount > 60) srOut.firstChild.remove();
+          cur = null; budget -= 2; continue;
+        }
         const n = Math.min(budget, sp.t.length - sp.i); sp.i += n; sp.s.textContent = sp.t.slice(0, sp.i); budget -= n;
         if (sp.i >= sp.t.length) cur.k++;
       }
@@ -1244,27 +1487,43 @@ APPS.terminal = {
       for (let r = 0; r < Math.max(logo.length, info.length); r++) { const inf = info[r] || ''; lines.push([C((logo[r] || '').padEnd(21), 'tacc'), ...(typeof inf === 'string' ? [inf] : inf)]); }
       print(lines, { pre: true });
     }
+    let matrixStop = null;
     function startMatrix() {
       if (reduced) { print([C('matrix: off while reduced motion is on', 'tdim')]); return; }
-      const s = scroller(); if (!s) return;
+      if (matrixStop) return;
+      /* the hint prints first, then the rain covers exactly the visible part of the scrolled terminal */
+      print([C(touchUI() ? '(tap to exit)' : '(press any key to exit)', 'tdim'), mountMatrix]);
+    }
+    function mountMatrix() {
+      const s = scroller(); if (!s || !node.isConnected || matrixStop) return;
+      scrollEnd();
       const cv = h('canvas', { class: 'matrix', 'aria-hidden': 'true' });
       const W = cv.width = s.clientWidth, H = cv.height = s.clientHeight;
-      cv.style.top = s.scrollTop + 'px'; node.append(cv); input.blur();
+      cv.style.top = s.scrollTop + 'px'; s.style.overflow = 'hidden'; node.append(cv); input.blur();
       const ctx = cv.getContext('2d'), fs = 14, cols = Math.ceil(W / fs), drops = Array.from({ length: cols }, () => Math.random() * -H / fs);
       const chars = '01アイウエオカキクケコサシスセソ4BOOSER<>/{}=+*'.split('');
       ctx.fillStyle = COL.term; ctx.fillRect(0, 0, W, H);
       let last = 0;
       const loop = now => {
+        if (!cv.isConnected) return stop(null, true);
+        const wv = cv.closest('.win'); if (wv && wv.hidden) return;
         if (now - last < 45) return; last = now;
         ctx.globalAlpha = .16; ctx.fillStyle = COL.term; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
         ctx.font = `700 ${fs}px "JetBrains Mono", monospace`;
         for (let i = 0; i < cols; i++) { const y = drops[i] * fs; ctx.fillStyle = Math.random() < .07 ? COL.paper : COL.accent; ctx.fillText(chars[Math.random() * chars.length | 0], i * fs, y); if (y > H && Math.random() > .96) drops[i] = 0; drops[i] += 1; }
       };
+      const stop = (e, quiet) => {
+        /* keys typed into another window are left alone; the rain keeps falling in the background */
+        if (e && e.type === 'keydown' && (!focused || focused.id !== 'terminal')) return;
+        if (e && e.cancelable) e.preventDefault(); if (e && e.type === 'keydown') e.stopPropagation();
+        removeLoop(loop); cv.remove(); s.style.overflow = ''; window.removeEventListener('keydown', stop, true); matrixStop = null;
+        if (quiet === true) return;
+        print([C('wake up, guest…', 'tacc')]); if (!isMobile()) input.focus({ preventScroll: true });
+      };
+      matrixStop = () => stop(null, true);
       addLoop(loop);
-      const stop = e => { if (e && e.cancelable) e.preventDefault(); if (e && e.type === 'keydown') e.stopPropagation(); removeLoop(loop); cv.remove(); window.removeEventListener('keydown', stop, true); print([C('wake up, guest…', 'tacc')]); if (!isMobile()) input.focus({ preventScroll: true }); };
-      setTimeout(() => window.addEventListener('keydown', stop, true), 60);
+      setTimeout(() => { if (matrixStop) window.addEventListener('keydown', stop, true); }, 60);
       cv.addEventListener('pointerdown', stop);
-      print([C('(press any key to exit)', 'tdim')]);
     }
     function hireMe() {
       print([
@@ -1278,14 +1537,19 @@ APPS.terminal = {
       ]);
     }
     const OPEN_MAP = { about: 'about', readme: 'about', projects: 'projects', project: 'projects', work: 'projects', terminal: 'terminal', player: 'player', music: 'player', settings: 'settings', prefs: 'settings', trash: 'trash' };
+    const HELP = [['about', 'who is 4booser'], ['projects', 'selected work'], ['open <name>', 'any app, or a project 1–5'], ['skills', 'tools of the trade'], ['contact', 'ways to reach me'], ['neofetch', 'system information'], ['theme <color>', 'orange · blue · green'], ['wallpaper <mode>', 'plasma · waves · rings'], ['ls · cat · date · echo', 'the usual'], ['clear · history', 'tidy up'], ['sudo hire-me', 'the express lane'], ['matrix', 'do not.']];
     const CMDS = {
-      help: () => print([
-        [C('BOOSER OS shell', 'tw'), C(', available commands', 'tdim')],
-        '',
-        ...[['about', 'who is 4booser'], ['projects', 'selected work'], ['open <name>', 'about · projects · player · settings · trash · 1–5'], ['skills', 'tools of the trade'], ['contact', 'ways to reach me'], ['neofetch', 'system information'], ['theme <color>', 'orange · blue · green'], ['wallpaper <mode>', 'plasma · waves · rings'], ['ls · cat · date · echo', 'the usual'], ['clear · history', 'tidy up'], ['sudo hire-me', 'the express lane'], ['matrix', 'do not.']].map(([a, b]) => ['  ', C(a.padEnd(24), 'tacc'), C(b, 'tdim')]),
-        '',
-        C('Tab completes, ↑ ↓ walk the history.', 'tdim')
-      ]),
+      help: () => {
+        const s = scroller(), narrow = !s || s.clientWidth < 560;
+        print([
+          [C('BOOSER OS shell', 'tw'), C(', available commands', 'tdim')],
+          '',
+          /* narrow screens: name, then the description indented underneath */
+          ...(narrow ? HELP.flatMap(([a, b]) => [['  ', C(a, 'tacc')], ['      ', C(b, 'tdim')]]) : HELP.map(([a, b]) => ['  ', C(a.padEnd(24), 'tacc'), C(b, 'tdim')])),
+          '',
+          C(touchUI() ? 'Tap a chip below or type a command.' : 'Tab completes, ↑ ↓ walk the history.', 'tdim')
+        ]);
+      },
       about: () => print([
         [C('4booser', 'tw'), C(', Creative Developer', 'tdim')],
         'I build interfaces that move.',
@@ -1332,7 +1596,7 @@ APPS.terminal = {
       neofetch,
       date: () => print([new Date().toString()]),
       echo: (args, raw) => print([raw.replace(/^echo\s?/i, '')]),
-      clear: () => { q.length = 0; cur = null; out.replaceChildren(); },
+      clear: () => { q.length = 0; cur = null; out.replaceChildren(); srOut.replaceChildren(); },
       theme: args => {
         const c = (args[0] || '').toLowerCase();
         if (!['orange', 'blue', 'green'].includes(c)) return print([[C('usage: ', 'tdim'), 'theme orange | blue | green', C(`   (now: ${state.accent})`, 'tdim')]]);
@@ -1388,7 +1652,7 @@ APPS.terminal = {
       };
       step();
     }
-    term = { print, exec, type, input };
+    term = { print, exec, type, input, clear: () => CMDS.clear(), stopMatrix: () => { if (matrixStop) matrixStop(); } };
     print([[C('Booser OS 4.2', 'tw'), C('  bsh 1.0 (tty1)', 'tdim')], [C('Type ', 'tdim'), C('help', 'tacc'), C(' to look around, or try ', 'tdim'), C('sudo hire-me', 'tacc')], ''], { instant: true });
     return node;
   }
@@ -1416,7 +1680,7 @@ function noise(t, dur, vol, type, freq, q) {
 }
 function playStep(st, t) {
   const bar = (st >> 4) & 3, s = st & 15, [root, arp] = CHORDS[bar];
-  if (s % 4 === 0) voice('sine', 150, t, .32, .9, null, 42);
+  if (s % 4 === 0) { voice('sine', 150, t, .32, .9, null, 42); audio.kickAt = t; }
   if (s === 4 || s === 12) { noise(t, .18, .32, 'bandpass', 1900, .9); voice('triangle', 190, t, .08, .12); }
   if (s % 2 === 1) noise(t, .04, s % 4 === 3 ? .16 : .07, 'highpass', 7500);
   if ([0, 3, 6, 8, 11, 14].includes(s)) voice('sawtooth', s === 6 || s === 14 ? root * 2 : root, t, .22, .2);
@@ -1436,8 +1700,14 @@ function play() {
   if (!ensureAudio()) { toast('Audio is not available in this browser'); return; }
   audio.playing = true; audio.next = audio.ctx.currentTime + .06; audio.step = 0; audio.startAt = audio.ctx.currentTime;
   audio.timer = setInterval(sched, 25); sched(); playerUI();
+  if (playerEls && playerEls.viz.isConnected) addLoop(drawViz);
 }
-function stopAudio(reset) { if (audio.playing) { audio.playing = false; clearInterval(audio.timer); } if (reset && playerEls) playerEls.time.textContent = '00:00'; playerUI(); }
+function stopAudio(reset) {
+  if (audio.playing) { audio.playing = false; clearInterval(audio.timer); audio.kickAt = 0; }
+  if (audio.ctx) idleAudio(450);   /* suspend once the last notes have rung out */
+  if (reset && playerEls) playerEls.time.textContent = '00:00'; playerUI();
+  if (playerEls && playerEls.viz.isConnected) { vizLast = 0; addLoop(drawViz); }   /* redraw the idle screen */
+}
 function drawViz(now) {
   if (!playerEls || !playerEls.viz.isConnected) return;
   const w = playerEls.viz.closest('.win'); if (w && w.hidden) return;
@@ -1456,6 +1726,7 @@ function drawViz(now) {
   } else {
     ctx.fillStyle = COL.dim; for (let x = 0; x < W; x += 2) ctx.fillRect(x, H / 2, 1, 1);
     if (!reduced) { const x = Math.floor((now / 28) % W); ctx.fillStyle = COL.accent; ctx.fillRect(x, H / 2 - 1, 3, 3); }
+    else removeLoop(drawViz);   /* reduced motion: the idle screen is static, so draw it once; play() brings the loop back */
   }
 }
 APPS.player = {
@@ -1481,6 +1752,7 @@ APPS.player = {
         h('label', { class: 'slider', for: 'pl-tone' }, h('span', {}, 'TONE'), tone))),
       h('p', { class: 'pl-note' }, 'A short loop generated live in your browser with WebAudio. Nothing plays until you press play.'));
     playerEls = { node, viz, time, state: st, play: playB };
+    fitCanvas(viz, 2, 32, () => { vizLast = 0; drawViz(performance.now()); });
     playB.addEventListener('click', () => { audio.playing ? stopAudio(false) : play(); });
     stopB.addEventListener('click', () => stopAudio(true));
     vol.addEventListener('input', () => setState({ vol: +vol.value }));
@@ -1501,7 +1773,7 @@ APPS.settings = {
     const scale = h('input', { type: 'range', id: 'set-scale', min: 2, max: 8, step: 1, value: state.scale, 'aria-label': 'Dither size' });
     scale.addEventListener('input', () => setState({ scale: +scale.value }));
     const out = h('output', { for: 'set-scale' });
-    const motion = h('input', { type: 'checkbox', class: 'switch', id: 'set-motion' });
+    const motion = h('input', { type: 'checkbox', class: 'switch', id: 'set-motion', disabled: reduced, 'aria-describedby': reduced ? 'set-motion-note' : null });
     motion.addEventListener('change', () => setState({ motion: motion.checked }));
     const sound = h('input', { type: 'checkbox', class: 'switch', id: 'set-sound' });
     sound.addEventListener('change', () => setState({ sound: sound.checked }));
@@ -1509,16 +1781,16 @@ APPS.settings = {
       sec('ACCENT', sw),
       sec('WALLPAPER', seg),
       sec('DITHER SIZE', h('div', { class: 'range-row' }, scale, out)),
-      h('label', { class: 'toggle-row', for: 'set-motion' }, h('span', {}, 'Animate wallpaper'), motion),
+      h('label', { class: 'toggle-row', for: 'set-motion' }, h('span', {}, 'Animate wallpaper', reduced ? h('small', { class: 'muted', id: 'set-motion-note', style: 'display:block;font-weight:500' }, 'Reduced motion is on in your system') : null), motion),
       h('label', { class: 'toggle-row', for: 'set-sound' }, h('span', {}, 'UI sounds'), sound),
       h('div', { class: 'build' },
         h('p', {}, h('b', {}, 'Booser OS 4.2'), ' · UI preview build 2026.10'),
         h('p', {}, 'Demo content: the name, projects, numbers and links are placeholders to swap for your own.'),
         h('button', { class: 'btn', type: 'button', onclick: restart }, 'Restart')));
-    sub(s => {
+    APPS.settings.unsub = sub(s => {
       $$('.swatch', sw).forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === s.accent)));
       $$('button', seg).forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === s.wall)));
-      scale.value = s.scale; out.textContent = s.scale + 'px'; motion.checked = s.motion; sound.checked = s.sound;
+      scale.value = s.scale; out.textContent = Math.max(s.scale, minScale()) + 'px'; motion.checked = s.motion && !reduced; sound.checked = s.sound;
     });
     return node;
   }
@@ -1542,18 +1814,50 @@ APPS.trash = {
   }
 };
 
+/* ---- Get Info (right-click an icon) ---- */
+const INFO = {
+  about: ['Plain text document', '4.2 KB of pure humility', 'nocturne'],
+  projects: ['Folder', '5 items · 2.4 GB of ideas', 'atlas'],
+  terminal: ['Application', '20 commands · 0 bugs (claimed)', 'pulse'],
+  player: ['Application', '35 oscillators, 1 loop', 'pulse'],
+  settings: ['Control panel', '3 knobs · 0 regrets', 'kinetik'],
+  trash: ['Folder', '4.2 MB of nostalgia', 'aurora']
+};
+let infoNode = null;
+APPS.info = {
+  title: 'Info', app: 'Finder', w: 300, h: 360,
+  build() { infoNode = h('div', { class: 'info' }); return infoNode; }
+};
+function getInfo(id) {
+  if (!INFO[id]) return;
+  if (!APPS.info.node) APPS.info.node = APPS.info.build();
+  const [kind, size, field] = INFO[id], label = DESK.find(d => d[0] === id)[1];
+  const cv = h('canvas', { width: 56, height: 32 });
+  const row = (k, v) => [h('dt', {}, k), h('dd', {}, v)];
+  infoNode.replaceChildren(
+    h('div', { class: 'info-thumb', 'aria-hidden': 'true', html: px(ICON_OF[id]) }),
+    h('div', {}, h('p', { class: 'info-name' }, label), h('p', { class: 'muted' }, kind)),
+    h('dl', { class: 'info-rows' }, ...row('Kind', kind), ...row('Size', size), ...row('Created', '2019'), ...row('Where', '~/Desktop')));
+  infoNode.firstChild.prepend(cv);
+  drawField(cv, field, 1.7);
+  APPS.info.title = label + ' Info';
+  const w = wins.get('info');
+  if (w && !w.closing) { w.title.textContent = APPS.info.title; if (w.min) restoreWin(w); else focusWin(w, true); }
+  else openApp('info');
+}
+
 /* ---------- global state wiring ---------- */
 sizeWall();
 sub((s, patch) => {
-  if ('accent' in patch) { root.dataset.accent = s.accent; readPalettes(); drawThumbs(); cpuTick(); wallDirty = true; }
+  if ('accent' in patch) { root.dataset.accent = s.accent; readPalettes(); drawThumbs(); cpuTick(); wakeWall(); }
   if ('scale' in patch) sizeWall();
-  if ('wall' in patch || 'blob' in patch || 'speed' in patch || 'motion' in patch) wallDirty = true;
+  if ('wall' in patch || 'blob' in patch || 'speed' in patch || 'motion' in patch) wakeWall();
   if ('muted' in patch) { volBtn.innerHTML = s.muted ? SVG_MUTE : SVG_VOL; volBtn.setAttribute('aria-pressed', String(s.muted)); volBtn.setAttribute('aria-label', s.muted ? 'Unmute sound' : 'Mute sound'); }
   if (audio.master) audio.master.gain.value = s.muted ? 0 : s.vol;
   if (audio.filter) audio.filter.frequency.value = toneHz(s.tone);
   knobRenders.forEach(f => f());
 });
-addLoop(wallLoop);
+wakeWall();
 
 /* ---------- boot ---------- */
 const BOOT = [
@@ -1574,7 +1878,10 @@ function runBoot() {
   const log = $('#boot-log'), bar = $('#boot-bar'), logo = $('#boot-logo');
   log.replaceChildren(); logo.hidden = true; bar.style.transition = 'none'; bar.style.width = '0%';
   const L = reduced ? 0 : 80;
-  BOOT.forEach(([a, b], i) => bootTimers.push(setTimeout(() => log.append(h('div', {}, a, b ? h('span', { class: 'ok' }, b === 'ok' ? '[ OK ]' : b) : '')), i * L)));
+  /* shorten the dot leaders so every line fits on one row of a narrow screen */
+  const cols = Math.floor((log.clientWidth || 358) / 7.6);
+  const fit = (a, r) => { const over = a.length + r.length - cols; return over > 0 ? a.replace(/ \.+ $/, m => ' ' + '.'.repeat(Math.max(3, m.length - 2 - over)) + ' ') : a; };
+  BOOT.forEach(([a, b], i) => { const r = b === 'ok' ? '[ OK ]' : b; bootTimers.push(setTimeout(() => log.append(h('div', {}, fit(a, r), b ? h('span', { class: 'ok' }, r) : '')), i * L)); });
   bootTimers.push(setTimeout(() => { logo.hidden = false; void bar.offsetWidth; bar.style.transition = reduced ? 'none' : 'width .5s steps(14)'; bar.style.width = '100%'; }, BOOT.length * L));
   bootTimers.push(setTimeout(finishBoot, reduced ? 300 : BOOT.length * L + 560));
 }
@@ -1596,14 +1903,22 @@ function startDesktop() {
   if (isMobile()) return;
   const { W, top, bottom } = deskBounds();
   const wg = $('.widget'), wr = { left: wg.offsetLeft, bottom: wg.offsetTop + wg.offsetHeight };
-  const aw = Math.round(Math.min(540, W * .42)), ah = Math.min(530, bottom - top - 16);
-  const ax = Math.max(128, Math.round(W * .1)), ay = top + 14;
-  const tw = Math.round(Math.min(660, W * .46));
-  const tx = Math.round(Math.min(W * .4, W - tw - 28));
-  let ty = tx + tw > wr.left - 12 ? wr.bottom + 18 : top + 110;
-  let th = Math.min(410, bottom - ty - 6);
-  if (th < 300) { th = Math.min(410, bottom - top - 40); ty = bottom - th - 6; }
-  openApp('about', { rect: { x: ax, y: ay, w: aw, h: ah }, silent: true, noFocus: true });
+  /* About starts right of the icon column (however many columns it wrapped into), never narrower than its content */
+  const ax = Math.round(iconsEl.getBoundingClientRect().right + 16), ay = top + 14;
+  /* below 1000px there is room for one window only, so About also takes the full height (no empty desktop under it on tablets) */
+  const solo = W < 1000;
+  const aw = Math.round(Math.min(clamp(W * .42, 400, 540), W - ax - 16)), ah = Math.min(solo ? 1000 : 720, bottom - ay - 8);
+  openApp('about', { rect: { x: ax, y: ay, w: aw, h: ah }, silent: true, noFocus: !solo });
+  if (solo) return;
+  let tx, ty, tw, th;
+  /* wide screens: Terminal goes beside About and under the widget, so About's contact block stays visible */
+  if (W >= 1280) { tx = ax + aw + 24; tw = Math.min(660, W - tx - 24); ty = wr.bottom + 18; th = Math.min(410, bottom - ty - 6); }
+  if (!(W >= 1280 && th >= 260 && tw >= 420)) {
+    tw = Math.round(Math.min(660, W * .46)); tx = Math.round(Math.min(W * .4, W - tw - 28));
+    ty = tx + tw > wr.left - 12 ? wr.bottom + 18 : top + 110;
+    th = Math.min(410, bottom - ty - 6);
+    if (th < 300) { th = Math.min(410, bottom - top - 40); ty = bottom - th - 6; }
+  }
   setTimeout(() => {
     openApp('terminal', { rect: { x: tx, y: ty, w: tw, h: th }, silent: true });
     setTimeout(() => term && term.type('neofetch'), reduced ? 0 : 420);
@@ -1613,6 +1928,10 @@ function restart() {
   hideMenu(); stopAudio(true);
   wins.forEach(w => { w.el.remove(); if (w.spec.onClose) w.spec.onClose(w); });
   wins.clear(); focusWin(null); updateDock();
+  /* a restart is a fresh session: every app rebuilds, so the old terminal history is gone */
+  for (const k in APPS) { if (APPS[k].unsub) { APPS[k].unsub(); APPS[k].unsub = null; } APPS[k].node = null; }
+  term = null; playerEls = null; thumbs.length = 0; coverCv = null; projNode = null; projEls = null; infoNode = null; avatarCv = null; aboutEls = null;
+  if (fitRO) fitRO.disconnect(); fitFns.clear();
   runBoot();
 }
 
@@ -1620,7 +1939,7 @@ function restart() {
 window.addEventListener('keydown', e => {
   if (!booted) { e.preventDefault(); finishBoot(); return; }
   if (e.key === 'Escape') {
-    if (!menuEl.hidden) return;
+    if (!menuEl.hidden || e.defaultPrevented) return;
     const a = document.activeElement;
     if (focused && !(a && a.classList.contains('term-in') && a.value)) { e.preventDefault(); closeWin(focused); }
   }
@@ -1629,14 +1948,14 @@ let rsT = 0;
 window.addEventListener('resize', () => {
   clearTimeout(rsT);
   rsT = setTimeout(() => {
-    sizeWall(); measureDock(); hideMenu();
+    sizeWall(); measureDock(); hideMenu(); knobRenders.forEach(f => f());
     if (isMobile()) return;
-    const { W, H, top, bottom } = deskBounds();
+    const { W, top, bottom } = deskBounds();
     wins.forEach(w => {
       const el = w.el;
       if (w.max) Object.assign(el.style, { left: '12px', top: top + 'px', width: (W - 30) + 'px', height: (bottom - top) + 'px' });
       el.style.left = clamp(parseFloat(el.style.left) || 0, -el.offsetWidth + 120, W - 120) + 'px';
-      el.style.top = clamp(parseFloat(el.style.top) || 0, top - 10, H - 46) + 'px';
+      el.style.top = clamp(parseFloat(el.style.top) || 0, top - 10, bottom - 36) + 'px';
     });
   }, 120);
 });
