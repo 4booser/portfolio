@@ -113,6 +113,14 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
   60% { transform: translate3d(-30px, -90px, 0); } 80% { transform: translate3d(110px, 70px, 0); } 100% { transform: translate3d(0, 0, 0); }
 }
 
+/* ── FIG.2 Klein pigment: one fixed difference layer (paper → IKB, ink → gold) ─ */
+.pigment {
+  position: fixed; left: 0; top: 0; z-index: var(--z-pigment); display: block;
+  width: 100%; height: 100vh; height: 100lvh; pointer-events: none;
+  mix-blend-mode: difference; visibility: hidden;
+}
+.pigment.on { visibility: visible; }
+
 /* ── Specimen apparatus: running heads, folios ────────────────────────────── */
 .rhead {
   display: flex; align-items: baseline; gap: 14px; margin: 0;
@@ -888,6 +896,7 @@ html.has-rig .pc {
 })();
 </script>
 
+<canvas class="pigment" aria-hidden="true"></canvas>
 <div class="grain" aria-hidden="true"></div>
 <div class="rig" aria-hidden="true"><i class="c c0"></i><i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="d"></i><span class="chip"></span></div>
 
@@ -970,7 +979,7 @@ html.has-rig .pc {
         <div><span class="lbl"><span class="idx">02</span>Ink-up</span><span><span class="lc">wght</span> 200 → 520 at the reading line</span></div>
       </div>
       <p class="manifesto" id="manifesto">I’m 4booser, a creative developer who sets the browser like a type specimen. I design and engineer interfaces where type breathes, data takes shape and every scroll lands with intent. Banks, record labels, freight fleets and fragrance houses trust me with their first impression. Six years in, one rule holds: if it doesn’t <em>move,</em> it doesn’t ship.</p>
-      <p class="figcap mono"><span class="idx">FIG.2</span>Klein pigment — move to paint · click to drop</p>
+      <p class="figcap mono"><span class="idx">FIG.2</span><span id="fig2-t">Klein pigment — move to paint · click to drop</span></p>
       <dl class="figs">
         <div><dt class="mono lbl">yrs in the browser</dt><dd>06</dd></div>
         <div><dt class="mono lbl">projects shipped</dt><dd>40</dd></div>
@@ -1256,19 +1265,19 @@ html.has-rig .pc {
        K2.pointer   Track { x, y, vx, vy, type, inside, seen, last } (mouse/pen; touch is per system)
        K2.zones     { list, folios, measure(), toneAt(docY), folioAt(docY) } — [data-nav] tones in doc px
        K2.sound     { on, toggle(), pluck(i,gain,pan,oct), tick(gain), thud(xFrac,v), ding(), whoosh(), setLevel(p) }
-       K2.pigment   STUB { enabled, splat(x,y,dx,dy,o), drop(x,y,o), burst(x,y,o) } — viewport px; stage B
-                    replaces the methods in place (Object.assign). o.ghost marks the intro stroke.
+       K2.pigment   { enabled, mode ('webgl2'|'webgl'|'2d'|'off'), splat(x,y,dx,dy,o), drop(x,y,o), burst(x,y,o), stats(), X, XB }
+                    viewport px; dx,dy = brush travel; o: { dye, radius, ghost (intro stroke, not logged), size (burst) }
        K2.scrollTo(target|y, { offset, duration, immediate, lock, focus, onComplete }) · K2.lockScroll(on) · K2.lenis
        K2.toast(msg) · K2.copy(text, selectEl) → Promise<bool> · K2.fit(lineEl, boxEl) → px
        K2.intro { play({short}), skip(), running } · K2.hero { strike(i), letters } · K2.strings { pluck(tape, at, amp) }
        K2.onLayout(fn) · K2.layout() · K2.env · K2.footnotes · K2.util
        K2.work { open(i), close(), isOpen } — case sheet + title flight (html.case-open while open)
        K2.loud { word, lines, sanitize(w), typeset(w), setWord(w), kick(), layout() } — stage C replaces setWord/kick
-       K2.plate { el, canvas, setStats({ px, drops }), setEmpty(b), number, signature, visible } — stage B renders
+       K2.plate { el, canvas, setStats({ px, drops }), setEmpty(b), print(), number, signature, visible }
        K2.rewind.run() — kick, 2.4s scroll to the top, short calibration replay
      ──────────────────────────────────────────────────────────────────────── */
   const K2 = window.K2 = {
-    version: 'A2',
+    version: 'B',
     env,
     util: { $, $$, clamp, lerp, smooth, pad3, mk, Track },
     lastInput: performance.now(),
@@ -1918,7 +1927,7 @@ html.has-rig .pc {
       const k = this.L[i], r = k.getBoundingClientRect();
       const cx = x == null ? r.left + r.width / 2 : x, cy = y == null ? r.top + r.height / 2 : y;
       Sound.pluck(i, 1, panOf(cx));
-      K2.pigment.burst(cx, cy, { strength: 1, letter: i });
+      K2.pigment.burst(cx, cy, { strength: 1, letter: i, size: r.height });
       if (env.reduce) {
         k.style.fontVariationSettings = `'wdth' 150, 'wght' 900`; this.str[i] = '';
         setTimeout(() => { k.style.fontVariationSettings = this.restAxes(i); this.str[i] = this.restAxes(i); }, 320);
@@ -2502,11 +2511,667 @@ html.has-rig .pc {
     tick() { if (!env.reduce) this.apply(F.y + F.vh * .6); return false; }
   };
 
-  /* ── 14 · Click anywhere (not on a control) drops pigment ──────────────── */
+  /* ── 14 · FIG.2 Klein pigment: the global signature layer ────────────────────
+     Stable fluids (Stam '99, structured like Dobryakov's pipeline, written
+     fresh) in vanilla WebGL: splat → curl → vorticity → divergence →
+     pressure → project → advect. One fixed canvas prints X·a through
+     mix-blend-mode: difference, X = |paper − IKB|: paper prints IKB, ink
+     prints gold. Density above a toothy threshold prints solid (screen
+     print); the drying edge breaks into a 45° AM halftone fixed to the
+     paper. Dye is advected with the page scroll so it sticks to the paper
+     (pinned sections hold it still), fades in ~2.5s and the whole sim
+     sleeps when nothing prints. Fallbacks: WebGL2 → WebGL1 half-float →
+     2D blots → off. Every visitor stroke is logged in document px for the
+     Anthropometry plate.                                                 */
+  const PIG = {
+    X: [201, 187, 16],     /* paper → #1D2CD3 (IKB), ink → #BBAD00 (gold): 3.9:1 */
+    XB: [18, 56, 172],     /* over IKB areas: IKB → #0B0C47 navy, paper → #D4AF37 Monogold: 8.6:1 */
+    DISS: 1.15,            /* dye decay /s: solid for ~.7s, the halftone is gone by ~2.6s */
+    VDISS: 2, CURL: 22, PRESSURE: .8, FADE: 7, CAP: 1.6,
+    QMAX: 160, LOG: 6000, X2D: 'rgb(201,187,16)'
+  };
+  const GLSL = {
+    vs: `precision highp float;
+attribute vec2 aPosition;
+varying vec2 vUv, vL, vR, vT, vB;
+uniform vec2 texelSize;
+void main () {
+  vUv = aPosition * .5 + .5;
+  vL = vUv - vec2(texelSize.x, 0.); vR = vUv + vec2(texelSize.x, 0.);
+  vT = vUv + vec2(0., texelSize.y); vB = vUv - vec2(0., texelSize.y);
+  gl_Position = vec4(aPosition, 0., 1.);
+}`,
+    head: `#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 vUv, vL, vR, vT, vB;
+vec4 samp (sampler2D s, vec2 uv, vec2 ts) {
+#ifdef MANUAL_FILTERING
+  vec2 st = uv / ts - .5, i = floor(st), f = fract(st);
+  vec4 a = texture2D(s, (i + vec2(.5, .5)) * ts), b = texture2D(s, (i + vec2(1.5, .5)) * ts);
+  vec4 c = texture2D(s, (i + vec2(.5, 1.5)) * ts), d = texture2D(s, (i + vec2(1.5, 1.5)) * ts);
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+#else
+  return texture2D(s, uv);
+#endif
+}
+`,
+    /* batched gaussian splats: NB per pass, uP = (x, y, r², dye), uV = (vx, vy, rv², 0) */
+    splat: `uniform sampler2D uTarget;
+uniform float aspect;
+uniform int uN;
+uniform vec4 uP[NB];
+#ifdef VEL
+uniform vec4 uV[NB];
+#endif
+void main () {
+  vec4 base = texture2D(uTarget, vUv);
+  vec2 acc = vec2(0.);
+  for (int i = 0; i < NB; i++) {
+    if (i >= uN) break;
+    vec2 p = vUv - uP[i].xy; p.x *= aspect;
+    float q = dot(p, p);
+#ifdef VEL
+    if (q < 14. * uV[i].z) acc += uV[i].xy * exp(-q / uV[i].z);
+#else
+    if (q < 14. * uP[i].z) acc.x += uP[i].w * exp(-q / uP[i].z);
+#endif
+  }
+#ifdef VEL
+  gl_FragColor = vec4(base.xy + acc, 0., 1.);
+#else
+  gl_FragColor = vec4(min(base.x + acc.x, CAP), 0., 0., 1.);
+#endif
+}`,
+    curl: `uniform sampler2D uVelocity;
+void main () {
+  float L = texture2D(uVelocity, vL).y, R = texture2D(uVelocity, vR).y;
+  float T = texture2D(uVelocity, vT).x, B = texture2D(uVelocity, vB).x;
+  gl_FragColor = vec4(.5 * (R - L - T + B), 0., 0., 1.);
+}`,
+    vort: `uniform sampler2D uVelocity, uCurl;
+uniform float curl, dt;
+void main () {
+  float L = texture2D(uCurl, vL).x, R = texture2D(uCurl, vR).x, T = texture2D(uCurl, vT).x, B = texture2D(uCurl, vB).x, C = texture2D(uCurl, vUv).x;
+  vec2 f = .5 * vec2(abs(T) - abs(B), abs(R) - abs(L));
+  f = f / (length(f) + .0001) * curl * C; f.y = -f.y;
+  vec2 v = texture2D(uVelocity, vUv).xy + f * dt;
+  gl_FragColor = vec4(clamp(v, -1000., 1000.), 0., 1.);
+}`,
+    div: `uniform sampler2D uVelocity;
+void main () {
+  float L = texture2D(uVelocity, vL).x, R = texture2D(uVelocity, vR).x, T = texture2D(uVelocity, vT).y, B = texture2D(uVelocity, vB).y;
+  vec2 C = texture2D(uVelocity, vUv).xy;
+  if (vL.x < 0.) L = -C.x; if (vR.x > 1.) R = -C.x; if (vT.y > 1.) T = -C.y; if (vB.y < 0.) B = -C.y;
+  gl_FragColor = vec4(.5 * (R - L + T - B), 0., 0., 1.);
+}`,
+    clear: `uniform sampler2D uTexture;
+uniform float value;
+void main () { gl_FragColor = value * texture2D(uTexture, vUv); }`,
+    press: `uniform sampler2D uPressure, uDivergence;
+void main () {
+  float L = texture2D(uPressure, vL).x, R = texture2D(uPressure, vR).x, T = texture2D(uPressure, vT).x, B = texture2D(uPressure, vB).x;
+  gl_FragColor = vec4((L + R + B + T - texture2D(uDivergence, vUv).x) * .25, 0., 0., 1.);
+}`,
+    grad: `uniform sampler2D uPressure, uVelocity;
+void main () {
+  float L = texture2D(uPressure, vL).x, R = texture2D(uPressure, vR).x, T = texture2D(uPressure, vT).x, B = texture2D(uPressure, vB).x;
+  gl_FragColor = vec4(texture2D(uVelocity, vUv).xy - vec2(R - L, T - B), 0., 1.);
+}`,
+    /* semi-Lagrangian advection; uShift carries the page scroll; off-screen samples are empty; IKB areas fade fast */
+    adv: `uniform sampler2D uVelocity, uSource;
+uniform vec2 texelSize, srcTexel, uShift;
+uniform float dt, keep, keepFade, cap;
+uniform vec4 uFade[3];
+void main () {
+  vec2 c = vUv - dt * samp(uVelocity, vUv, texelSize).xy * texelSize - uShift;
+  vec4 r = vec4(0.);
+  if (c.x >= 0. && c.x <= 1. && c.y >= 0. && c.y <= 1.) r = samp(uSource, c, srcTexel);
+  float k = keep;
+  for (int i = 0; i < 3; i++) { vec4 q = uFade[i]; if (vUv.x >= q.x && vUv.x <= q.z && vUv.y >= q.y && vUv.y <= q.w) k = keepFade; }
+  gl_FragColor = min(r * k, vec4(cap));
+}`,
+    /* the print: a toothy screen-print threshold, then a 45° AM halftone for the drying edge, fixed to the paper */
+    disp: `uniform sampler2D uDye;
+uniform vec2 uPx, uView, srcTexel;
+uniform float uDpr, uOff, uCell, uWrap;
+uniform vec3 uX, uXB;
+uniform vec4 uR[3];
+float hash (vec2 p) { vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+void main () {
+  float d = samp(uDye, vUv, srcTexel).r;
+  if (d < .045) { gl_FragColor = vec4(0.); return; }
+  vec2 pg = vec2(vUv.x * uView.x, (1. - vUv.y) * uView.y + uOff);
+  vec2 gc = floor(pg * .5); gc.y = mod(gc.y, uWrap);
+  float T = .42 + (hash(gc) - .5) * .06;
+  float fw = abs(samp(uDye, vUv + vec2(uPx.x, 0.), srcTexel).r - d) + abs(samp(uDye, vUv + vec2(0., uPx.y), srcTexel).r - d) + 1e-4;
+  float solid = clamp((d - T) / fw + .5, 0., 1.);
+  vec2 h = vec2(pg.x + pg.y, pg.y - pg.x) * (.70710678 / uCell);
+  float dist = length(fract(h) - .5) * uCell;
+  float rad = .74 * uCell * sqrt(clamp((d - .05) / (T - .05), 0., 1.));
+  float a = max(solid, clamp((rad - dist) * uDpr, 0., 1.));
+  vec3 X = uX;
+  for (int i = 0; i < 3; i++) { vec4 r = uR[i]; if (vUv.x >= r.x && vUv.x <= r.z && vUv.y >= r.y && vUv.y <= r.w) X = uXB; }
+  gl_FragColor = vec4(X * a, a);
+}`
+  };
+  function glProgram(gl, vs, fs, defs) {
+    const sh = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS) && !gl.isContextLost()) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    };
+    const p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, defs.map(d => '#define ' + d + '\n').join('') + GLSL.head + fs));
+    gl.bindAttribLocation(p, 0, 'aPosition');
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS) && !gl.isContextLost()) throw new Error(gl.getProgramInfoLog(p));
+    const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < n; i++) { const nm = gl.getActiveUniform(p, i).name.replace(/\[0\]$/, ''); u[nm] = gl.getUniformLocation(p, nm); }
+    return { p, u };
+  }
+
   const NODROP = 'a, button, input, textarea, select, label, summary, [contenteditable], [role="dialog"], [data-nodrop]';
-  document.addEventListener('click', e => {
-    if (e.defaultPrevented || e.button !== 0 || !e.target.closest || e.target.closest(NODROP)) return;
-    K2.pigment.drop(e.clientX, e.clientY, { strength: 1 });
+  const Pigment = {
+    name: 'pigment', active: true,
+    cv: $('.pigment'), band: $('.band'), cap: $('#fig2-t'),
+    mode: 'off', glMode: '', on: false, awake: false, gl: null, fmt: null, prog: null, NB: 16, lvl: 0, iters: 18,
+    vw: 1, vh: 1, W: 0, H: 0, dpr: 1, simW: 1, simH: 1, cell: 7.07, wrap: 500, period: 1000,
+    vel: null, dye: null, prs: null, divF: null, curlF: null,
+    Q: new Float32Array(8 * PIG.QMAX), qn: 0, qv: false, uP: null, uV: null,
+    maxD: 0, maxV: 0, flow: false, lastSplat: -1e9, lt: 0, ft: 16, fc: 0,
+    pins: new Float32Array(4), np: 0, bandT: 1e9, bandB: 1e9, off: 0, shift: 0,
+    rF: new Float32Array(12), rS: new Float32Array(12),
+    m: { x: 0, y: 0, t: 0, b: 0, lx: 0, ly: 0, lt: 0, moved: false, fresh: true, sp: 0, sid: -1, gx: 0, gy: 0 },
+    touches: new Map(),
+    log: new Float32Array(5 * PIG.LOG), ln: 0, sid: 0, px: 0, drops: 0, ver: 0,
+    blots: new Float32Array(5 * 400), bn: 0, c2: null, bx: -1e4, by: -1e4,
+
+    /* ── setup + fallback chain ── */
+    init() {
+      this.touchStep = this.touchStep.bind(this);
+      addEventListener('pointermove', e => {
+        if (e.pointerType === 'touch') return;
+        const m = this.m;
+        if (e.timeStamp - m.t > 250) m.fresh = true;
+        m.x = e.clientX; m.y = e.clientY; m.t = e.timeStamp; m.b = e.buttons; m.moved = true;
+      }, { passive: true });
+      root.addEventListener('mouseleave', () => { this.m.fresh = true; this.m.sid = -1; });
+      const T = this.touches;
+      addEventListener('touchstart', e => {
+        for (const t of e.changedTouches) T.set(t.identifier, { x: t.clientX, y: t.clientY, lx: t.clientX, ly: t.clientY, fresh: true, sid: -1, gx: 0, gy: 0 });
+        S.wake();
+      }, { passive: true });
+      addEventListener('touchmove', e => {
+        for (const t of e.changedTouches) { const tc = T.get(t.identifier); if (tc) { tc.x = t.clientX; tc.y = t.clientY; } }
+        S.wake();
+      }, { passive: true });
+      const end = e => { for (const t of e.changedTouches) T.delete(t.identifier); };
+      addEventListener('touchend', end, { passive: true });
+      addEventListener('touchcancel', end, { passive: true });
+      /* click anywhere (not on a control) drops a blot */
+      document.addEventListener('click', e => {
+        if (e.defaultPrevented || e.button !== 0 || !e.target.closest || e.target.closest(NODROP)) return;
+        this.drop(e.clientX, e.clientY);
+      });
+      this.cv.addEventListener('webglcontextlost', e => { e.preventDefault(); this.sleep(); this.gl = null; this.prog = null; this.vel = null; this.set('off'); });
+      this.cv.addEventListener('webglcontextrestored', () => this.motion());
+      this.motion();
+    },
+    /* (re)start for the current motion preference: WebGL, else the 2D blots, else nothing */
+    motion() {
+      if (env.reduce) { this.sleep(); this.set('off'); return; }
+      if (this.mode !== 'off') return;
+      if (!this.gl && !this.c2 && !this.boot()) this.fallback();
+      this.set(this.gl ? this.glMode : this.c2 ? '2d' : 'off');
+      this.W = 0; this.resize();
+    },
+    /* a canvas keeps its first context type: the blots print on a fresh one */
+    fallback() {
+      const cv = this.cv.cloneNode(false);
+      this.cv.replaceWith(cv); this.cv = cv;
+      try { this.c2 = cv.getContext('2d'); } catch (e) { this.c2 = null; }
+    },
+    set(mode) {
+      this.mode = mode; this.on = mode !== 'off';
+      K2.pigment.enabled = this.on; K2.pigment.mode = mode;
+      if (this.cap) this.cap.textContent = env.reduce ? 'Klein pigment — at rest (reduced motion)' : this.on ? 'Klein pigment — move to paint · click to drop' : 'Klein pigment — not available in this browser';
+    },
+    /* WebGL2 + half float, else WebGL1 + OES half float; false when neither renders */
+    boot() {
+      const o = { alpha: true, depth: false, stencil: false, antialias: false, premultipliedAlpha: true, preserveDrawingBuffer: false };
+      let gl = null, v2 = false;
+      try { gl = this.cv.getContext('webgl2', o); v2 = !!gl; if (!gl) gl = this.cv.getContext('webgl', o); } catch (e) { gl = null; }
+      if (!gl) return false;
+      let fmt = null;
+      if (v2) {
+        gl.getExtension('EXT_color_buffer_float');
+        const ht = gl.HALF_FLOAT;
+        const r = this.probe(gl, gl.R16F, gl.RED, ht) || this.probe(gl, gl.RG16F, gl.RG, ht) || this.probe(gl, gl.RGBA16F, gl.RGBA, ht);
+        const rg = this.probe(gl, gl.RG16F, gl.RG, ht) || this.probe(gl, gl.RGBA16F, gl.RGBA, ht);
+        if (r && rg) fmt = { r, rg, type: ht, linear: true };
+      } else {
+        const hf = gl.getExtension('OES_texture_half_float');
+        if (hf) {
+          const linear = !!gl.getExtension('OES_texture_half_float_linear');
+          gl.getExtension('EXT_color_buffer_half_float');
+          const f = this.probe(gl, gl.RGBA, gl.RGBA, hf.HALF_FLOAT_OES);
+          if (f) fmt = { r: f, rg: f, type: hf.HALF_FLOAT_OES, linear };
+        }
+      }
+      if (!fmt) return false;
+      try {
+        const maxU = gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS) || 64;
+        const NB = this.NB = clamp(Math.floor((maxU - 12) / 2), 4, 24);
+        const base = fmt.linear ? [] : ['MANUAL_FILTERING'];
+        const mkP = (src, defs = []) => glProgram(gl, GLSL.vs, src, base.concat(defs));
+        this.prog = {
+          splatV: mkP(GLSL.splat, ['NB ' + NB, 'CAP ' + PIG.CAP.toFixed(2), 'VEL']), splatD: mkP(GLSL.splat, ['NB ' + NB, 'CAP ' + PIG.CAP.toFixed(2)]),
+          curl: mkP(GLSL.curl), vort: mkP(GLSL.vort), div: mkP(GLSL.div), clear: mkP(GLSL.clear),
+          press: mkP(GLSL.press), grad: mkP(GLSL.grad), adv: mkP(GLSL.adv), disp: mkP(GLSL.disp)
+        };
+      } catch (e) { return false; }
+      this.uP = new Float32Array(4 * this.NB); this.uV = new Float32Array(4 * this.NB);
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(0);
+      gl.disable(gl.BLEND);
+      this.gl = gl; this.fmt = fmt; this.glMode = v2 ? 'webgl2' : 'webgl';
+      return true;
+    },
+    probe(gl, internal, format, type) {
+      const tex = gl.createTexture(), fb = gl.createFramebuffer();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, internal, 4, 4, 0, format, type, null);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.deleteFramebuffer(fb); gl.deleteTexture(tex);
+      return ok ? { internal, format } : null;
+    },
+    fbo(w, h, f, lin) {
+      const gl = this.gl, tex = gl.createTexture(), fb = gl.createFramebuffer(), flt = lin && this.fmt.linear ? gl.LINEAR : gl.NEAREST;
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, flt); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, flt);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, f.internal, w, h, 0, f.format, this.fmt.type, null);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      return { tex, fb, w, h, tx: 1 / w, ty: 1 / h };
+    },
+    dbl(w, h, f, lin) { return { r: this.fbo(w, h, f, lin), w: this.fbo(w, h, f, lin), swap() { const t = this.r; this.r = this.w; this.w = t; } }; },
+    free() {
+      const gl = this.gl;
+      if (!gl || !this.vel) return;
+      for (const t of [this.vel.r, this.vel.w, this.dye.r, this.dye.w, this.prs.r, this.prs.w, this.divF, this.curlF]) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fb); }
+      this.vel = null;
+    },
+    /* grid sizes for this device: sim ~128 / dye ~512 on the short side (phones lower), DPR ≤ 1.5 */
+    alloc() {
+      const gl = this.gl;
+      if (!gl) return;
+      this.free();
+      const lite = !env.fine || !env.desk, k = this.lvl ? [.75, .66] : [1, 1];
+      const res = n => { const a = this.W / this.H, s = Math.round(n), l = Math.round(n * (a > 1 ? a : 1 / a)); return a > 1 ? [l, s] : [s, l]; };
+      const [sw, sh] = res((lite ? 80 : 128) * k[0]);
+      const [dw, dh] = res(Math.min((lite ? 360 : 512) * k[1], Math.min(this.W, this.H)));
+      const f = this.fmt;
+      this.simW = sw; this.simH = sh;
+      this.vel = this.dbl(sw, sh, f.rg, true); this.prs = this.dbl(sw, sh, f.r, false);
+      this.divF = this.fbo(sw, sh, f.r, false); this.curlF = this.fbo(sw, sh, f.r, false);
+      this.dye = this.dbl(dw, dh, f.r, true);
+      this.iters = Math.round((lite ? 10 : 18) * (this.lvl ? .6 : 1));
+      this.maxD = this.maxV = 0;
+    },
+    /* canvas = viewport (large viewport on phones, so toolbars do not reset the sim) */
+    resize() {
+      if (!this.on) return;
+      const vw = this.cv.clientWidth || innerWidth, vh = this.cv.clientHeight || innerHeight, d = DPR(1.5);
+      const W = Math.round(vw * d), H = Math.round(vh * d);
+      this.vw = vw; this.vh = vh;
+      const desk = env.fine && env.desk, cd = desk ? 10 : 7;
+      this.cell = cd / Math.SQRT2; this.period = cd * 100; this.wrap = this.period / 2;
+      if (W === this.W && H === this.H) return;
+      this.W = W; this.H = H; this.dpr = d;
+      this.cv.width = W; this.cv.height = H;
+      if (this.gl) this.alloc();
+      this.bn = 0;
+    },
+    /* cached document geometry: the band (no ink), pinned ranges (paper stands still) */
+    measure() {
+      const b = Zones.list.find(z => z.el === this.band);
+      this.bandT = b ? b.top : 1e9; this.bandB = b ? b.bottom : 1e9;
+      this.np = 0;
+      if (Thresh.live) { this.pins[0] = Thresh.top; this.pins[1] = Thresh.top + Thresh.run; this.np = 2; }
+      if (Board.live) { this.pins[this.np] = Board.top; this.pins[this.np + 1] = Board.top + Board.run; this.np += 2; }
+    },
+    /* how far the paper under the viewport moved this frame: scroll minus the pinned stretches */
+    paperDy(y0, y1) {
+      let s = y1 - y0;
+      if (!s) return 0;
+      const lo = Math.min(y0, y1), hi = Math.max(y0, y1);
+      for (let i = 0; i < this.np; i += 2) {
+        const ov = Math.min(hi, this.pins[i + 1]) - Math.max(lo, this.pins[i]);
+        if (ov > 0) s -= s > 0 ? ov : -ov;
+      }
+      return s;
+    },
+    pinTop() { return Board.top - F.y + clamp(F.y - Board.top, 0, Board.run); },
+    /* ink gate at a viewport point: 0 over IKB (band, flood, open case, menu), .6 over a blue row, else 1 */
+    gain(x, y) {
+      if (!this.on || Case.isOpen || menuOpen) return 0;
+      const Y = y + F.y;
+      if (Y >= this.bandT && Y <= this.bandB) return 0;
+      if (Board.live && Board.active && Board.fp > .02) { const pt = this.pinTop(); if (y >= pt && y <= pt + Board.svh) return 0; }
+      if (this.rowBlue() && y >= Work.rr.t && y <= Work.rr.b) return .6;
+      return 1;
+    },
+    rowBlue() {
+      const row = Work.hov || Work.kb;
+      return !!row && Work.active && Work.rr.ok && (row.classList.contains('is-on') || row.classList.contains('is-kb'));
+    },
+
+    /* ── input → splats ── */
+    push(x, y, r, amt, vx, vy) {
+      if (this.qn >= PIG.QMAX) return;
+      const q = this.Q, o = this.qn++ * 8, ru = r / this.vh, k = this.simH / this.vh, rv = ru * 1.7;
+      q[o] = x / this.vw; q[o + 1] = 1 - y / this.vh; q[o + 2] = ru * ru; q[o + 3] = amt;
+      q[o + 4] = vx * k; q[o + 5] = -vy * k; q[o + 6] = rv * rv; q[o + 7] = 0;
+      const sp = (Math.abs(vx) + Math.abs(vy)) * k;
+      if (sp) { this.qv = true; if (sp > this.maxV) this.maxV = sp; }
+      this.maxD = PIG.CAP; this.lastSplat = performance.now();
+      if (this.mode === '2d') this.blot2d(x, y, r, amt);
+      if (!this.awake) this.wakeUp();
+    },
+    /* a straight brush segment, spaced so the line density is D whatever the speed */
+    line(x0, y0, x1, y1, r, D, vx, vy) {
+      const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy), n = clamp(Math.ceil(L / (r * .5)), 1, 24), s = L / n;
+      const a = D * Math.max(s, r * .25) / (1.77 * r), kv = .45 * s / (3 * r);
+      for (let i = 1; i <= n; i++) this.push(x0 + dx * i / n, y0 + dy * i / n, r, a, vx * kv, vy * kv);
+    },
+    /* public: one splat at viewport px; dx, dy = brush travel since the last splat */
+    splat(x, y, dx = 0, dy = 0, o = {}) {
+      const g = this.gain(x, y);
+      if (!g) return;
+      const r = o.radius || (o.ghost ? (env.desk ? 22 : 15) : 16), L = Math.hypot(dx, dy), dt = Math.max(F.dt, 1 / 120);
+      const a = (o.dye != null ? o.dye : 1) * clamp(L / (1.77 * r), .3, 1) * g, kv = .45 * Math.min(1, L / (3 * r));
+      this.push(x, y, r, a, dx / dt * kv, dy / dt * kv);
+      S.wake();
+    },
+    /* click: a blot that blooms into curling tendrils */
+    drop(x, y, o = {}) {
+      const g = this.gain(x, y);
+      if (!g) return;
+      const R = (o.radius || (env.desk ? 30 : 24)) * (o.strength || 1);
+      this.push(x, y, R, 1.45 * g, 0, 0);
+      for (let k = 0; k < 8; k++) {
+        const a = k / 8 * Math.PI * 2 + Math.random() * .5, c = Math.cos(a), s = Math.sin(a), v = 520 + Math.random() * 380;
+        this.push(x + c * R * .5, y + s * R * .5, R * .32, .5 * g, (c - .35 * s) * v, (s + .35 * c) * v);
+      }
+      this.drops++; this.logPt(x, y, R * 1.25, 1, -1);
+      S.wake();
+    },
+    /* strike: a radial burst thrown from the struck glyph */
+    burst(x, y, o = {}) {
+      const g = this.gain(x, y);
+      if (!g) return;
+      const Sz = clamp(o.size || 120, 40, 320), n = 12;
+      this.push(x, y, Sz * .2, 1.4 * g, 0, 0);
+      for (let k = 0; k < n; k++) {
+        const a = k / n * Math.PI * 2 + (Math.random() - .5) * .4, c = Math.cos(a), s = Math.sin(a), v = (900 + Math.random() * 700) * Sz / 140;
+        this.push(x + c * Sz * .2, y + s * Sz * .2, Sz * .075, .7 * g, c * v, s * v);
+      }
+      this.drops++; this.logPt(x, y, Sz * .45, 2, -1);
+      S.wake();
+    },
+    /* the mouse brush: deposit grows with speed; slow reading moves leave nothing; press-drag pours */
+    brush() {
+      const m = this.m;
+      if (!m.moved) return;
+      m.moved = false;
+      if (m.fresh) { m.fresh = false; m.sp = 0; m.sid = -1; m.lx = m.x; m.ly = m.y; m.lt = m.t; return; }
+      const dx = m.x - m.lx, dy = m.y - m.ly, L = Math.hypot(dx, dy), et = Math.max((m.t - m.lt) / 1000, 1 / 240);
+      if (L < .5) return;
+      m.sp += (L / et - m.sp) * .5;
+      const e = clamp((m.sp - 280) / 1500, 0, 1);
+      let D = e > 0 ? .55 + .85 * e : 0;
+      if ((m.b & 1) && m.sp > 20) D = Math.max(D, 1.15);
+      const g = D ? this.gain(m.x, m.y) : 0;
+      if (g) {
+        const r = 12 + 5 * e;
+        this.line(m.lx, m.ly, m.x, m.y, r, D * g, dx / et, dy / et);
+        this.px += L;
+        const w = r * (.9 + .35 * D);   /* the printed half-width of this stroke */
+        if (m.sid < 0) { m.sid = this.sid++; this.logPt(m.lx, m.ly, w, 0, m.sid); m.gx = m.lx; m.gy = m.ly; }
+        if (Math.hypot(m.x - m.gx, m.y - m.gy) >= 6) { this.logPt(m.x, m.y, w, 0, m.sid); m.gx = m.x; m.gy = m.y; }
+      } else m.sid = -1;
+      m.lx = m.x; m.ly = m.y; m.lt = m.t;
+    },
+    /* every finger is a brush, during native scroll too: the stroke follows the finger over the paper */
+    touchStep(tc) {
+      const lx = tc.lx, ly = tc.ly - this.shift, dt = Math.max(F.dt, 1 / 120);
+      const vx = (tc.x - tc.lx) / dt * .2, vy = (tc.y - tc.ly) / dt * .2;
+      tc.lx = tc.x; tc.ly = tc.y;
+      if (tc.fresh) { tc.fresh = false; return; }
+      const g = this.gain(tc.x, tc.y);
+      if (!g) { tc.sid = -1; return; }
+      const dx = tc.x - lx, dy = tc.y - ly, L = Math.hypot(dx, dy);
+      if (L > 1.5) {
+        const D = .7 + clamp(L / dt / 1500, 0, .6);
+        this.line(lx, ly, tc.x, tc.y, 14, D * g, dx / dt + vx, dy / dt + vy);
+        this.px += L;
+      } else this.push(tc.x, tc.y, 15, .1 * g, vx, vy);
+      if (tc.sid < 0) { tc.sid = this.sid++; tc.gx = tc.x; tc.gy = tc.y + F.y; this.logPt(tc.x, tc.y, 14, 0, tc.sid); }
+      else if (Math.hypot(tc.x - tc.gx, tc.y + F.y - tc.gy) >= 6) { this.logPt(tc.x, tc.y, 14, 0, tc.sid); tc.gx = tc.x; tc.gy = tc.y + F.y; }
+    },
+    /* strokes log for the plate: x as a fraction of the viewport, y in document px */
+    logPt(x, y, r, kind, sid) {
+      if (this.ln >= PIG.LOG) this.decimate();
+      const L = this.log, o = this.ln++ * 5;
+      L[o] = x / F.vw; L[o + 1] = y + F.y; L[o + 2] = r; L[o + 3] = kind; L[o + 4] = sid;
+      this.ver++;
+    },
+    /* full log: keep every other point of each stroke (strokes may interleave), all blots */
+    decimate() {
+      const L = this.log, n = this.ln, seen = new Map();
+      let w = 0;
+      for (let i = 0; i < n; i++) {
+        const o = i * 5;
+        if (L[o + 3] === 0) { const c = seen.get(L[o + 4]) || 0; seen.set(L[o + 4], c + 1); if (c & 1) continue; }
+        if (w !== i) L.copyWithin(w * 5, o, o + 5);
+        w++;
+      }
+      this.ln = Math.min(w, PIG.LOG - 1);
+    },
+
+    /* ── frame ── */
+    wakeUp() {
+      this.awake = true; this.fc = 0; this.lt = 0;
+      this.cv.classList.add('on');
+      S.wake();
+    },
+    sleep() {
+      this.awake = false; this.qn = 0; this.qv = false; this.maxD = this.maxV = 0; this.bn = 0;
+      this.cv.classList.remove('on');
+      const gl = this.gl;
+      if (gl && this.vel) {
+        gl.clearColor(0, 0, 0, 0);
+        for (const t of [this.vel.r, this.vel.w, this.dye.r, this.dye.w, this.prs.r, this.prs.w]) { gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb); gl.clear(gl.COLOR_BUFFER_BIT); }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.clear(gl.COLOR_BUFFER_BIT);
+      } else if (this.c2) this.c2.clearRect(0, 0, this.W, this.H);
+    },
+    tick(t, dt) {
+      if (!this.on) return false;
+      const sh = this.shift = this.paperDy(F.y - F.dy, F.y);
+      this.off = (((this.off + sh) % this.period) + this.period) % this.period;
+      this.brush();
+      if (this.touches.size) this.touches.forEach(this.touchStep);
+      if (!this.awake) return false;
+      const rdt = this.lt ? clamp((t - this.lt) / 1000, 0, .1) : dt;
+      if (this.mode === '2d') this.draw2d(t, sh);
+      else if (this.gl && this.vel) {
+        this.rects();
+        this.step(Math.min(rdt, 1 / 30), rdt, sh);
+        if (this.qn) this.flush();
+        this.display();
+        this.govern(t);
+      }
+      this.lt = t;
+      this.maxD *= Math.exp(-PIG.DISS * rdt); this.maxV *= Math.exp(-PIG.VDISS * rdt);
+      if (this.maxD < .045 && performance.now() - this.lastSplat > 1000) { this.sleep(); return false; }
+      return true;
+    },
+    /* frame-budget guard: a slow device steps down once (smaller dye grid, fewer pressure passes) */
+    govern(t) {
+      if (!this.lt) return;
+      const ft = t - this.lt;
+      if (ft < 250) this.ft += (ft - this.ft) * .05;
+      if (++this.fc > 90 && this.ft > 32 && !this.lvl) { this.lvl = 1; this.alloc(); }
+    },
+    /* viewport rects in uv (y up): fade = band, flood, open case; print navy/gold = band, flood, hovered row */
+    rects() {
+      const f = this.rF, s = this.rS, by = F.y;
+      this.rect(f, 0, this.bandT - by, this.bandB - by); this.rect(s, 0, this.bandT - by, this.bandB - by);
+      if (Board.live && Board.active && Board.fp > .02) {
+        const pt = this.pinTop();
+        this.rect(f, 1, pt, pt + Board.svh);
+        if (Board.fp > .5) this.rect(s, 1, pt, pt + Board.svh); else this.rect(s, 1, 0, 0);
+      } else { this.rect(f, 1, 0, 0); this.rect(s, 1, 0, 0); }
+      if (Case.isOpen) this.rect(f, 2, -1, this.vh + 1); else this.rect(f, 2, 0, 0);
+      if (this.rowBlue()) this.rect(s, 2, Work.rr.t - 1, Work.rr.b); else this.rect(s, 2, 0, 0);
+    },
+    rect(a, i, t, b) {
+      const o = i * 4;
+      if (b <= 0 || t >= this.vh || b <= t) { a[o] = a[o + 1] = a[o + 2] = a[o + 3] = -1; return; }
+      a[o] = 0; a[o + 1] = 1 - b / this.vh; a[o + 2] = 1; a[o + 3] = 1 - t / this.vh;
+    },
+    bind(t, unit) { const gl = this.gl; gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t.tex); return unit; },
+    blit(t) {
+      const gl = this.gl;
+      if (t) { gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb); gl.viewport(0, 0, t.w, t.h); }
+      else { gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, this.W, this.H); }
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    },
+    step(dt, rdt, sh) {
+      const gl = this.gl, P = this.prog, v = this.vel, du = sh / this.vh;
+      let p;
+      if (this.maxV > .5) {
+        p = P.curl; gl.useProgram(p.p);
+        gl.uniform2f(p.u.texelSize, v.r.tx, v.r.ty); gl.uniform1i(p.u.uVelocity, this.bind(v.r, 0));
+        this.blit(this.curlF);
+        p = P.vort; gl.useProgram(p.p);
+        gl.uniform2f(p.u.texelSize, v.r.tx, v.r.ty); gl.uniform1i(p.u.uVelocity, this.bind(v.r, 0)); gl.uniform1i(p.u.uCurl, this.bind(this.curlF, 1));
+        gl.uniform1f(p.u.curl, PIG.CURL); gl.uniform1f(p.u.dt, dt);
+        this.blit(v.w); v.swap();
+        p = P.div; gl.useProgram(p.p);
+        gl.uniform2f(p.u.texelSize, v.r.tx, v.r.ty); gl.uniform1i(p.u.uVelocity, this.bind(v.r, 0));
+        this.blit(this.divF);
+        p = P.clear; gl.useProgram(p.p);
+        gl.uniform1i(p.u.uTexture, this.bind(this.prs.r, 0)); gl.uniform1f(p.u.value, PIG.PRESSURE);
+        this.blit(this.prs.w); this.prs.swap();
+        p = P.press; gl.useProgram(p.p);
+        gl.uniform2f(p.u.texelSize, v.r.tx, v.r.ty); gl.uniform1i(p.u.uDivergence, this.bind(this.divF, 0));
+        for (let i = 0; i < this.iters; i++) { gl.uniform1i(p.u.uPressure, this.bind(this.prs.r, 1)); this.blit(this.prs.w); this.prs.swap(); }
+        p = P.grad; gl.useProgram(p.p);
+        gl.uniform2f(p.u.texelSize, v.r.tx, v.r.ty); gl.uniform1i(p.u.uPressure, this.bind(this.prs.r, 0)); gl.uniform1i(p.u.uVelocity, this.bind(v.r, 1));
+        this.blit(v.w); v.swap();
+        this.advect(v, v.r, PIG.VDISS, 0, 1e4, dt, rdt, du);
+        this.flow = true;
+      } else if (this.flow) {
+        /* the fluid has settled: zero what is left so drying dye never creeps */
+        this.flow = false;
+        gl.clearColor(0, 0, 0, 0); gl.bindFramebuffer(gl.FRAMEBUFFER, v.r.fb); gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+      this.advect(this.dye, this.dye.r, PIG.DISS, PIG.FADE, PIG.CAP, dt, rdt, du);
+    },
+    /* dt moves the fluid (capped for stability); rdt is real frame time, so decay is frame-rate independent */
+    advect(target, src, diss, fade, cap, dt, rdt, du) {
+      const gl = this.gl, p = this.prog.adv, v = this.vel.r;
+      gl.useProgram(p.p);
+      gl.uniform2f(p.u.texelSize, v.tx, v.ty); gl.uniform2f(p.u.srcTexel, src.tx, src.ty); gl.uniform2f(p.u.uShift, 0, du);
+      gl.uniform1i(p.u.uVelocity, this.bind(v, 0)); gl.uniform1i(p.u.uSource, src === v ? 0 : this.bind(src, 1));
+      gl.uniform1f(p.u.dt, dt); gl.uniform1f(p.u.keep, Math.exp(-diss * rdt)); gl.uniform1f(p.u.keepFade, Math.exp(-(diss + fade) * rdt)); gl.uniform1f(p.u.cap, cap);
+      gl.uniform4fv(p.u.uFade, this.rF);
+      this.blit(target.w); target.swap();
+    },
+    /* queued splats, NB per pass: velocity (if any moved), then dye */
+    flush() {
+      const gl = this.gl, NB = this.NB, Q = this.Q, uP = this.uP, uV = this.uV, asp = this.W / this.H;
+      for (let s0 = 0; s0 < this.qn; s0 += NB) {
+        const n = Math.min(NB, this.qn - s0);
+        for (let i = 0; i < n; i++) {
+          const o = (s0 + i) * 8, j = i * 4;
+          uP[j] = Q[o]; uP[j + 1] = Q[o + 1]; uP[j + 2] = Q[o + 2]; uP[j + 3] = Q[o + 3];
+          uV[j] = Q[o + 4]; uV[j + 1] = Q[o + 5]; uV[j + 2] = Q[o + 6]; uV[j + 3] = 0;
+        }
+        let p;
+        if (this.qv) {
+          p = this.prog.splatV; gl.useProgram(p.p);
+          gl.uniform1i(p.u.uTarget, this.bind(this.vel.r, 0)); gl.uniform1f(p.u.aspect, asp); gl.uniform1i(p.u.uN, n);
+          gl.uniform4fv(p.u.uP, uP); gl.uniform4fv(p.u.uV, uV);
+          this.blit(this.vel.w); this.vel.swap();
+        }
+        p = this.prog.splatD; gl.useProgram(p.p);
+        gl.uniform1i(p.u.uTarget, this.bind(this.dye.r, 0)); gl.uniform1f(p.u.aspect, asp); gl.uniform1i(p.u.uN, n);
+        gl.uniform4fv(p.u.uP, uP);
+        this.blit(this.dye.w); this.dye.swap();
+      }
+      this.qn = 0; this.qv = false;
+    },
+    display() {
+      const gl = this.gl, p = this.prog.disp, d = this.dye.r, X = PIG.X, XB = PIG.XB;
+      gl.useProgram(p.p);
+      gl.uniform1i(p.u.uDye, this.bind(d, 0));
+      gl.uniform2f(p.u.uPx, 1 / this.W, 1 / this.H); gl.uniform2f(p.u.uView, this.vw, this.vh); gl.uniform2f(p.u.srcTexel, d.tx, d.ty);
+      gl.uniform1f(p.u.uDpr, this.dpr); gl.uniform1f(p.u.uOff, this.off); gl.uniform1f(p.u.uCell, this.cell); gl.uniform1f(p.u.uWrap, this.wrap);
+      gl.uniform3f(p.u.uX, X[0] / 255, X[1] / 255, X[2] / 255); gl.uniform3f(p.u.uXB, XB[0] / 255, XB[1] / 255, XB[2] / 255);
+      gl.uniform4fv(p.u.uR, this.rS);
+      this.blit(null);
+    },
+
+    /* ── 2D fallback: hard-edged blots that dry by shrinking, stuck to the paper ── */
+    blot2d(x, y, r, amt) {
+      const big = r > 20;
+      if (!big && (Math.hypot(x - this.bx, y - this.by) < r * .7 || amt < .08)) return;
+      if (this.bn >= 400) return;
+      const B = this.blots, o = this.bn++ * 5;
+      B[o] = x; B[o + 1] = y; B[o + 2] = r * (big ? 1 : 1.1); B[o + 3] = performance.now(); B[o + 4] = big ? 2200 : 1500;
+      this.bx = x; this.by = y;
+    },
+    draw2d(t, sh) {
+      const c = this.c2, B = this.blots, k = this.dpr, now = performance.now();
+      c.setTransform(k, 0, 0, k, 0, 0);
+      c.clearRect(0, 0, this.vw, this.vh);
+      c.fillStyle = PIG.X2D;
+      let w = 0;
+      for (let i = 0; i < this.bn; i++) {
+        const o = i * 5, q = (now - B[o + 3]) / B[o + 4];
+        if (q >= 1) continue;
+        B[o + 1] -= sh;
+        if (w !== i) B.copyWithin(w * 5, o, o + 5);
+        const p = w * 5;
+        c.beginPath(); c.arc(B[p], B[p + 1], B[p + 2] * Math.sqrt(1 - q * q), 0, 6.2832); c.fill();
+        w++;
+      }
+      this.bn = w;
+      this.qn = 0;
+    }
+  };
+  Object.assign(K2.pigment, {
+    splat: (x, y, dx, dy, o) => Pigment.splat(x, y, dx, dy, o),
+    drop: (x, y, o) => Pigment.drop(x, y, o),
+    burst: (x, y, o) => Pigment.burst(x, y, o),
+    stats: () => ({ px: Math.round(Pigment.px), drops: Pigment.drops, points: Pigment.ln, awake: Pigment.awake, level: Pigment.lvl }),
+    X: PIG.X, XB: PIG.XB
   });
 
   /* ── 15 · Riso plates: two-plate generative art ──────────────────────────────
@@ -3395,7 +4060,7 @@ html.has-rig .pc {
     sec: $('#instances'), pin: $('.inst-pin'), boardEl: $('.board'), flood: $('.flood'), fc: null,
     nEl: $('#inst-n'), iEl: $('#inst-i'), rail: $$('.inst-bar .rail i'), dEl: $('#inst-d'), lEl: $('#inst-l'), copyEl: $('.inst-copy'),
     ds: $('.ds'), dsP: $('.ds-p'), dsD: $('.ds-d'), dsX: $('.ds-x'), dsY: $('.ds-y'), dsN: $$('.ds-n'), dsR: $('#ds-r'),
-    stages: [], tiles: [], live: false, top: 0, svh: 1, stage: -1, fp: -1, u: -1, size: 1, busy: false,
+    stages: [], tiles: [], live: false, top: 0, run: 1, svh: 1, stage: -1, fp: -1, u: -1, size: 1, busy: false,
     fw: 0, fh: 0, cols: 16, rows: 10, prev: null, ink: [], blue: [], dS: ['', '', '', '', ''],
     NODES: [[0, 1], [.25, .625], [.62, .25], [1, 0]],
     init() {
@@ -3471,6 +4136,7 @@ html.has-rig .pc {
     measure() {
       if (!this.live) return;
       this.top = this.sec.getBoundingClientRect().top + window.scrollY;
+      this.run = Math.max(1, this.sec.offsetHeight - this.pin.offsetHeight);
       this.u = -1; this.fp = -1;
     },
     tick(t) {
@@ -3647,11 +4313,15 @@ html.has-rig .pc {
     }
   };
 
-  /* Your Anthropometry: the frame, number, signature and live duration. Stage B renders the strokes
-     into K2.plate.canvas and reports K2.plate.setStats({ px, drops }) / setEmpty(false). */
+  /* Your Anthropometry: the visit printed as a plate. K2.pigment's strokes log (document px) is printed
+     in IKB on paper with a slight bleed and paper tooth: hero strokes at the top, true to the page's
+     aspect until the painted range is too tall to fit. The first print pulls in stroke by stroke. */
+  const seeded = s => () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const Ant = {
     name: 'plate', active: false,
-    el: $('#ant'), cv: $('.ant-cv'), no: $('#ant-no'), dur: $('#ant-dur'), px: $('#ant-px'), drops: $('#ant-drops'), sig: $('#ant-sig'), input: $('#ant-in'), ds: '',
+    el: $('#ant'), cv: $('.ant-cv'), no: $('#ant-no'), dur: $('#ant-dur'), px: $('#ant-px'), drops: $('#ant-drops'), sig: $('#ant-sig'), input: $('#ant-in'), msg: $('.ant-empty'), ds: '',
+    c: null, ink: null, ic: null, halo: null, hc: null, tooth: null, W: 0, H: 0, d: 1,
+    ver: -1, drawn: 0, rev: -1, t0: 0, last: -1e9, printed: false, mp: { a: 0, sy: 1, s: 1, m: 0, iw: 1 }, tail: new Map(),
     init() {
       let v = +session.get('k2:visit');
       if (!v) { v = Date.now(); session.set('k2:visit', String(v)); }
@@ -3663,7 +4333,18 @@ html.has-rig .pc {
         this.sig.textContent = s || 'Unsigned'; this.sig.classList.toggle('blank', !s);
       });
       setInterval(() => this.clock(), 1000);
+      this.c = this.cv.getContext('2d');
+      this.ink = mk('canvas'); this.ic = this.ink.getContext('2d');
+      this.halo = mk('canvas'); this.hc = this.halo.getContext('2d');
+      /* paper tooth: a tile of warm grey specks, multiplied over the whole print */
+      const n = mk('canvas'), nc = n.getContext('2d'), id = nc.createImageData(96, 96);
+      n.width = n.height = 96;
+      for (let i = 0; i < id.data.length; i += 4) { const g = 255 - Math.pow(Math.random(), 3) * 64; id.data[i] = g; id.data[i + 1] = g; id.data[i + 2] = g - 4; id.data[i + 3] = 255; }
+      nc.putImageData(id, 0, 0);
+      this.tooth = this.c.createPattern(n, 'repeat');
+      this.copy();
     },
+    copy() { this.msg.innerHTML = env.reduce ? 'The brush rests under reduced motion.<br>This plate stays unprinted.' : `No pigment yet.<br>${env.fine ? 'Move across the page' : 'Drag a finger across the page'} to paint.`; },
     clock() {
       if (!this.active || document.hidden) return;
       const s = Math.floor(performance.now() / 1000), txt = `${String(Math.floor(s / 60)).padStart(2, '0')} min ${String(s % 60).padStart(2, '0')} s`;
@@ -3674,11 +4355,128 @@ html.has-rig .pc {
       if (o.px != null) this.px.textContent = Math.round(o.px).toLocaleString('en-US');
       if (o.drops != null) this.drops.textContent = String(o.drops);
     },
-    setEmpty(b) { this.el.classList.toggle('empty', !!b); }
+    setEmpty(b) { this.el.classList.toggle('empty', !!b); },
+    layout() {
+      const w = this.cv.clientWidth, h = this.cv.clientHeight, d = DPR(2);
+      if (!w || !h) return;
+      const W = Math.round(w * d), H = Math.round(h * d);
+      if (W === this.W && H === this.H) return;
+      this.W = this.cv.width = this.ink.width = W; this.H = this.cv.height = this.ink.height = H; this.d = d;
+      this.halo.width = Math.max(1, Math.round(W / 6)); this.halo.height = Math.max(1, Math.round(H / 6));
+      this.ver = -1;
+    },
+    tick(t) {
+      if (!this.W) return false;
+      const L = Pigment;
+      if (this.rev >= 0) {
+        const p = clamp((t - this.t0) / 1400, 0, 1);
+        this.draw(Math.round(L.ln * (1 - (1 - p) * (1 - p))));
+        this.composite();
+        if (p >= 1) { this.rev = -1; this.ver = L.ver; }
+        return true;
+      }
+      if (L.ver === this.ver) return false;
+      if (t - this.last < 350) return true;
+      this.last = t;
+      this.print(t);
+      return this.rev >= 0;
+    },
+    print(t) {
+      const L = Pigment, n = L.ln;
+      this.setStats({ px: L.px, drops: L.drops });
+      this.setEmpty(!n);
+      this.frame();
+      if (n && !this.printed && !env.reduce) { this.printed = true; this.rev = 0; this.t0 = t; this.composite(); return; }
+      this.draw(n); this.composite();
+      this.ver = L.ver;
+    },
+    /* mapping: x across the viewport; y by document position, 1:1 with x while the painted range fits */
+    frame() {
+      const L = Pigment.log, n = Pigment.ln, W = this.W, H = this.H, m = Math.round(W * .07), iw = W - 2 * m, ih = H - 2 * m;
+      let y0 = Infinity, y1 = -Infinity;
+      for (let i = 0; i < n; i++) { const y = L[i * 5 + 1]; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      const sx = iw / Math.max(1, F.vw), need = ih / sx, pad = 90;
+      let a = 0, span = need;
+      if (n && y1 + pad > need) { a = Math.max(0, y0 - pad); span = Math.max(need, y1 + pad - a); }
+      const sy = ih / span;
+      Object.assign(this.mp, { a, sy, s: (sx + sy) / 2, m, iw });
+      this.ic.clearRect(0, 0, W, H);
+      this.drawn = 0; this.tail.clear();
+    },
+    /* the pigment layer, log items drawn → k (time order) */
+    draw(k) {
+      const L = Pigment.log, c = this.ic, mp = this.mp, d = this.d;
+      c.fillStyle = c.strokeStyle = C.blue; c.lineCap = c.lineJoin = 'round';
+      for (let i = this.drawn; i < k; i++) {
+        const o = i * 5, kind = L[o + 3], x = mp.m + L[o] * mp.iw, y = mp.m + (L[o + 1] - mp.a) * mp.sy, r = Math.max(.6 * d, L[o + 2] * mp.s);
+        if (kind === 1) { this.blot(c, x, y, r, i); continue; }
+        if (kind === 2) { this.splash(c, x, y, r, i); continue; }
+        /* strokes interleave in the log (several fingers): join each point to its own stroke's last one */
+        const sid = L[o + 4], q = this.tail.get(sid);
+        this.tail.set(sid, o);
+        if (q != null) {
+          c.lineWidth = r + Math.max(.6 * d, L[q + 2] * mp.s);
+          c.beginPath(); c.moveTo(mp.m + L[q] * mp.iw, mp.m + (L[q + 1] - mp.a) * mp.sy); c.lineTo(x, y); c.stroke();
+        } else { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); }
+        /* granulated pigment thrown off the stroke */
+        if (i % 3 === 0) {
+          const rnd = seeded(i * 7919 + 13);
+          for (let j = 0; j < 2; j++) { const a = rnd() * TAU, dd = r * (1.3 + rnd() * 1.6); c.beginPath(); c.arc(x + Math.cos(a) * dd, y + Math.sin(a) * dd, Math.max(.5 * d, r * (.08 + rnd() * .14)), 0, TAU); c.fill(); }
+        }
+      }
+      this.drawn = Math.max(this.drawn, k);
+    },
+    /* a click blot: a lumpy disc with satellites */
+    blot(c, x, y, R, i) {
+      const rnd = seeded(i * 104729 + 7), n = 16, px = [], py = [];
+      for (let k = 0; k < n; k++) { const a = k / n * TAU, rr = R * (.78 + .36 * rnd()); px.push(x + Math.cos(a) * rr); py.push(y + Math.sin(a) * rr); }
+      c.beginPath(); c.moveTo((px[n - 1] + px[0]) / 2, (py[n - 1] + py[0]) / 2);
+      for (let k = 0; k < n; k++) { const j = (k + 1) % n; c.quadraticCurveTo(px[k], py[k], (px[k] + px[j]) / 2, (py[k] + py[j]) / 2); }
+      c.fill();
+      for (let k = 0; k < 6; k++) { const a = rnd() * TAU, dd = R * (1.15 + rnd() * .9); c.beginPath(); c.arc(x + Math.cos(a) * dd, y + Math.sin(a) * dd, R * (.05 + rnd() * .13), 0, TAU); c.fill(); }
+    },
+    /* a strike burst: a core with tapered spikes, each ending in a drop */
+    splash(c, x, y, R, i) {
+      const rnd = seeded(i * 15485863 + 3);
+      this.blot(c, x, y, R * .5, i);
+      for (let k = 0; k < 12; k++) {
+        const a = k / 12 * TAU + (rnd() - .5) * .4, len = R * (1.1 + rnd() * 1.1), w = R * (.1 + rnd() * .06), ca = Math.cos(a), sa = Math.sin(a);
+        c.beginPath(); c.moveTo(x - sa * w, y + ca * w); c.lineTo(x + ca * len, y + sa * len); c.lineTo(x + sa * w, y - ca * w); c.fill();
+        c.beginPath(); c.arc(x + ca * len * 1.08, y + sa * len * 1.08, w * .7, 0, TAU); c.fill();
+      }
+    },
+    /* paper, folio ticks, bleed halo, pigment, tooth */
+    composite() {
+      const c = this.c, W = this.W, H = this.H, d = this.d, mp = this.mp;
+      c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+      c.fillStyle = C.paper; c.fillRect(0, 0, W, H);
+      /* specimen apparatus: where each section sits on the plate, and the scale */
+      c.fillStyle = 'rgba(14,14,16,.42)'; c.font = `${(7.5 * d).toFixed(1)}px "IBM Plex Mono", ui-monospace, monospace`; c.textBaseline = 'middle';
+      let last = '';
+      for (const f of Zones.folios) {
+        const y = mp.m + (f.top - mp.a) * mp.sy;
+        if (f.n === last || y < mp.m * .6 || y > H - mp.m * .6) continue;
+        last = f.n;
+        c.fillRect(mp.m * .22, Math.round(y), mp.m * .4, Math.max(1, d * .6));
+        c.fillText(f.n, mp.m * .22, y - 6 * d);
+      }
+      c.textAlign = 'right';
+      c.fillText('1:' + Math.max(1, Math.round(d / mp.sy)), W - mp.m * .3, H - mp.m * .45);
+      c.textAlign = 'left';
+      /* bleed: the pigment layer at 1/6 size, blown back up, under the crisp print */
+      const hw = this.halo.width, hh = this.halo.height;
+      this.hc.clearRect(0, 0, hw, hh); this.hc.drawImage(this.ink, 0, 0, hw, hh);
+      c.globalCompositeOperation = 'multiply';
+      c.globalAlpha = .42; c.drawImage(this.halo, 0, 0, hw, hh, d * .8, d * .8, W, H);
+      c.globalAlpha = 1; c.drawImage(this.ink, 0, 0);
+      c.globalAlpha = .34; c.fillStyle = this.tooth; c.fillRect(0, 0, W, H);
+      c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    }
   };
   K2.plate = {
     el: Ant.el, canvas: Ant.cv,
     setStats: o => Ant.setStats(o), setEmpty: b => Ant.setEmpty(b),
+    print: () => { Ant.ver = -1; S.wake(); },
     get number() { return 'ANT 4B–' + Ant.no.textContent; },
     get signature() { return Ant.input.value.trim(); },
     get visible() { return Ant.active; }
@@ -3717,8 +4515,11 @@ html.has-rig .pc {
     Loud.layout();
     Mail.fit();
     Case.layout();
+    Ant.layout();
+    Pigment.resize();
     navMid = nav.offsetHeight / 2;
     Zones.measure();
+    Pigment.measure();
     K2.hooks.forEach(fn => fn());
     if (Intro.running) Hero.pending = true;
     else if (env.reduce) Hero.rest();
@@ -3726,13 +4527,13 @@ html.has-rig .pc {
   }
   K2.layout = layout;
   /* pinned sections cache their document offsets: refresh when content above them changes height */
-  function measurePins() { Thresh.measure(); Board.measure(); }
+  function measurePins() { Thresh.measure(); Board.measure(); Pigment.measure(); }
   let rT = 0;
   addEventListener('resize', () => {
     clearTimeout(rT);
     rT = setTimeout(() => {
       if (innerWidth !== lastW || DESK.matches !== env.desk) { lastW = innerWidth; layout(); }
-      else { Zones.measure(); Hero.measure(); Strings.layout(); measurePins(); }
+      else { Zones.measure(); Hero.measure(); Strings.layout(); measurePins(); Pigment.resize(); }
       S.wake();
     }, 140);
   });
@@ -3742,6 +4543,7 @@ html.has-rig .pc {
   RM.addEventListener?.('change', () => {
     env.reduce = RM.matches;
     if (env.reduce) { Intro.skip(); killLenis(); Text.clear(); } else initLenis();
+    Pigment.motion(); Ant.copy(); Ant.ver = -1;
     layout();
   });
 
@@ -3766,9 +4568,10 @@ html.has-rig .pc {
   Loud.init();
   Mail.init();
   Ant.init();
+  Pigment.init();
   Rewind.init();
   syncSound();
-  [LenisSys, PointerSys, Intro, Hero, Strings, Text, Work, Case, Thresh, Board, Mail, Chrome, Arrive, Rig].forEach(s => S.add(s));
+  [LenisSys, PointerSys, Intro, Hero, Strings, Text, Work, Case, Thresh, Board, Pigment, Ant, Mail, Chrome, Arrive, Rig].forEach(s => S.add(s));
   layout();
   watch($('.hero'), Hero); watch(Strings.field, Strings); watch(Text.sec, Text);
   watch(Work.sec, Work); watch(Thresh.sec, Thresh); watch(Board.sec, Board); watch(Ant.el, Ant);
