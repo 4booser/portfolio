@@ -1,0 +1,10 @@
+{
+  "name": "preview-check",
+  "private": true,
+  "description": "Local copies of the exact library versions the previews load from jsDelivr, so Playwright can serve them when the CDN is unreachable.",
+  "dependencies": {
+    "gsap": "3.12.5",
+    "lenis": "1.1.13",
+    "matter-js": "0.19.0"
+  }
+}
