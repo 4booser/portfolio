@@ -3100,10 +3100,11 @@ void main () {
   for (int i = 0; i < 3; i++) { vec4 q = uFade[i]; if (vUv.x >= q.x && vUv.x <= q.z && vUv.y >= q.y && vUv.y <= q.w) k = keepFade; }
   gl_FragColor = min(r * k, vec4(cap));
 }`,
-    /* the print: a toothy screen-print threshold, then a 45° AM halftone for the drying edge, fixed to the paper */
+    /* the print: a toothy screen-print threshold, then a 45° AM halftone for the drying edge, fixed to the paper;
+       PROOF draws the same dye as 1px iso-lines of density instead (a topographic proof of the fluid) */
     disp: `uniform sampler2D uDye;
 uniform vec2 uPx, uView, srcTexel;
-uniform float uDpr, uOff, uCell, uWrap;
+uniform float uDpr, uOff, uCell, uWrap, uProof;
 uniform vec3 uX, uXB;
 uniform vec4 uR[3];
 float hash (vec2 p) { vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
@@ -3119,6 +3120,7 @@ void main () {
   float dist = length(fract(h) - .5) * uCell;
   float rad = .74 * uCell * sqrt(clamp((d - .05) / (T - .05), 0., 1.));
   float a = max(solid, clamp((rad - dist) * uDpr, 0., 1.));
+  if (uProof > .5) { float iso = abs(fract(d * 7.) - .5) / (7. * fw); a = clamp(1.4 - iso, 0., 1.) * .9; }
   vec3 X = uX;
   for (int i = 0; i < 3; i++) { vec4 r = uR[i]; if (vUv.x >= r.x && vUv.x <= r.z && vUv.y >= r.y && vUv.y <= r.w) X = uXB; }
   gl_FragColor = vec4(X * a, a);
@@ -3600,6 +3602,7 @@ void main () {
       gl.uniform1i(p.u.uDye, this.bind(d, 0));
       gl.uniform2f(p.u.uPx, 1 / this.W, 1 / this.H); gl.uniform2f(p.u.uView, this.vw, this.vh); gl.uniform2f(p.u.srcTexel, d.tx, d.ty);
       gl.uniform1f(p.u.uDpr, this.dpr); gl.uniform1f(p.u.uOff, this.off); gl.uniform1f(p.u.uCell, this.cell); gl.uniform1f(p.u.uWrap, this.wrap);
+      gl.uniform1f(p.u.uProof, Mode.s.proof ? 1 : 0);
       gl.uniform3f(p.u.uX, X[0] / 255, X[1] / 255, X[2] / 255); gl.uniform3f(p.u.uXB, XB[0] / 255, XB[1] / 255, XB[2] / 255);
       gl.uniform4fv(p.u.uR, this.rS);
       this.blit(null);
