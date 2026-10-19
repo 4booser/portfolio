@@ -90,6 +90,8 @@ html.rig-focus :focus-visible { outline-color: transparent; } /* the crop-mark r
 .lbl { color: var(--mute); }
 .idx { color: var(--mute); margin-right: .8em; font-variant-numeric: tabular-nums; }
 .lc { text-transform: none; }
+.nw { white-space: nowrap; }
+.rh-s { display: none; }
 .sr {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
@@ -685,11 +687,11 @@ html.has-rig .pc {
 .inst.live .inst-zone { display: block; position: absolute; left: 0; right: 0; top: 268svh; bottom: 0; pointer-events: none; }
 
 /* ── B8 Colophon: the LOUD band ───────────────────────────────────────────── */
-.band { background: var(--blue); color: var(--paper); }
+.band { position: relative; background: var(--blue); color: var(--paper); overflow: clip; } /* thrown sorts never leave the band */
 .band-in { padding-block: clamp(64px, 9vw, 130px) calc(env(safe-area-inset-bottom, 0px) + 24px); }
 .band .dot { background: var(--paper); }
 .band .dot::after { border-color: var(--paper); }
-.loud { margin-top: clamp(32px, 5vw, 80px); }
+.loud { position: relative; margin-top: clamp(32px, 5vw, 80px); }
 .ld {
   position: relative; isolation: isolate; display: block; white-space: nowrap;
   font-family: var(--f-display); font-weight: 400; text-transform: uppercase; line-height: .8; color: var(--paper);
@@ -699,9 +701,35 @@ html.has-rig .pc {
 .ld-t { display: inline-block; font-variation-settings: 'wdth' var(--w), 'wght' var(--g); }
 .lg { display: inline-block; }
 .ld-shelf { position: absolute; left: 0; right: 0; top: var(--base, 80%); z-index: -1; height: 1px; background: rgba(230, 231, 227, .34); }
+/* FIG.4 live: every sort is a rigid body; a fixed box per sort, so axis squash never reflows the line */
+.loud.phys .lg {
+  display: inline-flex; justify-content: center; width: var(--aw); position: relative; z-index: 1;
+  touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.loud.phys .lg.sp { touch-action: auto; pointer-events: none; }
+.loud.phys .lg.held { z-index: 3; }
+.ld-ev { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 2; pointer-events: none; }
+.loud .ld-ev .lg {
+  position: absolute; display: flex; justify-content: center; white-space: nowrap; width: var(--aw);
+  font-family: var(--f-display); text-transform: uppercase; line-height: .8; color: var(--paper);
+  transition: opacity .6s var(--ease);
+}
+.loud .ld-ev .lg.gone { opacity: 0; }
+/* the floor of the type case: knocked sorts pile on this hairline */
+.ld-floor {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px 24px;
+  margin-top: clamp(32px, 5vw, 84px); padding-top: 10px; border-top: 1px solid var(--hair-inv);
+  font-size: 10px; color: var(--mute-inv);
+}
+.ld-cap { min-width: 0; }
+.ld-cap .idx { color: var(--paper); }
+.ld-reset { padding: 6px 0; margin: -6px 0; color: var(--paper); white-space: nowrap; letter-spacing: .07em; }
+.ld-reset[hidden] { display: none; }
+.ld-reset:focus-visible { outline-offset: 3px; }
+@media (hover: hover) { .ld-reset:hover { text-decoration: underline; text-underline-offset: 3px; } }
 .mk {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px;
-  margin-top: clamp(28px, 4vw, 56px); padding-top: 18px; border-top: 1px solid var(--hair-inv);
+  margin-top: clamp(24px, 3.2vw, 48px); padding-top: 18px; border-top: 1px solid var(--hair-inv);
 }
 .mk-row {
   display: flex; align-items: baseline; gap: .32em; min-width: 0;
@@ -876,6 +904,8 @@ html.has-rig .pc {
   .tagrow { grid-template-columns: minmax(0, 1fr) auto; row-gap: 16px; }
   .tagline { grid-column: 1 / -1; }
   .marg, .manifesto, .figs, .figcap { grid-column: 1 / -1; }
+  .rh-l { display: none; }
+  .rh-s { display: inline; }
   .marg { flex-direction: row; flex-wrap: wrap; gap: 12px 24px; padding-top: 0; }
   .marg > div { flex: 1 1 140px; }
   .figs { gap: 10px; }
@@ -932,7 +962,7 @@ html.has-rig .pc {
     <span class="seal" aria-hidden="true">No.02</span>
     <div class="spec mono">
       <div class="cell"><span class="lbl"><span class="idx">01</span>4Booser Variable</span><span>Creative Developer</span></div>
-      <div class="cell"><span class="lbl"><span class="idx">02</span>Axes</span><span class="lc">wdth 50–150 · wght 100–900</span></div>
+      <div class="cell"><span class="lbl"><span class="idx">02</span>Axes</span><span class="lc"><span class="nw">wdth 50–150 ·</span> <span class="nw">wght 100–900</span></span></div>
       <div class="cell"><span class="lbl"><span class="idx">03</span>Set in</span><span>Remote, worldwide</span></div>
       <div class="cell"><span class="lbl"><span class="idx">04</span>Set at</span><span data-clock="flap">--:--:-- UTC</span></div>
     </div>
@@ -991,7 +1021,7 @@ html.has-rig .pc {
   </section>
 
   <!-- B4 · In use (4B—04): five voices, riso plates, title flight -->
-  <section class="work wrap" id="work" data-nav="paper" data-folio="04" data-title="In Use" aria-labelledby="work-h" tabindex="-1">
+  <section class="work wrap" id="work" data-nav="paper" data-folio="04" data-title="In Use" data-cursor="paint" aria-labelledby="work-h" tabindex="-1">
     <div class="rhead mono"><span class="rh-n">4B—04</span><h2 class="rh-t" id="work-h">In use</h2><i class="lead" aria-hidden="true"></i><span>05 plates</span></div>
     <div class="work-key mono" aria-hidden="true"><span>No.</span><span>Title, set in the client’s instance</span><span>Description · instance</span><span>Year</span><span>Plate</span></div>
     <ol class="rows">
@@ -1046,7 +1076,7 @@ html.has-rig .pc {
   </section>
 
   <!-- B5 · Threshold: into the O (paper → ink) -->
-  <section class="thresh" id="process" data-nav="paper" data-folio="05" data-title="Instances" aria-labelledby="thr-h" tabindex="-1">
+  <section class="thresh" id="process" data-nav="paper" data-folio="05" data-title="Instances" data-cursor="paint" aria-labelledby="thr-h" tabindex="-1">
     <div class="thr-pin wrap">
       <div class="thr-top mono" aria-hidden="true"><span>4B—05 Instances</span><span>Scroll into the O ↓</span></div>
       <h2 class="thr-h" id="thr-h"><span class="sr">How a project moves</span><span class="thr-a" aria-hidden="true"><span class="thr-t">How a project</span></span><span class="thr-b" aria-hidden="true"><span class="thr-t">Moves</span></span></h2>
@@ -1056,7 +1086,7 @@ html.has-rig .pc {
   </section>
 
   <!-- B6/B7 · Instances: split-flap board, designspace, flood to IKB (4B—05) -->
-  <section class="inst" id="instances" data-nav="ink" data-folio="05" data-title="Instances" aria-labelledby="inst-h">
+  <section class="inst" id="instances" data-nav="ink" data-folio="05" data-title="Instances" data-cursor="paint" aria-labelledby="inst-h">
     <div class="inst-pin">
       <div class="inst-in wrap">
         <div class="rhead mono"><span class="rh-n">4B—05</span><h2 class="rh-t" id="inst-h">Instances</h2><i class="lead" aria-hidden="true"></i><span>04 stages</span></div>
@@ -1087,19 +1117,23 @@ html.has-rig .pc {
       </div>
       <canvas class="flood" aria-hidden="true"></canvas>
     </div>
-    <span class="inst-zone" data-nav="blue" aria-hidden="true"></span>
+    <span class="inst-zone" data-nav="blue" data-folio="06" data-title="Colophon" aria-hidden="true"></span>
   </section>
 
   <!-- B8 · Colophon: the LOUD band (4B—06) -->
   <footer class="band" id="contact" data-nav="blue" data-folio="06" data-title="Colophon" aria-labelledby="col-h" tabindex="-1">
     <div class="band-in wrap">
-      <div class="rhead mono"><span class="rh-n">4B—06</span><h2 class="rh-t" id="col-h">Colophon</h2><i class="lead" aria-hidden="true"></i><span>Set in Anybody, Archivo, IBM Plex Mono</span></div>
+      <div class="rhead mono"><span class="rh-n">4B—06</span><h2 class="rh-t" id="col-h">Colophon</h2><i class="lead" aria-hidden="true"></i><span><span class="rh-l">Set in Anybody, Archivo, IBM Plex Mono</span><span class="rh-s">3 faces</span></span></div>
       <div class="loud" id="loud">
         <h3 class="sr" id="loud-h">Let’s make something loud.</h3>
-        <div class="ld-lines" aria-hidden="true">
+        <div class="ld-lines" aria-hidden="true" data-nodrop>
           <span class="ld" style="--w:50;--g:300"><span class="ld-t">Let’s make</span><i class="ld-shelf"></i></span>
           <span class="ld" style="--w:100;--g:600"><span class="ld-t">Something</span><i class="ld-shelf"></i></span>
           <span class="ld" style="--w:150;--g:900"><span class="ld-t">Loud.</span><i class="ld-shelf"></i></span>
+        </div>
+        <div class="ld-floor mono">
+          <span class="ld-cap"><span class="idx">FIG.4</span><span id="ld-cap">Type at rest</span></span>
+          <button class="ld-reset" id="ld-reset" type="button" data-cursor-label="Re-set" hidden>(Re-set type)</button>
         </div>
       </div>
       <form class="mk" id="mk" autocomplete="off">
@@ -1211,6 +1245,7 @@ html.has-rig .pc {
 <div class="toast mono" id="toast" role="status" aria-live="polite"></div>
 
 <script async id="lenis-js" src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script async id="matter-js" src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
 <script>
 /* ==========================================================================
    KINETIC II — runtime. One rAF scheduler drives every system: a read phase
@@ -1265,7 +1300,7 @@ html.has-rig .pc {
        K2.frame     { t, dt, y, dy, vel (px/s), vw, vh, max, p (0–1 page progress) }
        K2.pointer   Track { x, y, vx, vy, type, inside, seen, last } (mouse/pen; touch is per system)
        K2.zones     { list, folios, measure(), toneAt(docY), folioAt(docY) } — [data-nav] tones in doc px
-       K2.sound     { on, toggle(), pluck(i,gain,pan,oct), tick(gain), thud(xFrac,v), ding(), whoosh(), setLevel(p) }
+       K2.sound     { on, toggle(), pluck(i,gain,pan,oct), tick(gain), thud(xFrac,v), ding(), whoosh(), buzz(ms), setLevel(p) }
        K2.pigment   { enabled, mode ('webgl2'|'webgl'|'2d'|'off'), splat(x,y,dx,dy,o), drop(x,y,o), burst(x,y,o), stats(), X, XB }
                     viewport px; dx,dy = brush travel; o: { dye, radius, ghost (intro stroke, not logged), size (burst) }
        K2.scrollTo(target|y, { offset, duration, immediate, lock, focus, onComplete }) · K2.lockScroll(on) · K2.lenis
@@ -1273,12 +1308,13 @@ html.has-rig .pc {
        K2.intro { play({short}), skip(), running } · K2.hero { strike(i), letters } · K2.strings { pluck(tape, at, amp) }
        K2.onLayout(fn) · K2.layout() · K2.env · K2.footnotes · K2.util
        K2.work { open(i), close(), isOpen } — case sheet + title flight (html.case-open while open)
-       K2.loud { word, lines, sanitize(w), typeset(w), setWord(w), kick(), layout() } — stage C replaces setWord/kick
+       K2.loud { word, lines, sanitize(w), typeset(w), setWord(w), kick(), reset(), layout(), physics, stats() }
+                    setWord/kick run the FIG.4 physics when matter-js is live, else the static typeset
        K2.plate { el, canvas, setStats({ px, drops }), setEmpty(b), print(), number, signature, visible }
        K2.rewind.run() — kick, 2.4s scroll to the top, short calibration replay
      ──────────────────────────────────────────────────────────────────────── */
   const K2 = window.K2 = {
-    version: 'B',
+    version: 'C',
     env,
     util: { $, $$, clamp, lerp, smooth, pad3, mk, Track },
     lastInput: performance.now(),
@@ -1379,21 +1415,31 @@ html.has-rig .pc {
     root.classList.toggle('locked', lk);
     if (lenis) { if (lk) lenis.stop(); else lenis.start(); }
   };
-  /* native smooth scroll has no completion event everywhere: watch for arrival */
-  const Arrive = {
-    name: 'arrive', active: true, to: null, fn: null, t0: 0, ly: -1, still: 0,
-    start(y, fn) { this.to = y; this.fn = fn; this.t0 = performance.now(); this.ly = -1; this.still = 0; S.wake(); },
-    tick(t) {
-      if (this.to == null) return false;
-      this.still = Math.abs(F.y - this.ly) < .5 ? this.still + 1 : 0;
-      this.ly = F.y;
-      if (Math.abs(F.y - this.to) < 2 || this.still > 14 || t - this.t0 > 4000) {
-        const fn = this.fn; this.to = this.fn = null;
-        if (fn) fn();
-        return false;
-      }
-      return true;
-    }
+  /* native path (no Lenis): the scheduler tweens window scroll in its pre phase, so a timed run
+     (REWIND's 2.4s) scrubs every system on the way; any wheel, touch or key hands control back */
+  const ScrollTween = {
+    name: 'scroll-tween', active: true, on: false, y0: 0, y1: 0, t0: -1, dur: 1, ease: null, fn: null,
+    start(y, dur, ease, fn) {
+      this.y0 = window.scrollY; this.y1 = y; this.t0 = -1; this.dur = Math.max(1, dur); this.ease = ease; this.fn = fn;
+      if (!this.on) for (const ev of ['wheel', 'touchstart', 'keydown']) addEventListener(ev, this.cancel, { passive: true });
+      this.on = true; S.wake();
+    },
+    cancel: () => ScrollTween.stop(false),
+    stop(done) {
+      if (!this.on) return;
+      this.on = false;
+      for (const ev of ['wheel', 'touchstart', 'keydown']) removeEventListener(ev, this.cancel, { passive: true });
+      const fn = this.fn; this.fn = null;
+      if (done && fn) fn();
+    },
+    pre(t) {
+      if (!this.on) return;
+      if (this.t0 < 0) this.t0 = t;
+      const p = clamp((t - this.t0) / this.dur, 0, 1);
+      window.scrollTo(0, Math.round(lerp(this.y0, this.y1, this.ease(p))));
+      if (p >= 1) this.stop(true);
+    },
+    tick() { return this.on; }
   };
   const easeInOut = x => (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
   K2.scrollTo = (target, o = {}) => {
@@ -1409,8 +1455,7 @@ html.has-rig .pc {
       return;
     }
     if (env.reduce || o.immediate) { window.scrollTo(0, top); done(); return; }
-    window.scrollTo({ top, behavior: 'smooth' });
-    Arrive.start(top, done);
+    ScrollTween.start(top, (o.duration || 1.2) * 1000, o.easing || easeInOut, done);
   };
 
   /* ── 5 · Zones: section tones and folios in document px ────────────────── */
@@ -1419,7 +1464,7 @@ html.has-rig .pc {
     measure() {
       const y = window.scrollY;
       this.list = $$('[data-nav]').map(el => { const r = el.getBoundingClientRect(); return { el, top: r.top + y, bottom: r.bottom + y, tone: el.dataset.nav }; });
-      this.folios = $$('[data-folio]').map(el => { const r = el.getBoundingClientRect(); return { el, top: r.top + y, bottom: r.bottom + y, n: el.dataset.folio, title: el.dataset.title || '' }; });
+      this.folios = $$('[data-folio]').map(el => { const r = el.getBoundingClientRect(); return { el, h: r.height, top: r.top + y, bottom: r.bottom + y, n: el.dataset.folio, title: el.dataset.title || '' }; }).filter(f => f.h > 0).sort((a, b) => a.top - b.top);
       F.vw = innerWidth; F.vh = innerHeight;
       F.max = Math.max(1, root.scrollHeight - innerHeight);
     },
@@ -1503,26 +1548,38 @@ html.has-rig .pc {
       if (!this.on || !this.gate('p' + oct + '-' + i, 90)) return;
       this.play(this.ks[clamp(i | 0, 0, 6)], .5 * clamp(gain, .1, 1), pan, oct ? 2 : 1);
     },
-    /* soft mechanical tick (flaps, reels) */
+    /* soft mechanical tick (flaps, reels, hover): 6–9ms of noise through a random narrow band */
     tick(gain = 1) {
-      if (!this.on || !this.gate('tick', 24)) return;
+      if (!this.on || !this.gate('tick', 18)) return;
       const c = this.ctx, bp = c.createBiquadFilter();
-      bp.type = 'bandpass'; bp.frequency.value = 1900 + Math.random() * 700; bp.Q.value = 2.5;
-      const v = this.play(this.noise, .07 * gain, 0, 1, 0, .007);
+      bp.type = 'bandpass'; bp.frequency.value = 1800 + Math.random() * 800; bp.Q.value = 2 + Math.random() * 2;
+      const v = this.play(this.noise, (.06 + Math.random() * .04) * gain, 0, 1, 0, .006 + Math.random() * .003);
       if (v) { v.g.disconnect(); v.g.connect(bp); bp.connect(this.bus); v.src.addEventListener('ended', () => bp.disconnect()); }
     },
-    /* letterpress thud, panned by x (0–1 across the viewport) */
+    /* letterpress thud, panned by x (0–1 across the viewport): a falling sine plus a low-passed knock */
     thud(x = .5, v = 1) {
-      if (!this.on || !this.gate('thud', 30)) return;
-      const c = this.ctx, t = c.currentTime, o = c.createOscillator(), g = c.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(92, t); o.frequency.exponentialRampToValueAtTime(42, t + .14);
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.55 * clamp(v, .1, 1), t + .004); g.gain.exponentialRampToValueAtTime(.001, t + .2);
+      if (!this.on || this.voices > 12 || !this.gate('thud', 22)) return;
+      const c = this.ctx, t = c.currentTime, o = c.createOscillator(), g = c.createGain(), a = clamp(v, .1, 1);
+      o.type = 'sine'; o.frequency.setValueAtTime(70 + 40 * a, t); o.frequency.exponentialRampToValueAtTime(42, t + .14);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.55 * a, t + .004); g.gain.exponentialRampToValueAtTime(.001, t + .2);
       let out = g;
       o.connect(g);
       if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = clamp(x * 2 - 1, -1, 1) * .8; g.connect(p); out = p; }
       out.connect(this.bus);
+      const n = this.play(this.noise, .22 * a, 0, 1, t, .03);
+      if (n) {
+        const lp = c.createBiquadFilter();
+        lp.type = 'lowpass'; lp.frequency.value = 240 + 380 * (1 - a);
+        n.g.disconnect(); n.g.connect(lp); lp.connect(out === g ? this.bus : out);
+        n.src.addEventListener('ended', () => lp.disconnect());
+      }
+      this.voices++;
       o.start(t); o.stop(t + .22);
-      o.onended = () => { o.disconnect(); g.disconnect(); if (out !== g) out.disconnect(); };
+      o.onended = () => { this.voices--; o.disconnect(); g.disconnect(); if (out !== g) out.disconnect(); };
+    },
+    /* a short haptic where the device has one (Android), only in instrument mode */
+    buzz(ms) {
+      if (this.on && !env.fine && navigator.vibrate && this.gate('buzz', 45)) { try { navigator.vibrate(ms); } catch (e) { /* not allowed here */ } }
     },
     /* two-note ding (copy) */
     ding() {
@@ -1582,7 +1639,7 @@ html.has-rig .pc {
       K2.toast(env.fine ? 'Selected. Press Ctrl+C or ⌘C to copy' : 'Selected — long-press to copy');
       resolve(false);
     };
-    try { navigator.clipboard.writeText(text).then(() => { K2.toast('Copied'); Sound.ding(); resolve(true); }, fallback); }
+    try { navigator.clipboard.writeText(text).then(() => { K2.toast('Copied'); Sound.ding(); Sound.buzz([8, 30, 8]); resolve(true); }, fallback); }
     catch (e) { fallback(); }
   });
   const Clock = {
@@ -1719,7 +1776,7 @@ html.has-rig .pc {
     /* resolve what the pointer (or keyboard focus) is over */
     set(node, isFocus) {
       if (this.focus && !isFocus) return;
-      const t = node && node.closest ? node.closest(RIG_SEL) : null;
+      const t = node && node.closest ? node.closest(RIG_SEL) : null, was = this.src;
       this.src = t; this.kind = 'base'; this.label = ''; this.paint = false;
       if (!t) return;
       const dc = t.dataset.cursor;
@@ -1727,6 +1784,8 @@ html.has-rig .pc {
       else if (!isFocus && (dc === 'chip' || dc === 'paint')) { this.kind = 'chip'; this.paint = dc === 'paint'; this.label = t.dataset.cursorLabel || ''; }
       else if (!isFocus && dc === 'hide') this.kind = 'hide';
       else { this.kind = 'el'; this.label = t.dataset.cursorLabel || this.verb(t); }
+      /* instrument mode: the marks click softly as they lock onto a new control */
+      if (t !== was && (this.kind === 'el' || this.kind === 'glyph')) Sound.tick(.3);
     },
     verb(t) {
       const tag = t.tagName;
@@ -1779,7 +1838,7 @@ html.has-rig .pc {
       /* chip: live axes over glyphs, the action verb over controls */
       let lab = this.label;
       if (this.kind === 'glyph' && !lab && this.src) lab = this.axes(this.src);
-      else if (this.kind === 'chip' && this.paint) lab = K2.pigment.enabled ? 'Paint' : '';
+      else if (this.kind === 'chip' && this.paint) lab = Pigment.gain(P.x, P.y) > 0 ? 'Paint' : '';
       else if (this.kind === 'base' || this.kind === 'hide') lab = '';
       if (lab !== this.chipS) { this.chip.textContent = lab; this.chipS = lab; }
       const on = !!lab;
@@ -4204,21 +4263,21 @@ void main () {
     }
   };
 
-  /* ── 21 · B8 Colophon: the typeset headline and MAKE ___ LOUD ────────────────
-     LET'S MAKE / SOMETHING / LOUD. as three fitted lines in paper, real text
-     at rest (stage C hangs the physics on .lg glyphs and .ld-shelf lines).
-     K2.loud.setWord(word) is the single entry point for the word swap; its
-     static version re-sets the middle line in the DOM.                    */
+  /* ── 21 · B8 Colophon: LOUD — the typeset headline, FIG.4, MAKE ___ LOUD ─────
+     LET'S MAKE / SOMETHING / LOUD. are three fitted lines in paper: real text,
+     and the whole statement without JS, without matter-js or under reduced
+     motion. Loud owns the typesetting; Phys (below) hangs rigid bodies on the
+     same glyph spans when it can.                                          */
   const Loud = {
     el: $('#loud'), lines: [], word: 'SOMETHING', h: $('#loud-h'), live: $('#loud-live'), mail: $('#mailto'),
     form: $('#mk'), input: $('#mk-in'), chips: $$('#mk .chip'), typeT: 0,
     init() {
-      this.lines = $$('.ld', this.el).map(ld => {
-        const t = $('.ld-t', ld), ln = { el: ld, t, shelf: $('.ld-shelf', ld), probe: mk('i', 'probe'), glyphs: [], w: +ld.style.getPropertyValue('--w'), g: +ld.style.getPropertyValue('--g'), fs: 0, base: 0 };
+      this.lines = $$('.ld', this.el).map((ld, i) => {
+        const t = $('.ld-t', ld), ln = { i, el: ld, t, shelf: $('.ld-shelf', ld), probe: mk('i', 'probe'), glyphs: [], w: +ld.style.getPropertyValue('--w'), g: +ld.style.getPropertyValue('--g'), fs: 0, base: 0 };
         this.split(ln, t.textContent);
         return ln;
       });
-      this.chips.forEach(c => c.addEventListener('click', () => { this.input.value = ''; K2.loud.setWord(c.textContent); }));
+      this.chips.forEach(c => { c.dataset.cursorLabel = 'Set'; c.addEventListener('click', () => { this.input.value = ''; K2.loud.setWord(c.textContent); }); });
       this.form.addEventListener('submit', e => { e.preventDefault(); clearTimeout(this.typeT); this.submit(); });
       this.input.addEventListener('input', () => {
         const v = this.input.value, s = v.replace(/[^A-Za-z0-9 ]+/g, '');
@@ -4228,10 +4287,14 @@ void main () {
       });
     },
     submit() { const w = this.sanitize(this.input.value); if (w && w !== this.word) K2.loud.setWord(w); },
+    /* one span per sort; a space is a non-breaking space so it keeps its width inside an inline box */
     split(ln, text) {
       ln.t.textContent = '';
       ln.glyphs = [];
-      for (const ch of text) { const g = mk('span', 'lg', ch); ln.t.appendChild(g); ln.glyphs.push(g); }
+      for (const ch of text) {
+        const sp = ch === ' ', g = mk('span', sp ? 'lg sp' : 'lg', sp ? ' ' : ch);
+        ln.t.appendChild(g); ln.glyphs.push(g);
+      }
       ln.t.appendChild(ln.probe);
     },
     sanitize: w => String(w || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 12),
@@ -4240,11 +4303,16 @@ void main () {
       ln.base = ln.probe.getBoundingClientRect().top - ln.el.getBoundingClientRect().top;
       ln.shelf.style.top = ln.base.toFixed(1) + 'px';
     },
-    /* every line fitted to the measure, except the whisper: LET'S MAKE never sets larger than SOMETHING */
+    /* every line fitted to the measure, then the crescendo is enforced: the middle word never sets
+       larger than .8 of LOUD. (a short word keeps its size and sits flush left), the whisper never
+       larger than the middle word */
     layout() {
+      Phys.unfix();
+      const [a, b, c] = this.lines;
       this.lines.forEach(ln => this.fitLine(ln));
-      const a = this.lines[0], b = this.lines[1];
+      if (b.fs > c.fs * .8) { b.el.style.fontSize = (c.fs * .8).toFixed(2) + 'px'; this.fitLine(b, c.fs * .8); }
       if (a.fs > b.fs) { a.el.style.fontSize = b.fs.toFixed(2) + 'px'; this.fitLine(a, b.fs); }
+      Phys.measure();
     },
     /* the static swap: re-set the middle line, then tell everyone */
     typeset(word) {
@@ -4253,16 +4321,16 @@ void main () {
       this.word = w;
       this.split(this.lines[1], w);
       this.layout();
-      const phrase = `Let’s make ${w.toLowerCase()} loud.`;
+      const lw = w.toLowerCase(), phrase = `Let’s make ${lw} loud.`;
       this.h.textContent = phrase; this.live.textContent = phrase;
-      this.mail.href = `mailto:hello@4booser.dev?subject=${encodeURIComponent(`Let’s make ${w.toLowerCase()} loud`)}`;
-      this.mail.textContent = `Write: make ${w.toLowerCase()} loud ↗`;
+      this.mail.href = `mailto:hello@4booser.dev?subject=${encodeURIComponent(`Let’s make ${lw} loud`)}`;
+      this.mail.textContent = `Write: make ${lw} loud ↗`;
       this.chips.forEach(c => c.setAttribute('aria-pressed', String(this.sanitize(c.textContent) === w)));
       this.input.placeholder = w;
       Sound.tick(1);
       return true;
     },
-    /* static kick: every sort hops once, left to right (the physics stage replaces it) */
+    /* without physics: every sort hops once, left to right */
     kick() {
       if (env.reduce) return;
       let j = 0;
@@ -4271,14 +4339,565 @@ void main () {
       }));
     }
   };
+
+  /* ── FIG.4 Re-set type: spring-homed sorts (matter-js 0.19) ─────────────────
+     Every glyph is a rigid body, its ink box standing on its line's baseline,
+     held home by a damped velocity spring; the DOM letters stay the real text
+     and are placed from body transforms (fixed boxes, so axis squash never
+     reflows a line). World = .loud's box in px; engine gravity is off and
+     applied per state, so home sorts float exactly at home and can sleep.
+       wait  parked above the band (clipped), released as its line scrolls in
+       fall  drops straight onto its own shelf only, upright; lands → home
+       home  spring + angular spring; brushes wobble it, a fast hit snaps it
+       loose walls, floor, every other sort; passes through the shelves
+       fly   tweened home with collisions off (Re-set, 9s idle)
+       out   an evicted word's sort: loose, then fades
+     Custom pointer drag (a Matter constraint to the pointer), never
+     MouseConstraint: its Mouse cancels wheel and touch, which kills scroll. */
+  const CAT = { WALL: 1, FLOOR: 2, SHELF: [4, 8, 16], GLYPH: 32, FALL: 64 };
+  const PH = {
+    STEP: 1000 / 60, G: .55,                        /* fixed step (ms); gravity, px/step² */
+    KX: .06, KY: .045, CV: .1, KA: .05, CA: .14,    /* home spring (per step²) and damping (per step) */
+    SQK: .16, SQC: .3,                              /* axis-squash spring */
+    KNOCK: 1.6, FLING: .8, VMAX: 38, VFALL: 34,     /* pointer px/ms; body px/step caps */
+    IDLE: 9000, LAG: [42, 42, 95], GAP: 130
+  };
+  const easeOutBack = x => { const c = 1.9, y = x - 1; return 1 + (c + 1) * y * y * y + c * y * y; };
+  const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
+  const Phys = {
+    name: 'loud', active: false,
+    el: Loud.el, band: $('.band'), floorEl: $('.ld-floor'), capEl: $('#ld-cap'), btn: $('#ld-reset'), evL: null,
+    M: null, E: null, live: false, G: [], ev: [], statics: [], queue: [], rel: [false, false, false],
+    armed: true, kicked: false, keep: false, rest: false, now: 0, acc: 0, flip: 0, invite: 0, invited: false,
+    lx: 0, docTop: 0, vy0: 0, bandTop: 0, wallL: 0, wallR: 0, floorY: 0, lastTouch: 0, idleT: 0, capS: '',
+    drag: null, track: new Track(), V: { x: 0, y: 0 }, slab: { t0: 0, t1: 1 }, mc: null, hops: [],
+    /* matter-js arrived (or motion allowed again): build the world over the typeset lines */
+    boot() {
+      if (this.live || env.reduce || typeof window.Matter !== 'object' || !Loud.lines.length) return;
+      const M = this.M = window.Matter;
+      try {
+        this.E = M.Engine.create({ enableSleeping: true, positionIterations: 8, velocityIterations: 6 });
+        this.E.gravity.y = 0;
+        M.Events.on(this.E, 'collisionStart', ev => { const ps = ev.pairs; for (let i = 0; i < ps.length; i++) this.hit(ps[i]); });
+      } catch (e) { this.M = this.E = null; return; }
+      if (!this.evL) {
+        this.evL = mk('div', 'ld-ev'); this.evL.setAttribute('aria-hidden', 'true'); this.el.appendChild(this.evL);
+        this.el.addEventListener('pointerdown', e => this.down(e));
+        this.el.addEventListener('pointermove', e => this.move(e));
+        for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) this.el.addEventListener(ev, e => this.up(e));
+        this.btn.addEventListener('click', () => this.reset(true));
+      }
+      this.live = true; this.armed = !this.invited; this.rel.fill(false);
+      this.btn.hidden = false;
+      Loud.layout();
+      S.wake();
+    },
+    /* reduced motion switched on: back to the static typeset */
+    kill() {
+      if (!this.live) return;
+      this.letGo(true);
+      this.G.forEach(g => { g.el.style.transform = g.el.style.fontVariationSettings = ''; delete g.el.dataset.cursor; g.el._g = null; });
+      this.ev.forEach(g => g.el.remove());
+      this.G = []; this.ev = []; this.queue = []; this.hops = []; this.statics = [];
+      this.M.Composite.clear(this.E.world, false); this.M.Engine.clear(this.E);
+      this.live = false; this.btn.hidden = true;
+      this.el.classList.remove('phys');
+      Loud.layout(); this.caption();
+    },
+    /* before the lines are fitted: natural advances, no transforms */
+    unfix() {
+      if (!this.live) return;
+      this.el.classList.remove('phys');
+      for (const g of this.G) { g.el.style.transform = ''; g.tf = null; }
+    },
+    /* after the lines are fitted: homes, bodies, shelves, floor, walls (all in .loud px) */
+    measure() {
+      this.caption();
+      if (!this.live) return;
+      const M = this.M, W = this.E.world, R = this.el.getBoundingClientRect(), B = this.band.getBoundingClientRect();
+      this.lx = R.left; this.docTop = R.top + window.scrollY; this.vy0 = R.top;
+      this.bandTop = B.top - R.top; this.wallL = B.left - R.left; this.wallR = B.right - R.left;
+      this.floorY = this.floorEl.getBoundingClientRect().top - R.top;
+      const keep = this.keep, seen = new Set(), bases = [];
+      Loud.lines.forEach((ln, li) => {
+        const lr = ln.el.getBoundingClientRect(), base = lr.top - R.top + ln.base;
+        bases.push(base);
+        ln.glyphs.forEach(el => {
+          const r = el.getBoundingClientRect(), bx = r.left - R.left, by = r.top - R.top;
+          el.style.setProperty('--aw', r.width.toFixed(2) + 'px');
+          if (el.classList.contains('sp')) return;
+          const ink = this.ink(el.textContent, ln, r.width);
+          const top = base - ink.a, bot = Math.min(base + Math.min(ink.d, 0), base) - .5;
+          const w = Math.max(4, ink.r - ink.l), h = Math.max(4, bot - top), cx = ink.l + w / 2, hx = bx + cx, hy = top + h / 2;
+          let g = el._g;
+          if (!g) {
+            g = el._g = { el, li, ch: el.textContent, dot: /[.,]/.test(el.textContent), b: null, inW: false, state: 'wait', w: 0, h: 0, hx, hy, bx, by, fs: 0,
+              baseW: ln.w, baseG: ln.g, sq: 0, sqv: 0, bold: 0, tf: null, fv: null, I: 0, x0: 0, y0: 0, a0: 0, t0: 0, dur: 0, lift: 0, hitT: -1e9, outT: 0 };
+            el.dataset.cursor = 'throw'; el.dataset.cursorLabel = 'Throw';
+            this.G.push(g);
+            if (keep) g.fresh = true;
+          }
+          const moved = Math.abs(g.hx - hx) + Math.abs(g.hy - hy);
+          g.li = li; g.bx = bx; g.by = by; g.fs = ln.fs; g.baseW = ln.w; g.baseG = ln.g; g.float = base - bot > 3;
+          el.style.transformOrigin = `${cx.toFixed(2)}px ${(hy - by).toFixed(2)}px`;
+          if (!g.b || Math.abs(g.w - w) > .5 || Math.abs(g.h - h) > .5) this.body(g, w, h, hx, hy);
+          g.hx = hx; g.hy = hy;
+          if (!keep || g.fresh) { this.place(g, this.armed || g.fresh ? 'wait' : 'home'); g.fresh = false; }
+          else if (g.state === 'home' && moved > .5) this.fly(g, 0, 380);
+          seen.add(g);
+        });
+      });
+      this.G = this.G.filter(g => seen.has(g)).sort((a, b) => a.li - b.li || a.hx - b.hx);
+      if (!keep) { this.queue.length = 0; this.hops.length = 0; this.ev.forEach(g => this.drop(g)); this.ev = []; if (this.armed) this.rel.fill(false); }
+      Loud.lines.forEach((ln, li) => { if ((!this.armed || this.rel[li]) && this.G.some(g => g.li === li && g.state === 'wait' && !g.q)) this.enqueue(li, this.now); });
+      /* the static world: walls at the band edges, a thick floor under the hairline, one shelf per baseline */
+      this.statics.forEach(s => M.Composite.remove(W, s));
+      const span = this.wallR - this.wallL, hi = this.bandTop - 4000, lo = this.floorY + 600;
+      const st = (x, y, w, h, cat, kind) => M.Bodies.rectangle(x, y, w, h, { isStatic: true, friction: .6, collisionFilter: { category: cat, mask: CAT.GLYPH | CAT.FALL }, label: kind });
+      this.statics = [
+        st(this.wallL - 200, (hi + lo) / 2, 400, lo - hi, CAT.WALL, 'wall'),
+        st(this.wallR + 200, (hi + lo) / 2, 400, lo - hi, CAT.WALL, 'wall'),
+        st((this.wallL + this.wallR) / 2, this.floorY + 300, span + 800, 600, CAT.FLOOR, 'floor')
+      ].concat(bases.map((b, i) => { const s = st((this.wallL + this.wallR) / 2, b + 40, span, 80, CAT.SHELF[i], 'shelf'); s._shelf = i; return s; }));
+      M.Composite.add(W, this.statics);
+      this.el.classList.add('phys');
+      this.rest = false;
+      this.render();
+      S.wake();
+    },
+    /* the page above moved: refresh the document offset only */
+    pos() { if (this.live) this.docTop = this.el.getBoundingClientRect().top + window.scrollY; },
+    /* ink box of one sort at its line's instance (canvas metrics, trued to the DOM advance) */
+    ink(ch, ln, adv) {
+      const c = this.mc || (this.mc = mk('canvas').getContext('2d'));
+      c.font = cfont(ln.w, ln.g, ln.fs);
+      const m = c.measureText(ch), k = m.width > 0 ? adv / m.width : 1;
+      if (!(m.actualBoundingBoxAscent > 0)) return { l: adv * .06, r: adv * .94, a: ln.fs * Hero.cap, d: 0 };
+      return { l: -(m.actualBoundingBoxLeft || 0) * k, r: (m.actualBoundingBoxRight || m.width) * k, a: m.actualBoundingBoxAscent, d: m.actualBoundingBoxDescent || 0 };
+    },
+    body(g, w, h, x, y) {
+      const M = this.M;
+      if (g.b && g.inW) M.Composite.remove(this.E.world, g.b);
+      const r = g.dot ? Math.min(w, h) * .45 : Math.min(4, w * .12, h * .12);
+      g.b = M.Bodies.rectangle(x, y, w, h, {
+        chamfer: { radius: r }, friction: g.dot ? .3 : .45, frictionStatic: .8, frictionAir: .012, restitution: g.dot ? .42 : .18,
+        density: .0011 + .0007 * g.baseG / 900, slop: .02, sleepThreshold: 40
+      });
+      g.b._g = g; g.I = g.b.inertia; g.w = w; g.h = h; g.inW = false;
+    },
+    filter(g) {
+      const f = g.b.collisionFilter, s = g.state;
+      f.category = s === 'fall' ? CAT.FALL : CAT.GLYPH;
+      f.mask = s === 'fall' ? CAT.SHELF[g.li] : s === 'fly' ? 0 : s === 'out' ? CAT.FLOOR
+        : s === 'home' ? CAT.WALL | CAT.FLOOR | CAT.GLYPH | CAT.SHELF[g.li] : CAT.WALL | CAT.FLOOR | CAT.GLYPH;
+    },
+    world(g, on) {
+      if (on === g.inW) return;
+      g.inW = on;
+      if (on) this.M.Composite.add(this.E.world, g.b); else this.M.Composite.remove(this.E.world, g.b);
+    },
+    /* put a sort at home (or park it for the drop) with no motion */
+    place(g, state) {
+      const M = this.M, b = g.b, V = this.V;
+      g.state = state; g.sq = g.sqv = g.bold = 0; g.q = false;
+      V.x = g.hx; V.y = g.hy; M.Body.setPosition(b, V); M.Body.setAngle(b, 0);
+      V.x = V.y = 0; M.Body.setVelocity(b, V); M.Body.setAngularVelocity(b, 0);
+      M.Body.setInertia(b, g.I);
+      this.filter(g); this.world(g, state !== 'wait');
+      if (state !== 'wait') M.Sleeping.set(b, false);
+    },
+    caption() {
+      let s = env.reduce ? 'Type at rest (reduced motion)' : 'Type at rest';
+      if (this.live) {
+        const n = this.G.length, loose = this.G.reduce((k, g) => k + (g.state === 'loose' ? 1 : 0), 0);
+        s = `${String(n).padStart(2, '0')} sorts on springs · ${loose ? String(loose).padStart(2, '0') + ' loose' : 'throw one'}`;
+      }
+      if (s !== this.capS) { this.capEl.textContent = s; this.capS = s; }
+    },
+    touch() { this.lastTouch = performance.now(); clearTimeout(this.idleT); this.rest = false; markInput(); S.wake(); },
+
+    /* ── the drop: each line falls in as it scrolls into view, LOUD. last and heaviest ── */
+    enqueue(li, at) {
+      const last = this.queue.length ? this.queue[this.queue.length - 1].at + PH.GAP : at;
+      let t = Math.max(at, last);
+      for (const g of this.G) if (g.li === li && g.state === 'wait' && !g.q) { g.q = true; this.queue.push({ g, at: t }); t += PH.LAG[li]; }
+      this.rel[li] = true;
+    },
+    trigger() {
+      if (!this.armed) return;
+      for (const g of this.G) if (!this.rel[g.li] && this.vy0 + g.hy < F.vh) { this.enqueue(g.li, this.now); this.rest = false; }
+      if (this.rel[0] && this.rel[1] && this.rel[2]) this.armed = false;
+    },
+    launch(g) {
+      const M = this.M, b = g.b, V = this.V, top = Math.max(this.bandTop, -this.vy0);
+      V.x = g.hx; V.y = Math.min(g.hy - g.h - 8, top - g.h / 2 - 24 - Math.random() * 60);
+      M.Body.setPosition(b, V); M.Body.setAngle(b, 0);
+      V.x = 0; V.y = 6; M.Body.setVelocity(b, V); M.Body.setAngularVelocity(b, 0);
+      M.Body.setInertia(b, Infinity);
+      g.q = false; g.state = 'fall'; this.filter(g); this.world(g, true); M.Sleeping.set(b, false);
+    },
+    land(g, rv) {
+      const M = this.M, L = clamp(rv / 22, .35, 1) * (g.li === 2 ? 1 : .8);
+      g.state = 'home'; this.filter(g); M.Body.setInertia(g.b, g.I);
+      g.sqv += .5 * L + (g.li === 2 ? .3 : 0);
+      this.sound(g, L);
+      /* LOUD. lands heavy: the lines above it jolt */
+      if (g.li === 2) for (const o of this.G) if (o.li < 2 && o.state === 'home') { M.Sleeping.set(o.b, false); this.V.x = o.b.velocity.x; this.V.y = -1.1 * L; M.Body.setVelocity(o.b, this.V); }
+      if (!this.invited && g.li === 2 && !this.queue.length && this.G.every(o => o.state !== 'fall' && o.state !== 'wait')) { this.invited = true; this.invite = this.now + 650; }
+    },
+    /* the invitation: the full stop falls off LOUD., bounces and rolls */
+    nudge() {
+      const g = this.G.filter(o => o.li === 2 && o.dot).pop();
+      if (!g || g.state !== 'home') return;
+      this.loosen(g, -.6, -7.5, -.2);
+      this.lastTouch = performance.now();
+    },
+
+    /* ── state changes ── */
+    loosen(g, vx, vy, w) {
+      const M = this.M, b = g.b, V = this.V;
+      if (!g.inW) { this.place(g, 'home'); }
+      g.state = g.state === 'out' ? 'out' : 'loose'; this.filter(g); M.Body.setInertia(b, g.I);
+      M.Sleeping.set(b, false);
+      const s = Math.hypot(vx, vy), k = s > PH.VMAX ? PH.VMAX / s : 1;
+      V.x = vx * k; V.y = vy * k; M.Body.setVelocity(b, V); M.Body.setAngularVelocity(b, w);
+      this.rest = false;
+    },
+    fly(g, delay, dur) {
+      const b = g.b;
+      if (!g.inW) { this.place(g, 'home'); return; }
+      g.x0 = b.position.x; g.y0 = b.position.y; g.a0 = wrapA(b.angle); g.t0 = this.now + delay; g.dur = dur;
+      g.lift = Math.min(140, Math.hypot(g.hx - g.x0, g.hy - g.y0) * .3); g.bold0 = g.bold;
+      g.state = 'fly'; this.filter(g); this.M.Body.setInertia(b, g.I);
+      this.rest = false;
+    },
+    flyStep(g) {
+      const M = this.M, b = g.b, V = this.V, p = clamp((this.now - g.t0) / g.dur, 0, 1), e = easeOutBack(p);
+      V.x = lerp(g.x0, g.hx, e); V.y = lerp(g.y0, g.hy, e) - Math.sin(Math.PI * Math.min(p * 1.1, 1)) * g.lift;
+      M.Body.setPosition(b, V); M.Body.setAngle(b, lerp(g.a0, 0, Math.min(1, e)));
+      V.x = V.y = 0; M.Body.setVelocity(b, V); M.Body.setAngularVelocity(b, 0);
+      g.bold = g.bold0 * (1 - p);
+      if (p >= 1) { this.place(g, 'home'); g.sqv += .25; this.caption(); }
+    },
+    /* (Re-set type) and the 9s idle: every displaced sort flies home in a cascade; if all are home,
+       a proof ripple runs through the case so the button always answers */
+    reset(manual) {
+      let j = 0, any = false;
+      for (const g of this.G) {
+        if (g.state === 'wait' || g.state === 'fall') continue;
+        const off = Math.abs(g.b.position.x - g.hx) + Math.abs(g.b.position.y - g.hy) + Math.abs(wrapA(g.b.angle)) * 40;
+        if (g.state === 'loose' || off > 2) { this.fly(g, j++ * 22, 650); any = true; }
+      }
+      this.ev.forEach(g => { g.outT = Math.min(g.outT, this.now); });
+      if (!any && manual && !this.hops.length) { let at = this.now; for (const g of this.G) if (g.state === 'home') { this.hops.push({ g, at }); at += 26; } }
+      if (manual) { Sound.tick(.8); this.touch(); }
+      this.rest = false; S.wake();
+    },
+    /* REWIND: every sort gets an upward kick and gravity turns over for a moment */
+    kick() {
+      this.letGo(true); this.hops.length = 0;
+      for (const g of this.G) {
+        if (g.state === 'wait') continue;
+        this.loosen(g, (Math.random() - .5) * 8, -(20 + Math.random() * 12), (Math.random() - .5) * .45);
+      }
+      this.flip = 520; this.kicked = true; this.queue.length = 0; this.armed = false;
+      this.touch();
+    },
+    /* back to the parked state, ready to drop again (after REWIND, once the band is out of sight) */
+    rearm() {
+      this.letGo(true);
+      this.kicked = false; this.flip = 0; this.invite = 0; this.queue.length = 0; this.hops.length = 0;
+      this.armed = true; this.rel.fill(false);
+      this.ev.forEach(g => this.drop(g)); this.ev = [];
+      this.G.forEach(g => this.place(g, 'wait'));
+      this.render(); this.caption();
+    },
+    /* MAKE ___ LOUD: the middle word's sorts are kicked off the shelf, the new word drops in */
+    swap(word) {
+      const w = Loud.sanitize(word);
+      if (!w || w === Loud.word) return false;
+      for (const g of this.G) if (g.li === 1) this.evict(g);
+      this.G = this.G.filter(g => g.li !== 1);
+      this.keep = true;
+      Loud.typeset(w);
+      this.keep = false;
+      Sound.whoosh();
+      this.touch();
+      return true;
+    },
+    evict(g) {
+      const el = g.el, s = el.style;
+      el._g = null; delete el.dataset.cursor;
+      if (this.drag && this.drag.g === g) this.letGo(true);
+      if (!g.inW) { el.remove(); return; }
+      s.left = g.bx.toFixed(2) + 'px'; s.top = g.by.toFixed(2) + 'px';
+      s.height = (g.fs * .8).toFixed(2) + 'px'; s.fontSize = g.fs.toFixed(2) + 'px';
+      g.fv = null;
+      this.evL.appendChild(el);
+      g.state = 'out';
+      const side = g.hx < (this.wallL + this.wallR) / 2 ? -1 : 1;
+      this.loosen(g, side * (2 + Math.random() * 7), -(9 + Math.random() * 7), (Math.random() - .5) * .5);
+      g.outT = this.now + 1100;
+      this.ev.push(g);
+      if (this.ev.length > 36) this.drop(this.ev.shift());
+    },
+    drop(g) { if (g.b) this.world(g, false); g.el.remove(); },
+
+    /* ── input: brush (fine pointers), drag + throw (mouse, pen, touch on the letters only) ── */
+    down(e) {
+      if (!this.live || this.drag || e.button > 0) return;
+      const el = e.target.closest && e.target.closest('.lg'), g = el && el._g;
+      if (!g || !g.inW || g.state === 'fall') return;
+      if (e.pointerType === 'mouse') e.preventDefault();
+      try { el.setPointerCapture(e.pointerId); } catch (x) { /* capture is best effort */ }
+      const M = this.M, b = g.b;
+      if (g.state === 'fly') this.place(g, 'home');
+      const wx = e.clientX - this.lx, wy = e.clientY - this.vy0;
+      M.Sleeping.set(b, false);
+      const c = M.Constraint.create({ pointA: { x: wx, y: wy }, bodyB: b, pointB: { x: wx - b.position.x, y: wy - b.position.y }, stiffness: .2, damping: .1, length: 0 });
+      M.Composite.add(this.E.world, c);
+      this.drag = { g, c, id: e.pointerId, cx: e.clientX, cy: e.clientY, sx: e.clientX, sy: e.clientY, t0: performance.now(), moved: 0 };
+      this.track.reset(); this.track.set(e.clientX, e.clientY, e.timeStamp); this.track.active = true;
+      el.classList.add('held');
+      Sound.tick(.6); Sound.buzz(8);
+      this.touch();
+    },
+    move(e) {
+      const d = this.drag;
+      if (!d || e.pointerId !== d.id) return;
+      d.cx = e.clientX; d.cy = e.clientY;
+      d.moved = Math.max(d.moved, Math.hypot(e.clientX - d.sx, e.clientY - d.sy));
+      this.track.set(e.clientX, e.clientY, e.timeStamp);
+      markInput(); S.wake();
+    },
+    up(e) {
+      const d = this.drag;
+      if (!d || e.pointerId !== d.id) return;
+      this.letGo(e.type !== 'pointerup');
+    },
+    /* let go: a tap knocks the sort off its line, a fast release throws it */
+    letGo(cancel) {
+      const d = this.drag;
+      if (!d) return;
+      this.drag = null;
+      this.M.Composite.remove(this.E.world, d.c);
+      d.g.el.classList.remove('held');
+      this.track.active = false;
+      if (cancel || !this.live) return;
+      const g = d.g, tr = this.track, k = PH.STEP / 1000;
+      if (d.moved < 6 && performance.now() - d.t0 < 350) {
+        this.loosen(g, (Math.random() - .5) * 5, -(8 + Math.random() * 3), (Math.random() < .5 ? -1 : 1) * (.12 + Math.random() * .14));
+        Sound.thud(clamp((this.lx + g.b.position.x) / F.vw, 0, 1), .4);
+      } else {
+        const sp = Math.hypot(tr.vx, tr.vy) / 1000;
+        if (g.state === 'home' && sp > PH.FLING) this.loosen(g, tr.vx * k, tr.vy * k, g.b.angularVelocity);
+        else if (g.state !== 'home') this.loosen(g, tr.vx * k, tr.vy * k, g.b.angularVelocity);
+      }
+      this.touch(); this.caption();
+    },
+    /* per frame: drag target (and the snap when a held sort is pulled off its line), brush */
+    input(dt) {
+      const d = this.drag, M = this.M;
+      if (d) {
+        this.track.sample(dt);
+        const x = d.cx - this.lx, y = d.cy - this.vy0;
+        d.c.pointA.x = x; d.c.pointA.y = y;
+        if (d.g.state === 'home') {
+          const b = d.g.b, px = d.c.pointB.x + b.position.x, py = d.c.pointB.y + b.position.y;
+          if (Math.hypot(x - px, y - py) + Math.hypot(b.position.x - d.g.hx, b.position.y - d.g.hy) > Math.max(36, d.g.h * .42)) {
+            d.g.state = 'loose'; this.filter(d.g); d.g.sqv += .3;
+            Sound.tick(1); Sound.buzz(10); this.caption();
+          }
+        }
+        return;
+      }
+      if (!env.fine || !P.seen || !P.inside) return;
+      const x1 = P.x - this.lx, y1 = P.y - this.vy0, x0 = P.px - this.lx, y0 = P.py - this.vy0;
+      if (x0 === x1 && y0 === y1) return;
+      if (Math.max(y0, y1) < this.bandTop || Math.min(y0, y1) > this.floorY + 40) return;
+      const sp = Math.hypot(P.vx, P.vy) / 1000;
+      if (sp < .12) return;
+      const k = PH.STEP / 1000, V = this.V;
+      const lo = Math.min(x0, x1) - 4, hi = Math.max(x0, x1) + 4, top = Math.min(y0, y1) - 4, bot = Math.max(y0, y1) + 4;
+      for (const g of this.G) {
+        if (!g.inW || g.state === 'fall' || g.state === 'fly') continue;
+        const b = g.b, bb = b.bounds;
+        if (bb.max.x < lo || bb.min.x > hi || bb.max.y < top || bb.min.y > bot || !this.cross(b, g, x0, y0, x1, y1)) continue;
+        M.Sleeping.set(b, false);
+        if (g.state === 'home' && sp > PH.KNOCK) {
+          this.loosen(g, P.vx * k * .8, P.vy * k * .8 - 4, (Math.random() - .5) * .3 + clamp(P.vx * k, -20, 20) * .012);
+          g.sqv += .35; this.touch(); this.caption();
+          continue;
+        }
+        /* a brush: velocity along the stroke, spin from where it caught the sort */
+        const ex = clamp(P.vx * k * .2, -7, 7), ey = clamp(P.vy * k * .2, -7, 7);
+        V.x = b.velocity.x + ex; V.y = b.velocity.y + ey; M.Body.setVelocity(b, V);
+        const rx = (x0 + x1) / 2 - b.position.x, ry = (y0 + y1) / 2 - b.position.y;
+        M.Body.setAngularVelocity(b, clamp(b.angularVelocity + (rx * ey - ry * ex) / (g.w * g.h) * 1.4, -.35, .35));
+        this.rest = false;
+      }
+    },
+    /* does the segment (world px) cross the body's rotated box (+4px)? */
+    cross(b, g, x0, y0, x1, y1) {
+      const c = Math.cos(-b.angle), s = Math.sin(-b.angle), px = b.position.x, py = b.position.y;
+      const ax = (x0 - px) * c - (y0 - py) * s, ay = (x0 - px) * s + (y0 - py) * c;
+      const bx = (x1 - px) * c - (y1 - py) * s, by = (x1 - px) * s + (y1 - py) * c;
+      const r = this.slab;
+      r.t0 = 0; r.t1 = 1;
+      return this.clip(ax, bx - ax, g.w / 2 + 4, r) && this.clip(ay, by - ay, g.h / 2 + 4, r);
+    },
+    /* Liang–Barsky on one axis of the box */
+    clip(p, q, h, r) {
+      if (Math.abs(q) < 1e-9) return p >= -h && p <= h;
+      let a = (-h - p) / q, z = (h - p) / q;
+      if (a > z) { const t = a; a = z; z = t; }
+      if (a > r.t0) r.t0 = a;
+      if (z < r.t1) r.t1 = z;
+      return r.t0 <= r.t1;
+    },
+
+    /* ── contacts: landings, squash, bolder on every impact, panned thuds ── */
+    hit(pair) {
+      const A = pair.bodyA.parent, B = pair.bodyB.parent, n = pair.collision.normal;
+      const rv = Math.abs((A.velocity.x - B.velocity.x) * n.x + (A.velocity.y - B.velocity.y) * n.y);
+      if (A._g) this.impact(A._g, B, rv);
+      if (B._g) this.impact(B._g, A, rv);
+    },
+    impact(g, other, rv) {
+      if (g.state === 'fall') { if (other._shelf === g.li) this.land(g, rv); return; }
+      if (rv < 1.6 || g.state === 'fly') return;
+      const L = clamp((rv - 1.6) / 14, 0, 1);
+      g.sqv += .45 * L;
+      if (g.state === 'loose' || g.state === 'out') g.bold = Math.min(900 - g.baseG, g.bold + 40 + 160 * L);
+      if (this.now - g.hitT > 60) { g.hitT = this.now; this.sound(g, L); }
+    },
+    sound(g, L) {
+      Sound.thud(clamp((this.lx + g.b.position.x) / F.vw, 0, 1), L * (.55 + .45 * g.baseG / 900));
+      Sound.buzz(Math.round(Math.min(25, 4 + 20 * L)));
+    },
+
+    /* ── the loop ── */
+    step() {
+      const M = this.M, V = this.V;
+      this.now += PH.STEP;
+      while (this.queue.length && this.queue[0].at <= this.now) this.launch(this.queue.shift().g);
+      while (this.hops.length && this.hops[0].at <= this.now) {
+        const g = this.hops.shift().g;
+        if (g.state !== 'home') continue;
+        M.Sleeping.set(g.b, false); V.x = 0; V.y = -5; M.Body.setVelocity(g.b, V); g.sqv += .22;
+      }
+      if (this.invite && this.now >= this.invite) { this.invite = 0; this.nudge(); }
+      if (this.flip > 0) this.flip -= PH.STEP;
+      const gy = this.flip > 0 ? -PH.G * 1.6 : PH.G;
+      for (const g of this.G) this.pre(g, gy, M, V);
+      for (const g of this.ev) {
+        this.pre(g, gy, M, V);
+        if (this.now >= g.outT && !g.el.classList.contains('gone')) g.el.classList.add('gone');
+      }
+      M.Engine.update(this.E, PH.STEP);
+      for (const g of this.G) {
+        if (g.state === 'fly' && this.now >= g.t0) this.flyStep(g);
+        g.sqv += -PH.SQK * g.sq - PH.SQC * g.sqv; g.sq += g.sqv;
+        if (Math.abs(g.sq) < 1e-4 && Math.abs(g.sqv) < 1e-4) g.sq = g.sqv = 0;
+      }
+      for (let i = this.ev.length - 1; i >= 0; i--) if (this.now >= this.ev[i].outT + 700) this.drop(this.ev.splice(i, 1)[0]);
+    },
+    /* per sort, before the engine: gravity by state, the home springs, speed caps */
+    pre(g, gy, M, V) {
+      const b = g.b;
+      if (!g.inW || b.isSleeping) return;
+      const v = b.velocity;
+      if (g.state === 'home') {
+        const nx = v.x + PH.KX * (g.hx - b.position.x) - PH.CV * v.x, ny = v.y + PH.KY * (g.hy - b.position.y) - PH.CV * v.y;
+        if (Math.abs(nx - v.x) + Math.abs(ny - v.y) > 1e-4) { V.x = nx; V.y = ny; M.Body.setVelocity(b, V); }
+        const w = b.angularVelocity, nw = w - PH.KA * wrapA(b.angle) - PH.CA * w;
+        if (Math.abs(nw - w) > 1e-6) M.Body.setAngularVelocity(b, nw);
+        return;
+      }
+      if (g.state === 'fly') return;
+      b.positionPrev.y -= gy;
+      if (g.state === 'fall') {
+        /* a mark that hangs above the baseline (an apostrophe) lands at its height, not on the shelf */
+        if (g.float && b.position.y >= g.hy) { V.x = g.hx; V.y = g.hy; M.Body.setPosition(b, V); this.land(g, v.y); return; }
+        if (v.y > PH.VFALL) { V.x = 0; V.y = PH.VFALL; M.Body.setVelocity(b, V); }
+        return;
+      }
+      const s = v.x * v.x + v.y * v.y;
+      if (s > PH.VMAX * PH.VMAX) { const k = PH.VMAX / Math.sqrt(s); V.x = v.x * k; V.y = v.y * k; M.Body.setVelocity(b, V); }
+    },
+    tick(t, dt) {
+      if (!this.live) return false;
+      this.vy0 = this.docTop - F.y;
+      this.trigger();
+      this.input(dt);
+      let loose = false;
+      for (const g of this.G) if (g.state === 'loose') { loose = true; break; }
+      if (loose && !this.drag && performance.now() - this.lastTouch > PH.IDLE) this.reset(false);
+      if (this.rest) return false;
+      this.acc = Math.min(this.acc + dt * 1000, PH.STEP * 3);
+      while (this.acc >= PH.STEP) { this.step(); this.acc -= PH.STEP; }
+      this.render();
+      let busy = !!this.drag || this.queue.length > 0 || this.hops.length > 0 || this.flip > 0 || this.invite > 0 || this.ev.length > 0;
+      if (!busy) for (const g of this.G) if ((g.inW && !g.b.isSleeping) || g.sq || g.state === 'fly' || g.state === 'fall') { busy = true; break; }
+      if (!busy) this.settle(loose);
+      this.rest = !busy;
+      return busy;
+    },
+    /* everything asleep: home sorts snap to their exact home (crisp text); a loose case schedules its re-set */
+    settle(loose) {
+      const M = this.M, V = this.V;
+      for (const g of this.G) {
+        if (g.state !== 'home') continue;
+        V.x = g.hx; V.y = g.hy; M.Body.setPosition(g.b, V); M.Body.setAngle(g.b, 0);
+      }
+      this.acc = 0;
+      this.render(); this.caption();
+      clearTimeout(this.idleT);
+      if (loose) this.idleT = setTimeout(S.wake, Math.max(0, this.lastTouch + PH.IDLE - performance.now()) + 30);
+    },
+    render() {
+      for (const g of this.G) this.draw(g);
+      for (const g of this.ev) this.draw(g);
+    },
+    draw(g) {
+      let tf;
+      const s = g.sq;
+      if (g.state === 'wait') tf = `translate(0px,${(this.bandTop - g.h - 80 - g.hy).toFixed(1)}px)`;
+      else {
+        const b = g.b, dx = b.position.x - g.hx, dy = b.position.y - g.hy, a = b.angle;
+        if (Math.abs(dx) < .01 && Math.abs(dy) < .01 && Math.abs(a) < 1e-4 && !s) tf = '';
+        else {
+          tf = `translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) rotate(${a.toFixed(4)}rad)`;
+          if (Math.abs(s) > .002) { const h2 = (g.h / 2).toFixed(1); tf += ` translate(0,${h2}px) scale(${(1 + .05 * s).toFixed(4)},${(1 - .09 * s).toFixed(4)}) translate(0,-${h2}px)`; }
+        }
+      }
+      if (tf !== g.tf) { g.el.style.transform = tf; g.tf = tf; }
+      const W = clamp(g.baseW + 25 * s, 50, 150), Gw = clamp(g.baseG + 150 * s + g.bold, 100, 900);
+      const fv = g.state !== 'out' && Math.abs(W - g.baseW) < .05 && Math.abs(Gw - g.baseG) < .5 ? '' : `'wdth' ${W.toFixed(1)}, 'wght' ${Math.round(Gw)}`;
+      if (fv !== g.fv) { g.el.style.fontVariationSettings = fv; g.fv = fv; }
+    },
+    onVis(v) {
+      if (!this.live) return;
+      if (!v && this.kicked) this.rearm();
+      if (v) { this.rest = false; this.acc = 0; }
+    },
+    stats() {
+      const c = { live: this.live, armed: this.armed, rest: this.rest, out: this.ev.length, wait: 0, fall: 0, home: 0, loose: 0, fly: 0 };
+      for (const g of this.G) c[g.state]++;
+      return c;
+    }
+  };
   K2.loud = {
     get word() { return Loud.word; },
-    get lines() { return Loud.lines; },   /* [{ el, t, shelf, glyphs[], w, g, fs, base }] — base = baseline y in the line box */
+    get lines() { return Loud.lines; },   /* [{ i, el, t, shelf, glyphs[], w, g, fs, base }] — base = baseline y in the line box */
     sanitize: w => Loud.sanitize(w),
-    typeset: w => Loud.typeset(w),
-    setWord: w => Loud.typeset(w),        /* stage C: replace with the physics swap (kick old letters, drop new ones) */
-    kick: () => Loud.kick(),              /* stage C: replace with the physics kick used by REWIND */
-    layout: () => Loud.layout()
+    typeset: w => Loud.typeset(w),        /* static re-set of the middle word (no physics) */
+    setWord: w => (Phys.live ? Phys.swap(w) : Loud.typeset(w)),
+    kick: () => (Phys.live ? Phys.kick() : Loud.kick()),
+    reset: () => Phys.live && Phys.reset(true),
+    layout: () => Loud.layout(),
+    get physics() { return Phys.live; },
+    stats: () => Phys.stats()
   };
 
   /* contact: the email copies from the click (selectable text; fallback selects it) and ripples its wdth */
@@ -4494,6 +5113,7 @@ void main () {
       K2.loud.kick();
       if (env.reduce) { K2.scrollTo(0, { immediate: true, focus: top }); return; }
       Sound.whoosh();
+      $$('#rewind > span').forEach((sp, i) => sp.animate([{ transform: 'none' }, { transform: 'translateY(-140%)', opacity: 0, offset: .45 }, { transform: 'translateY(140%)', opacity: 0, offset: .46 }, { transform: 'none', opacity: 1 }], { duration: 700, delay: i * 70, easing: 'cubic-bezier(.6,0,.2,1)' }));
       setTimeout(() => K2.scrollTo(0, {
         duration: 2.4, easing: x => (x < .5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2), lock: true, focus: top,
         onComplete: () => K2.intro.play({ short: true })
@@ -4528,7 +5148,7 @@ void main () {
   }
   K2.layout = layout;
   /* pinned sections cache their document offsets: refresh when content above them changes height */
-  function measurePins() { Thresh.measure(); Board.measure(); Pigment.measure(); }
+  function measurePins() { Thresh.measure(); Board.measure(); Pigment.measure(); Phys.pos(); }
   let rT = 0;
   addEventListener('resize', () => {
     clearTimeout(rT);
@@ -4543,9 +5163,10 @@ void main () {
   if (typeof ResizeObserver === 'function') new ResizeObserver(() => { cancelAnimationFrame(roT); roT = requestAnimationFrame(() => { Zones.measure(); Hero.measure(); Strings.layout(); measurePins(); }); }).observe(page);
   RM.addEventListener?.('change', () => {
     env.reduce = RM.matches;
-    if (env.reduce) { Intro.skip(); killLenis(); Text.clear(); } else initLenis();
+    if (env.reduce) { Intro.skip(); killLenis(); Text.clear(); Phys.kill(); } else initLenis();
     Pigment.motion(); Ant.copy(); Ant.ver = -1;
     layout();
+    Phys.boot();
   });
 
   const io = new IntersectionObserver(es => {
@@ -4572,10 +5193,10 @@ void main () {
   Pigment.init();
   Rewind.init();
   syncSound();
-  [LenisSys, PointerSys, Intro, Hero, Strings, Text, Work, Case, Thresh, Board, Pigment, Ant, Mail, Chrome, Arrive, Rig].forEach(s => S.add(s));
+  [LenisSys, ScrollTween, PointerSys, Intro, Hero, Strings, Text, Work, Case, Thresh, Board, Pigment, Phys, Ant, Mail, Chrome, Rig].forEach(s => S.add(s));
   layout();
   watch($('.hero'), Hero); watch(Strings.field, Strings); watch(Text.sec, Text);
-  watch(Work.sec, Work); watch(Thresh.sec, Thresh); watch(Board.sec, Board); watch(Ant.el, Ant);
+  watch(Work.sec, Work); watch(Thresh.sec, Thresh); watch(Board.sec, Board); watch(Ant.el, Ant); watch(Loud.el, Phys);
 
   if (!env.reduce && window.scrollY < innerHeight * .5) Intro.play({ short: session.get('k2:cal') === '1' });
   else { root.classList.remove('cal'); Hero.rest(); }
@@ -4586,5 +5207,8 @@ void main () {
   }
   if (typeof window.Lenis === 'function') initLenis();
   else { const s = $('#lenis-js'); if (s) s.addEventListener('load', initLenis); }
+  /* FIG.4 physics: matter-js is optional; without it the headline stays typeset */
+  if (typeof window.Matter === 'object') Phys.boot();
+  else { const s = $('#matter-js'); if (s) s.addEventListener('load', () => Phys.boot()); }
 })();
 </script>
