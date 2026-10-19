@@ -1,5 +1,5 @@
-// Builds the GitHub Pages site: wraps each preview fragment in a full HTML document
-// and adds the index page. Output goes to _site/.
+// Builds the GitHub Pages site: the portfolio (Kinetic II) wrapped in a full HTML
+// document as the site root. Output goes to _site/.
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -7,13 +7,15 @@ import { fileURLToPath } from 'url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, '_site');
 
-// Preview file -> URL slug on the site.
-const PAGES = {
-  'b-kinetic-v2.html': 'kinetic-ii',
-  'b-kinetic.html': 'kinetic',
-  'a-singularity.html': 'singularity',
-  'c-booser-os.html': 'booser-os',
-};
+// The one page the site publishes. The other previews stay in previews/ as an archive.
+const SITE_PAGE = 'b-kinetic-v2.html';
+const SITE_TITLE = '4booser — Creative Developer';
+
+// Any unknown path (including the old /kinetic-ii/ and friends) lands on the portfolio.
+const NOT_FOUND = '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>4booser</title>\n'
+  + '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+  + '<meta http-equiv="refresh" content="0; url=/portfolio/">\n</head>\n<body>\n'
+  + '<p><a href="/portfolio/">4booser — portfolio</a></p>\n</body>\n</html>\n';
 
 // The same small reset the previews were designed against.
 const RESET = ':root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}'
@@ -36,13 +38,8 @@ function wrap(fragment) {
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
-for (const [file, slug] of Object.entries(PAGES)) {
-  const src = path.join(root, 'previews', file);
-  if (!fs.existsSync(src)) continue;
-  fs.mkdirSync(path.join(out, slug), { recursive: true });
-  fs.writeFileSync(path.join(out, slug, 'index.html'), wrap(fs.readFileSync(src, 'utf8')));
-  console.log(`previews/${file} -> /${slug}/`);
-}
-fs.copyFileSync(path.join(root, 'tools', 'site', 'index.html'), path.join(out, 'index.html'));
+const page = fs.readFileSync(path.join(root, 'previews', SITE_PAGE), 'utf8').replace(/<title>[\s\S]*?<\/title>/, `<title>${SITE_TITLE}</title>`);
+fs.writeFileSync(path.join(out, 'index.html'), wrap(page));
+fs.writeFileSync(path.join(out, '404.html'), NOT_FOUND);
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
-console.log('index.html -> /');
+console.log(`previews/${SITE_PAGE} -> /`);

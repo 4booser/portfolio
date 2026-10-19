@@ -15,16 +15,9 @@
 
 ## Сайт
 
-Все варианты публикуются на GitHub Pages: https://4booser.github.io/portfolio/
+Портфолио — Kinetic II — публикуется на GitHub Pages: https://4booser.github.io/portfolio/
 
-При каждом пуше в `main` workflow `.github/workflows/pages.yml` запускает `node tools/build-site.mjs`. Скрипт оборачивает каждое превью в полноценную HTML-страницу и кладёт её в `_site/<slug>/` вместе с главной страницей `tools/site/index.html`.
-
-Адреса:
-
-- `/kinetic-ii/`
-- `/kinetic/`
-- `/singularity/`
-- `/booser-os/`
+При каждом пуше в `main` workflow `.github/workflows/pages.yml` запускает `node tools/build-site.mjs`. Скрипт оборачивает `previews/b-kinetic-v2.html` в полноценную HTML-страницу и кладёт её в корень `_site/`. Остальные варианты лежат здесь как архив и на сайт не публикуются; старые адреса вроде `/kinetic-ii/` перенаправляются на главную.
 
 Локальная сборка: `node tools/build-site.mjs`, результат в `_site/`.
 
