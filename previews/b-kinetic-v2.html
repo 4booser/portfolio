@@ -10,6 +10,8 @@
    The developer as a variable type family: wdth 50–150 × wght 100–900.
    B0 calibration · B1 title page · B2 strings · B3 text setting · B4 in use ·
    B5 threshold · B6/B7 instances + flood · B8 colophon.
+   D1 modes: VOL (one bias over every display line), PROOF, the Key sheet,
+   Contents, footnotes and the reader/developer layer.
    ========================================================================== */
 
 /* ── Tokens ───────────────────────────────────────────────────────────────── */
@@ -33,10 +35,22 @@
   --ease: cubic-bezier(.76, 0, .24, 1);
   --ease-out: cubic-bezier(.16, 1, .3, 1);
 
-  /* stacking: content < riso card < pigment < grain < nav < case sheet < title flight < phone menu < cursor < toast */
-  --z-plate: 60; --z-pigment: 70; --z-grain: 75; --z-nav: 80; --z-case: 100; --z-flight: 105; --z-menu: 110; --z-cursor: 120; --z-toast: 130;
+  /* stacking: content < riso card < pigment < proof overlay < grain < nav < telemetry < popovers < case sheet
+     < title flight < key sheet < phone menu < stamp < cursor < selection chip < toast */
+  --z-plate: 60; --z-pigment: 70; --z-proof: 72; --z-grain: 75; --z-nav: 80; --z-tele: 84; --z-pop: 90; --z-case: 100;
+  --z-flight: 105; --z-sheet: 108; --z-menu: 110; --z-stamp: 115; --z-cursor: 120; --z-sel: 125; --z-toast: 130;
+  /* VOL: the one bias every display line reads (--vp pulls toward 150/900, --vn toward 50/100) */
+  --vp: 0; --vn: 0;
   color-scheme: light;
 }
+/* the shared remap: a display element sets its own instance as --w/--g and prints the biased one */
+.sw, .r-btn, .ld-t, .thr-a, .thr-b, .thr-t.thin .fl, .email, .st-w, .ml-t, .m4b > span, .fader.big .fd-n {
+  --W: calc(var(--w, 100) + var(--vp) * (150 - var(--w, 100)) + var(--vn) * (var(--w, 100) - 50));
+  --G: calc(var(--g, 500) + var(--vp) * (900 - var(--g, 500)) + var(--vn) * (var(--g, 500) - 100));
+  font-variation-settings: 'wdth' var(--W), 'wght' var(--G);
+}
+@property --mw { syntax: '<number>'; inherits: false; initial-value: 150; }
+@property --mg { syntax: '<number>'; inherits: false; initial-value: 900; }
 @media (min-width: 761px) {
   :root {
     --gut-l: max(clamp(16px, 2.6vw, 40px), env(safe-area-inset-left, 0px));
@@ -145,7 +159,7 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
 /* ── Nav ──────────────────────────────────────────────────────────────────── */
 .nav {
   position: fixed; inset: 0 0 auto 0; z-index: var(--z-nav);
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 16px); padding-bottom: 14px;
   color: #fff; mix-blend-mode: difference;
 }
@@ -155,9 +169,11 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
 .brand { justify-self: start; display: inline-flex; align-items: center; gap: 12px; text-decoration: none; min-width: 0; }
 .m4b {
   font-family: var(--f-display); font-variation-settings: 'wdth' 150, 'wght' 900;
-  font-size: 20px; line-height: 1; letter-spacing: -.02em; text-transform: uppercase;
+  font-size: 20px; line-height: 1; letter-spacing: -.02em; text-transform: uppercase; white-space: nowrap;
 }
-.nav-links { display: flex; gap: clamp(16px, 2.4vw, 34px); }
+/* masthead meter: the monogram's instance tracks the current section (offset by VOL) */
+.m4b > span { --w: var(--mw); --g: var(--mg); transition: --mw .6s var(--ease-out), --mg .6s var(--ease-out); }
+.nav-links { justify-self: center; display: flex; gap: clamp(16px, 2.4vw, 34px); }
 .nav-links a { position: relative; text-decoration: none; }
 .nav-links a::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px; background: currentColor;
@@ -165,9 +181,42 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
 }
 .nav-links a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
 @media (hover: hover) { .nav-links a:hover::after { transform: scaleX(1); transform-origin: left; } }
-.nav-r { justify-self: end; display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); min-width: 0; }
-.folio-n { display: inline-flex; gap: .55em; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.folio-t { display: inline-block; min-width: 6.4em; }
+.nav-r { justify-self: end; display: flex; align-items: center; gap: clamp(14px, 1.7vw, 26px); min-width: 0; }
+/* the folio is the Contents button; its 6-segment level meter lights up to the current page */
+.folio-n { display: inline-flex; align-items: center; gap: .55em; padding: 4px 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.folio-t { display: inline-block; min-width: 6.4em; text-align: left; }
+.folio-n[aria-expanded="true"] .folio-t { text-decoration: underline; text-underline-offset: 3px; }
+.meter { display: inline-flex; align-items: flex-end; gap: 2px; height: 9px; }
+.meter i { display: block; width: 3px; background: currentColor; opacity: .22; transition: opacity .12s; }
+.meter i:nth-child(1) { height: 34%; } .meter i:nth-child(2) { height: 47%; } .meter i:nth-child(3) { height: 60%; }
+.meter i:nth-child(4) { height: 73%; } .meter i:nth-child(5) { height: 86%; } .meter i:nth-child(6) { height: 100%; }
+.meter i.on { opacity: 1; }
+.meter i.pk { opacity: .58; }
+/* VOL fader: 10 graduated segments plus the overload "11" */
+.fader { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; touch-action: none; -webkit-user-select: none; user-select: none; font-variant-numeric: tabular-nums; }
+.fd-s { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; padding: 3px 0; }
+.fd-s i { display: block; width: 4px; background: currentColor; opacity: .26; }
+.fd-s i:nth-child(n) { height: calc(30% + var(--k, 0) * 7%); }
+.fd-s i.on { opacity: 1; }
+.fd-s i.x { width: 7px; height: 100%; margin-left: 3px; opacity: 1; background: none; box-shadow: inset 0 0 0 1px currentColor; }
+.fd-s i.x.on { background: currentColor; }
+.fd-n { min-width: 2ch; }
+.fader:focus-visible { outline-offset: 6px; }
+.vol-btn, .pf { display: none; align-items: center; gap: .5em; padding: 4px 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pf { display: inline-flex; }
+.pf .o, .md-row .o { width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
+[data-proof][aria-pressed="true"] .o { background: currentColor; }
+.kc {
+  display: inline-grid; place-items: center; width: 19px; height: 19px; box-sizing: border-box; padding: 0;
+  border: 1px solid currentColor; border-bottom-width: 2px; font: 500 11px/1 var(--f-mono);
+}
+@media (max-width: 1099px) {
+  .nav .fader { display: none; }
+  .vol-btn { display: inline-flex; }
+  .nav-r { gap: 14px; }
+  .nav-links { gap: 16px; }
+}
+@media (max-width: 899px) { .brand-t { display: none; } }
 .snd { display: inline-flex; align-items: center; gap: .55em; padding: 4px 0; white-space: nowrap; }
 .snd .o { width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
 .snd[aria-pressed="true"] .o { background: currentColor; }
@@ -191,11 +240,15 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
 }
 .menu-list .ml-b { flex: 1; min-width: 0; display: block; font-family: var(--f-display); text-transform: uppercase; font-size: 15vw; line-height: .86; }
 .menu-list .ml-t { display: inline-block; white-space: nowrap; }
-.menu-list li:nth-child(1) .ml-t { font-variation-settings: 'wdth' 50, 'wght' 300; }
-.menu-list li:nth-child(2) .ml-t { font-variation-settings: 'wdth' 100, 'wght' 600; }
-.menu-list li:nth-child(3) .ml-t { font-variation-settings: 'wdth' 150, 'wght' 900; }
+.menu-list li:nth-child(1) .ml-t { --w: 50; --g: 300; }
+.menu-list li:nth-child(2) .ml-t { --w: 100; --g: 600; }
+.menu-list li:nth-child(3) .ml-t { --w: 150; --g: 900; }
 .menu-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--hair-inv); }
 .menu-foot .snd { padding: 10px 0; }
+/* the phone desk: VOL, proof, key, contents (every D1 control reachable from the menu) */
+.menu-desk { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 18px; }
+.md-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.md-row button { display: inline-flex; align-items: center; gap: .55em; padding: 12px 13px 11px; border: 1px solid var(--hair-inv); }
 
 /* ── Cursor: crop-mark selection rig (fine pointers only) ─────────────────── */
 .rig { display: none; }
@@ -332,7 +385,6 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
 .sw {
   display: inline-flex; align-items: center; gap: .3em; padding-right: .3em; white-space: nowrap;
   font-family: var(--f-display); text-transform: uppercase; line-height: 1;
-  font-variation-settings: 'wdth' var(--w, 100), 'wght' var(--g, 700);
 }
 .sw.it { font-style: italic; }
 .sw i { font-style: normal; font-family: var(--f-mono); font-size: .42em; font-weight: 400; }
@@ -423,8 +475,7 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
 }
 /* each title is set permanently in its client's instance */
 .r-btn {
-  text-align: left; white-space: nowrap;
-  font-variation-settings: 'wdth' var(--w, 100), 'wght' var(--g, 500); letter-spacing: var(--tr, 0em); font-style: var(--st, normal);
+  text-align: left; white-space: nowrap; letter-spacing: var(--tr, 0em); font-style: var(--st, normal);
 }
 .r-btn::after { content: ""; position: absolute; inset: 0; z-index: 1; }
 .r-btn:focus-visible { outline-color: var(--paper); }
@@ -578,10 +629,10 @@ html.has-rig .pc {
 .thr-top { display: flex; justify-content: space-between; gap: 16px; margin-bottom: clamp(20px, 3vw, 40px); color: var(--mute); }
 .thr-h { margin: 0; font-family: var(--f-display); font-weight: 400; text-transform: uppercase; line-height: .8; letter-spacing: 0; }
 .thr-a, .thr-b { display: block; white-space: nowrap; }
-.thr-a { font-variation-settings: 'wdth' 50, 'wght' 100; font-size: clamp(48px, 20vw, 330px); }
-.thr-b { font-variation-settings: 'wdth' 150, 'wght' 900; font-size: clamp(48px, 17vw, 280px); margin-top: .06em; }
+.thr-a { --w: 50; --g: 100; font-size: clamp(48px, 20vw, 330px); }
+.thr-b { --w: 150; --g: 900; font-size: clamp(48px, 17vw, 280px); margin-top: .06em; }
 .thr-t, .thr-b .fl { display: inline-block; }
-.thr-t.thin .fl { font-variation-settings: 'wdth' 50, 'wght' 900; }
+.thr-t.thin .fl { --w: 50; --g: 900; }
 .thr-ink, .thr-zone { display: none; }
 .thresh.live { height: 160svh; }
 .thresh.live .thr-pin {
@@ -608,7 +659,7 @@ html.has-rig .pc {
 .st-n { grid-area: n; color: var(--mute-inv); }
 .st-w {
   grid-area: w; margin: 0; font-family: var(--f-display); font-weight: 400; text-transform: uppercase;
-  font-size: clamp(48px, 10vw, 150px); line-height: .82; font-variation-settings: 'wdth' var(--w), 'wght' var(--g);
+  font-size: clamp(48px, 10vw, 150px); line-height: .82;
 }
 .st-i { grid-area: i; color: var(--mute-inv); }
 .stage p { grid-area: p; margin: 0; }
@@ -697,7 +748,7 @@ html.has-rig .pc {
   font-size: clamp(48px, 16vw, 260px);
 }
 .ld + .ld { margin-top: clamp(8px, 1vw, 16px); }
-.ld-t { display: inline-block; font-variation-settings: 'wdth' var(--w), 'wght' var(--g); }
+.ld-t { display: inline-block; }
 .lg { display: inline-block; }
 .ld-shelf { position: absolute; left: 0; right: 0; top: var(--base, 80%); z-index: -1; height: 1px; background: rgba(230, 231, 227, .34); }
 /* FIG.4 live: every sort is a rigid body; a fixed box per sort, so axis squash never reflows the line */
@@ -750,7 +801,7 @@ html.has-rig .pc {
 .contact { margin-top: clamp(48px, 6vw, 96px); padding-top: 18px; border-top: 1px solid var(--hair-inv); row-gap: 40px; align-items: start; grid-template-rows: auto 1fr; }
 .c-mail { grid-column: 1 / span 8; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; min-width: 0; }
 .email {
-  margin: 0; white-space: nowrap; font-family: var(--f-display); font-variation-settings: 'wdth' 96, 'wght' 640;
+  margin: 0; white-space: nowrap; font-family: var(--f-display); --w: 96; --g: 640;
   font-size: clamp(30px, 4.6vw, 78px); line-height: 1; letter-spacing: -.01em;
 }
 .c-act { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -867,6 +918,177 @@ html.has-rig .pc {
   .row, .row::before, .r-arrow, .r-inst, .case, .case-in > :not(.case-head), .chip, .rewind, .rail i, .ds-n { transition: none !important; }
 }
 
+/* ── D1 · Paper popovers: Contents, the VOL console, footnote slips ───────── */
+.pop {
+  position: fixed; left: 0; top: 0; z-index: var(--z-pop); box-sizing: border-box;
+  background: var(--paper); color: var(--ink); border: 1px solid var(--ink);
+  opacity: 0; transform: translateY(-6px); transition: opacity .22s var(--ease), transform .32s var(--ease-out);
+}
+.pop.open { opacity: 1; transform: none; }
+.pop .lbl, .pop .idx { color: var(--mute); }
+.pop-h { display: flex; justify-content: space-between; gap: 12px; margin: 0 0 6px; padding-bottom: 8px; border-bottom: 1px solid var(--ink); }
+.toc { width: min(380px, calc(100vw - 32px)); padding: 12px 16px 10px; }
+.toc-l { list-style: none; margin: 0; padding: 0; }
+.toc-l a {
+  display: grid; grid-template-columns: .9em 2em auto minmax(16px, 1fr) auto; align-items: baseline; gap: 8px;
+  min-height: 40px; box-sizing: border-box; padding: 9px 0 5px; text-decoration: none; border-bottom: 1px solid var(--hair);
+}
+.toc-l li:last-child a { border-bottom: 0; }
+.toc-cur { color: var(--blue); visibility: hidden; }
+.toc-t {
+  font-family: var(--f-display); text-transform: uppercase; font-size: 25px; line-height: .86; white-space: nowrap;
+  font-variation-settings: 'wdth' var(--w), 'wght' var(--g);
+}
+.toc-l .lead { height: 2px; opacity: .5; background: radial-gradient(circle, currentColor .9px, transparent 1.25px) 0 50% / 6px 2px repeat-x; }
+.toc-l a[aria-current="page"] { color: var(--blue); }
+.toc-l a[aria-current="page"] .toc-cur { visibility: visible; }
+.toc-l a:focus-visible { outline-offset: 2px; }
+@media (hover: hover) { .toc-l a:hover .toc-t { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; } }
+.volpop { width: 320px; padding: 14px 16px 16px; }
+.vp-pre { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.vp-pre button { padding: 9px 11px 8px; border: 1px solid var(--hair); }
+.vp-pre button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.menu .vp-pre button { border-color: var(--hair-inv); }
+.menu .vp-pre button[aria-pressed="true"] { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+/* the big fader (console and phone menu): a crescendo wedge with a live display readout */
+.fader.big { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px 16px; width: 100%; white-space: normal; }
+.fader.big .fd-l { grid-column: 1 / -1; }
+.fader.big .fd-s { height: 46px; gap: 3px; padding: 0; }
+.fader.big .fd-s i { flex: 1; width: auto; }
+.fader.big .fd-s i.x { flex: 1.5; margin-left: 5px; }
+.fader.big .fd-n {
+  --w: 100; --g: 500; min-width: 0; font-family: var(--f-display); font-size: 56px; line-height: .8; letter-spacing: 0;
+}
+.fnpop { width: max-content; max-width: min(42ch, calc(100vw - 32px)); padding: 10px 12px 9px; font-size: 11px; line-height: 1.45; text-transform: none; letter-spacing: .02em; }
+.fnpop button { display: block; margin-top: 8px; color: var(--blue); text-transform: uppercase; letter-spacing: .07em; }
+
+/* ── D1 · Key to the Specimen: one table, rendered as the sheet ────────────── */
+.ks {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: var(--z-sheet); width: min(520px, 100vw); box-sizing: border-box;
+  overflow-y: auto; overscroll-behavior: contain; background: var(--paper); color: var(--ink); border-left: 1px solid var(--ink);
+  transform: translateX(101%); transition: transform .5s var(--ease); visibility: hidden;
+}
+.ks.open { transform: none; visibility: visible; }
+.ks .lbl, .ks .idx { color: var(--mute); }
+.ks-in { padding: calc(env(safe-area-inset-top, 0px) + 16px) var(--gut-r) calc(env(safe-area-inset-bottom, 0px) + 28px) 28px; }
+.ks-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+.ks-x { padding: 6px 0 6px 12px; }
+.ks-h {
+  margin: 26px 0 6px; font-family: var(--f-display); font-weight: 400; text-transform: uppercase;
+  font-variation-settings: 'wdth' 150, 'wght' 900; font-size: 46px; line-height: .84;
+}
+.ks-sub { margin: 0 0 18px; }
+.ks-l, .ks-g { list-style: none; margin: 0; padding: 0; }
+.ks-l li { display: grid; grid-template-columns: 7.2rem minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--hair); }
+.ks-caps { display: flex; flex-wrap: wrap; gap: 5px; }
+.cap {
+  display: inline-grid; place-items: center; min-width: 44px; height: 44px; box-sizing: border-box; padding: 0 8px 2px;
+  border: 1px solid var(--ink); border-bottom-width: 3px; font-family: var(--f-display); text-transform: uppercase;
+  font-size: 21px; line-height: 1; font-variation-settings: 'wdth' var(--w), 'wght' var(--g);
+  transition: transform .09s, border-bottom-width .09s, background-color .2s, color .2s;
+}
+.cap.dn { transform: translateY(2px); border-bottom-width: 1px; background: var(--ink); color: var(--paper); }
+.ks-a { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.ks-a .lead { flex: 1; min-width: 12px; height: 2px; opacity: .5; background: radial-gradient(circle, currentColor .9px, transparent 1.25px) 0 50% / 6px 2px repeat-x; }
+.ks-st { color: var(--blue); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ks-last { margin: 14px 0 0; min-height: 1.45em; }
+.ks-t { margin: 30px 0 8px; padding-top: 10px; border-top: 1px solid var(--ink); }
+.ks-g li { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; border-bottom: 1px solid var(--hair); }
+.ks-g li span:last-child { text-align: right; color: var(--mute); }
+.ks-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; }
+.ks-sw { display: inline-flex; align-items: center; gap: .55em; padding: 9px 11px 8px; border: 1px solid var(--ink); }
+.ks-sw .o { width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
+.ks-sw[aria-pressed="true"] .o { background: currentColor; }
+
+/* ── D1 · The LOUD stamp (and its hairline inverse, WHISPER) ──────────────── */
+.stamp {
+  position: fixed; left: 50%; top: 50%; z-index: var(--z-stamp); pointer-events: none;
+  display: none; flex-direction: column; align-items: center; gap: 10px; padding: .1em .22em .14em;
+  color: var(--blue); border: 3px solid currentColor; border-radius: 14px; transform: translate(-50%, -50%) rotate(-8deg);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3.2 2.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3.2 2.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px;
+}
+.stamp.on { display: flex; }
+.stamp.inv { color: var(--paper); }
+.stamp-w {
+  font-family: var(--f-display); font-weight: 400; text-transform: uppercase; white-space: nowrap;
+  font-variation-settings: 'wdth' 150, 'wght' 900; font-size: clamp(76px, 17vw, 250px); line-height: .8;
+}
+.stamp-s { padding-bottom: 6px; font-size: 11px; white-space: nowrap; }
+.stamp.wh { border-width: 1px; border-radius: 6px; padding: .16em .4em .2em; }
+.stamp.wh .stamp-w { text-transform: none; font-variation-settings: 'wdth' 50, 'wght' 100; font-size: clamp(64px, 13vw, 200px); }
+
+/* ── D1 · PROOF: the specimen shows its working (canvas overlay + keylines) ── */
+.proof-cv { position: fixed; left: 0; top: 0; z-index: var(--z-proof); display: block; width: 100%; height: 100vh; height: 100lvh; pointer-events: none; }
+.proof-cv[hidden], .tele[hidden] { display: none; }
+.tele {
+  position: fixed; left: var(--gut-l); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: var(--z-tele);
+  margin: 0; padding: 8px 10px 7px; background: var(--ink); color: var(--paper); box-shadow: 0 0 0 1px var(--hair-inv);
+  font: 400 9.5px/1.55 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; white-space: pre;
+  pointer-events: none; font-variant-numeric: tabular-nums; max-width: calc(100vw - 32px); overflow: hidden;
+}
+html.proof { --kl: var(--ink); }
+html.proof .inst, html.proof .band, html.proof .row.is-on, html.proof .row.is-kb, html.proof .case { --kl: var(--paper); }
+html.proof :is(.kin .k, .tagline, .manifesto, .manifesto .w, .r-btn, .thr-h, .email, .mk-row, .st-w, .ld-t, .ld-ev .lg, .lf b, .case-title, .sw) {
+  color: transparent !important; -webkit-text-stroke: 1px var(--kl);
+}
+html.proof :is(.tagline em, .manifesto .hl) { -webkit-text-stroke-color: var(--blue); }
+html.proof .sw { -webkit-text-stroke-color: var(--ink); }
+html.proof .sw i { color: var(--blue) !important; -webkit-text-stroke: 0; }
+html.proof .str path { fill: transparent; stroke: var(--ink); stroke-width: 1px; }
+html.proof .lf:not(.blue) { background: transparent; box-shadow: inset 0 0 0 1px var(--hair-inv); }
+html.proof .nav .m4b { color: transparent; -webkit-text-stroke: 1px #fff; }
+html.proof .nav:is([data-tone="ink"], [data-tone="blue"]) .m4b { -webkit-text-stroke-color: var(--paper); }
+
+/* ── D1 · Reader layer: footnote marks, the selection inspector, readouts ─── */
+.fnref { color: inherit; text-decoration: none; padding: 0 .1em; }
+.fnref:focus-visible { outline-offset: 2px; }
+@media (hover: hover) { .fnref:hover sup { color: var(--blue); } }
+.band .fnref:hover sup { color: inherit; }
+.fns li { position: relative; padding: 4px 6px; margin: -4px -6px; transition: background-color .4s var(--ease), color .4s var(--ease); }
+.fns li:focus { outline: none; }
+.fns li.ring { background: var(--paper); color: var(--ink); }
+.fns li.ring b { color: var(--blue); }
+.fn-ring { position: absolute; left: -12px; top: -9px; width: calc(100% + 24px); height: calc(100% + 18px); overflow: visible; pointer-events: none; }
+.fn-ring ellipse { fill: none; stroke: var(--blue); stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.fn-back { margin-left: auto; padding-left: 10px; white-space: nowrap; color: var(--blue); text-decoration: none; }
+.fns li.new { animation: fn-in .5s var(--ease-out); }
+@keyframes fn-in { from { transform: perspective(300px) rotateX(-80deg); opacity: .2; } to { transform: none; opacity: 1; } }
+.rig .chip.long { white-space: normal; width: max-content; max-width: 42ch; line-height: 1.35; text-transform: none; letter-spacing: .02em; }
+html.whisper .rig .c { width: 5px; height: 5px; }
+.selchip {
+  position: fixed; left: 0; top: 0; z-index: var(--z-sel); pointer-events: none; box-sizing: border-box; max-width: calc(100vw - 32px);
+  margin: 0; padding: 5px 8px 4px; background: var(--ink); color: var(--paper); box-shadow: 0 0 0 1px var(--hair-inv);
+  font: 500 10px/1.25 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; opacity: 0; visibility: hidden; transition: opacity .18s, visibility 0s .18s;
+}
+.selchip.on { opacity: 1; visibility: visible; transition: opacity .18s; }
+.rsz {
+  position: fixed; right: var(--gut-r); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: var(--z-tele);
+  margin: 0; padding: 6px 9px 5px; background: var(--ink); color: var(--paper); font-size: 10px; white-space: nowrap;
+  max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis;
+  pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s;
+}
+.rsz.on { opacity: 1; visibility: visible; transition: opacity .15s; }
+@media (pointer: coarse) {
+  .selchip.dock { left: var(--gut-l); right: var(--gut-r); top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); transform: none !important; max-width: none; white-space: normal; }
+}
+@media (max-width: 760px) {
+  .toc { width: auto; }
+  .toc-l a { min-height: 46px; }
+  .ks-in { padding-left: var(--gut-l); }
+  .ks-h { font-size: 38px; }
+  .ks-l li { grid-template-columns: 6rem minmax(0, 1fr); }
+  .ks-l .ks-st { grid-column: 2; justify-self: start; }
+  .cap { min-width: 36px; height: 36px; font-size: 18px; }
+  .tele { right: var(--gut-r); white-space: nowrap; text-overflow: ellipsis; font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop, .ks, .cap, .meter i, .fns li, .selchip, .rsz { transition: none; }
+  .m4b > span { transition: none; }
+  .fns li.new { animation: none; }
+}
+
 /* ── Toast ────────────────────────────────────────────────────────────────── */
 .toast {
   position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); z-index: var(--z-toast);
@@ -887,7 +1109,7 @@ html.has-rig .pc {
   }
   .nav[data-tone="ink"] { background: var(--ink); color: var(--paper); border-bottom-color: var(--hair-inv); }
   .nav[data-tone="blue"] { background: var(--blue); color: var(--paper); border-bottom-color: var(--hair-inv); }
-  .brand-t, .nav-links, .nav .snd { display: none; }
+  .brand-t, .nav-links, .nav .snd, .nav .fader, .vol-btn, .pf, .kc { display: none; }
   .nav-r { display: contents; }
   .folio-n { justify-self: start; }
   .menu-btn { display: inline-flex; justify-self: end; padding: 6px 0 6px 12px; }
@@ -932,22 +1154,31 @@ html.has-rig .pc {
 <div class="rig" aria-hidden="true"><i class="c c0"></i><i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="d"></i><span class="chip"></span></div>
 
 <nav class="nav wrap mono" aria-label="Primary" data-tone="paper">
-  <a class="brand" href="#top" data-cursor-label="Top"><span class="m4b" aria-hidden="true">4B</span><span class="brand-t">Specimen No. 02</span><span class="sr">4booser, home</span></a>
+  <a class="brand" href="#top" data-cursor-label="Top"><span class="m4b" aria-hidden="true"><span>4</span><span>B</span></span><span class="brand-t">Specimen No. 02</span><span class="sr">4booser, home</span></a>
   <div class="nav-links"><a href="#work">Work</a><a href="#process">Process</a><a href="#contact">Contact</a></div>
   <div class="nav-r">
-    <span class="folio-n" aria-hidden="true"><span>p.</span><span id="folio-p">01/06</span><span class="folio-t" id="folio-t">Title</span></span>
-    <button class="snd" type="button" data-sound aria-pressed="false" data-cursor-label="Sound on">Sound <i class="o" aria-hidden="true"></i> <span class="st">Off</span></button>
+    <button class="folio-n" id="folio" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="toc" data-key="1–6"><span class="sr">Contents. Now on page</span><span aria-hidden="true">p.</span><span id="folio-p">01/06</span><span class="folio-t" id="folio-t">Title</span><span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button>
+    <div class="fader" data-fader></div>
+    <button class="vol-btn" id="vol-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="volpop" data-key="+ −">Vol <span data-vol-n>05</span></button>
+    <button class="pf" type="button" data-proof aria-pressed="false" data-key="#">Proof <span aria-hidden="true">⊞</span> <i class="o" aria-hidden="true"></i></button>
+    <button class="kc" type="button" data-keys aria-haspopup="dialog" aria-controls="ks" aria-label="Key to the specimen" data-key="?">?</button>
+    <button class="snd" type="button" data-sound aria-pressed="false" data-key="!">Sound <i class="o" aria-hidden="true"></i> <span class="st">Off</span></button>
     <button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
   </div>
 </nav>
 
 <div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menu" hidden data-lenis-prevent>
-  <div class="menu-top mono"><span class="m4b" aria-hidden="true">4B</span><span class="lbl">Specimen No. 02</span><button class="menu-x" id="menu-x" type="button">Close <span aria-hidden="true">✕</span></button></div>
+  <div class="menu-top mono"><span class="m4b" aria-hidden="true"><span>4</span><span>B</span></span><span class="lbl">Specimen No. 02</span><button class="menu-x" id="menu-x" type="button" data-key="Esc">Close <span aria-hidden="true">✕</span></button></div>
   <ol class="menu-list">
     <li><a href="#work"><span class="mono idx">01</span><span class="ml-b"><span class="ml-t">Work</span></span></a></li>
     <li><a href="#process"><span class="mono idx">02</span><span class="ml-b"><span class="ml-t">Process</span></span></a></li>
     <li><a href="#contact"><span class="mono idx">03</span><span class="ml-b"><span class="ml-t">Contact</span></span></a></li>
   </ol>
+  <div class="menu-desk mono">
+    <div class="fader big" data-fader></div>
+    <div class="vp-pre" role="group" aria-label="Volume presets"><button type="button" data-vol="0">Whisper 00</button><button type="button" data-vol="5">As designed 05</button><button type="button" data-vol="11">Loud 11</button></div>
+    <div class="md-row"><button type="button" data-proof aria-pressed="false">Proof ⊞ <i class="o" aria-hidden="true"></i></button><button type="button" data-keys aria-haspopup="dialog" aria-controls="ks">Key ?</button><button type="button" data-toc aria-haspopup="dialog" aria-controls="toc">Contents</button></div>
+  </div>
   <div class="menu-foot mono">
     <button class="snd" type="button" data-sound aria-pressed="false">Sound <i class="o" aria-hidden="true"></i> <span class="st">Off</span></button>
     <span class="lbl" data-clock>--:--:-- UTC</span>
@@ -959,7 +1190,7 @@ html.has-rig .pc {
   <header class="hero wrap" id="top" data-nav="paper" data-folio="01" data-title="Title" data-cursor="paint" tabindex="-1">
     <span class="reg l" aria-hidden="true">+</span><span class="reg r" aria-hidden="true">+</span>
     <div class="rule" aria-hidden="true"><i class="rule-l"></i><span class="ruler"></span></div>
-    <span class="seal" aria-hidden="true">No.02</span>
+    <span class="seal" aria-hidden="true" data-nodrop data-cursor="chip" data-cursor-label="No.02">No.02</span>
     <div class="spec mono">
       <div class="cell"><span class="lbl"><span class="idx">01</span>4Booser Variable</span><span>Creative Developer</span></div>
       <div class="cell"><span class="lbl"><span class="idx">02</span>Axes</span><span class="lc"><span class="nw">wdth 50–150 ·</span> <span class="nw">wght 100–900</span></span></div>
@@ -970,12 +1201,12 @@ html.has-rig .pc {
       <span class="sr">4booser, creative developer</span>
       <span class="nl" aria-hidden="true"><span class="kin"><span class="kl"><span class="k">4</span><span class="k">B</span><span class="k">O</span><span class="k">O</span><span class="k">S</span><span class="k">E</span><span class="k">R</span></span></span></span>
     </h1>
-    <div class="fig1 mono" aria-hidden="true">
+    <div class="fig1 mono">
       <span class="fig1-l">
-        <span class="cal-t">Anybody VF · wdth 50–150 · wght 100–900 · <span id="cal-pct">000</span>%</span>
-        <span class="fig-t">FIG.1 String — 7 nodes · K 220 · <span class="lc">ζ</span> .12 · slnt ±12<sup class="fn">*</sup></span>
+        <span class="cal-t" aria-hidden="true">Anybody VF · wdth 50–150 · wght 100–900 · <span id="cal-pct">000</span>%</span>
+        <span class="fig-t">FIG.1 String — 7 nodes · K 220 · <span class="lc">ζ</span> .12 · slnt ±12<a class="fnref" href="#fn-1" aria-label="Footnote *"><sup class="fn">*</sup></a></span>
       </span>
-      <span class="pl">Pluck ⟷</span>
+      <span class="pl" aria-hidden="true">Pluck ⟷</span>
     </div>
     <div class="tagrow">
       <p class="tagline">I build interfaces that <em>move.</em></p>
@@ -985,8 +1216,8 @@ html.has-rig .pc {
   </header>
 
   <!-- B2 · Strings (4B—02) -->
-  <section class="strings" id="strings" data-nav="paper" data-folio="02" data-title="Strings" aria-labelledby="str-h">
-    <div class="wrap"><div class="rhead mono"><span class="rh-n">4B—02</span><h2 class="rh-t" id="str-h">Strings</h2><i class="lead" aria-hidden="true"></i><span>10 styles<sup class="fn">‡</sup></span></div></div>
+  <section class="strings" id="strings" data-nav="paper" data-folio="02" data-title="Strings" aria-labelledby="str-h" tabindex="-1">
+    <div class="wrap"><div class="rhead mono"><span class="rh-n">4B—02</span><h2 class="rh-t" id="str-h">Strings</h2><i class="lead" aria-hidden="true"></i><span>10 styles<a class="fnref" href="#fn-3" aria-label="Footnote ‡"><sup class="fn">‡</sup></a></span></div></div>
     <ul class="sr"><li>TypeScript</li><li>React</li><li>Next.js</li><li>Three.js</li><li>GLSL</li><li>WebGL</li><li>Node.js</li><li>Figma</li><li>Motion design</li><li>Creative coding</li></ul>
     <div class="str-field" aria-hidden="true" data-nodrop>
       <div class="str str-b" data-geo="1" data-dir="-1" data-oct="1" data-cursor="chip" data-cursor-label="Pluck">
@@ -1002,7 +1233,7 @@ html.has-rig .pc {
   </section>
 
   <!-- B3 · Text setting (4B—03) -->
-  <section class="text wrap" id="text" data-nav="paper" data-folio="03" data-title="Text" data-cursor="paint" aria-labelledby="txt-h">
+  <section class="text wrap" id="text" data-nav="paper" data-folio="03" data-title="Text" data-cursor="paint" aria-labelledby="txt-h" tabindex="-1">
     <div class="rhead mono"><span class="rh-n">4B—03</span><h2 class="rh-t" id="txt-h">Text setting</h2><i class="lead" aria-hidden="true"></i><span><span id="wc">00</span> words</span></div>
     <div class="grid12 txt-grid">
       <div class="marg mono">
@@ -1014,7 +1245,7 @@ html.has-rig .pc {
       <dl class="figs">
         <div><dt class="mono lbl">yrs in the browser</dt><dd>06</dd></div>
         <div><dt class="mono lbl">projects shipped</dt><dd>40</dd></div>
-        <div><dt class="mono lbl">awards &amp; mentions<sup class="fn">†</sup></dt><dd>12</dd></div>
+        <div><dt class="mono lbl">awards &amp; mentions<a class="fnref" href="#fn-2" aria-label="Footnote †"><sup class="fn">†</sup></a></dt><dd>12</dd></div>
       </dl>
     </div>
     <p class="folio mono"><span>Specimen No. 02 — Text setting</span><span>03</span></p>
@@ -1153,7 +1384,7 @@ html.has-rig .pc {
           <span class="mono lbl"><span class="idx">01</span>Email</span>
           <p class="email" id="email" data-cursor="copy" data-cursor-label="Copy">hello@4booser.dev</p>
           <div class="c-act">
-            <button class="btn" id="copy" type="button" data-cursor-label="Copy">Copy email</button>
+            <button class="btn" id="copy" type="button" data-key="@">Copy email</button>
             <a class="btn" id="mailto" href="mailto:hello@4booser.dev?subject=Let%E2%80%99s%20make%20something%20loud" data-cursor-label="Write">Write: make something loud ↗</a>
           </div>
         </div>
@@ -1182,8 +1413,12 @@ html.has-rig .pc {
           <label class="ant-sign mono"><span class="lbl"><span class="idx">05</span>Sign the plate</span><input id="ant-in" type="text" maxlength="24" spellcheck="false" autocomplete="off" placeholder="Your name"></label>
         </figure>
       </div>
-      <ol class="fns mono" id="fns" aria-label="Footnotes"></ol>
-      <button class="rewind mono" id="rewind" type="button" data-cursor-label="Rewind"><span>Rewind ↑</span><i class="lead" aria-hidden="true"></i><span>Play it again</span></button>
+      <ol class="fns mono" id="fns" aria-label="Footnotes">
+        <li id="fn-1" tabindex="-1"><b>*</b><span>slnt is synthetic: Anybody has an ital axis, the lean is a skewX transform.</span></li>
+        <li id="fn-2" tabindex="-1"><b>†</b><span>Demo figures, like every number on this page.</span></li>
+        <li id="fn-3" tabindex="-1"><b>‡</b><span>No glyphs were harmed. Several were stretched.</span></li>
+      </ol>
+      <button class="rewind mono" id="rewind" type="button" data-key="^"><span>Rewind ↑</span><i class="lead" aria-hidden="true"></i><span>Play it again</span></button>
       <div class="foot-bar mono"><span>© 2026 4booser</span><span>Demo content — name, projects, numbers and links are placeholders</span><span>06</span></div>
     </div>
   </footer>
@@ -1196,7 +1431,7 @@ html.has-rig .pc {
       <div class="case-bar mono">
         <span id="case-count">Plate 01 / 05</span>
         <span class="case-inst lbl" id="case-inst"></span>
-        <button class="btn" id="case-close" type="button" data-cursor-label="Close">Close <span aria-hidden="true">✕</span></button>
+        <button class="btn" id="case-close" type="button" data-key="Esc">Close <span aria-hidden="true">✕</span></button>
       </div>
       <div class="case-head"><h2 class="case-title" id="case-title"></h2></div>
       <div class="case-grid">
@@ -1242,6 +1477,40 @@ html.has-rig .pc {
 <div class="flight" aria-hidden="true"></div>
 <div class="pc" aria-hidden="true"><canvas></canvas><span class="pc-m a">+</span><span class="pc-m b">+</span><span class="pc-m c">+</span><span class="pc-m d">+</span><span class="pc-cap mono"></span></div>
 
+<!-- D1 · navigation and reader layer: Contents, VOL console, Key sheet, stamp, proof, inspector -->
+<div class="pop toc mono" id="toc" role="dialog" aria-label="Contents" hidden data-lenis-prevent>
+  <p class="pop-h"><span>Contents</span><span class="lbl">Specimen No. 02 · 6 pp.</span></p>
+  <ol class="toc-l"></ol>
+</div>
+<div class="pop volpop mono" id="volpop" role="dialog" aria-label="Volume" hidden>
+  <div class="fader big" data-fader></div>
+  <div class="vp-pre" role="group" aria-label="Volume presets"><button type="button" data-vol="0">Whisper 00</button><button type="button" data-vol="5">As designed 05</button><button type="button" data-vol="11">Loud 11</button></div>
+</div>
+<div class="pop fnpop mono" id="fnpop" role="dialog" aria-label="Footnote" hidden><span class="fnpop-t"></span><button type="button">Go to the note →</button></div>
+<div class="ks" id="ks" role="dialog" aria-modal="true" aria-labelledby="ks-h" hidden data-lenis-prevent>
+  <div class="ks-in">
+    <div class="ks-top mono"><span class="lbl"><span class="idx">?</span>Key</span><button class="ks-x" id="ks-x" type="button" data-key="Esc">Close <span aria-hidden="true">✕</span></button></div>
+    <h2 class="ks-h" id="ks-h">Key to the Specimen</h2>
+    <p class="ks-sub mono lbl">Punctuation that means its action. Press any key to try it.</p>
+    <ol class="ks-l mono"></ol>
+    <p class="ks-last mono lbl" aria-live="polite">Last key: —</p>
+    <p class="ks-t mono lbl">By hand — every key has a touch route</p>
+    <ul class="ks-g mono">
+      <li><span>Tap a letter of the name</span><span>Strike</span></li>
+      <li><span>Swipe across the name</span><span>Pluck</span></li>
+      <li><span>Drag a tape</span><span>Scrub</span></li>
+      <li><span>Tap the No.02 seal five times</span><span>Volume 11</span></li>
+      <li><span>Menu → Volume</span><span>Whisper to LOUD</span></li>
+      <li><span>Tap the folio</span><span>Contents</span></li>
+    </ul>
+    <div class="ks-foot mono"><button class="ks-sw" id="ks-sw" type="button" aria-pressed="true">Single-key shortcuts <i class="o" aria-hidden="true"></i> <span>On</span></button><span class="lbl">Ignored while you type</span></div>
+  </div>
+</div>
+<div class="stamp mono" aria-hidden="true"><span class="stamp-w"></span><span class="stamp-s"></span></div>
+<canvas class="proof-cv" aria-hidden="true" hidden></canvas>
+<pre class="tele" aria-hidden="true" hidden></pre>
+<p class="selchip" aria-hidden="true"></p>
+<p class="rsz mono" aria-hidden="true"></p>
 <div class="toast mono" id="toast" role="status" aria-live="polite"></div>
 
 <script async id="lenis-js" src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
@@ -1312,19 +1581,25 @@ html.has-rig .pc {
                     setWord/kick run the FIG.4 physics when matter-js is live, else the static typeset
        K2.plate { el, canvas, setStats({ px, drops }), setEmpty(b), print(), number, signature, visible }
        K2.rewind.run() — kick, 2.4s scroll to the top, short calibration replay
+     D1 · modes, director and navigation layer
+       K2.mode      { vol 0–11, proof, brush 'ikb'|'gold', tip 'round'|'chisel'|'type', show, bias, set(patch) → bool, toggle(k) }
+                    mirrored to html[data-vol|data-proof|data-brush|data-tip|data-show] and --vol; 'k2:mode' event on document
+                    { detail: { mode, changed[] } }. vol 11 = the LOUD event (back to the previous VOL ≤ 10 after 10s), 0 = WHISPER
+       K2.vol       { a (bias −1…1), w(wdth), g(wght), fv(w, g), fit(line, box) } — remap any display instance; CSS lines read --vp/--vn
+       K2.director  { run(name, { dur, end(cancelled) }) → bool, end(name), current, quiet(ms) } — one page-scale event at a time;
+                    priority rewind > press-pull > klein = eleven = whisper > snap > demonstration; 'k2:director' events
+       K2.events    { eleven(), whisper(), stamp(word, sub, hairline), shake() }
+       K2.pages     { turn(n 1–6), flap(from, to), current, contents(open) } · K2.keys { table, sheet(open), enabled, fallback(e) }
+       K2.proof     { on, spec(el, fn) } — register a live spec tag · K2.notes { add(mark, text), jump(i) } · K2.help()
      ──────────────────────────────────────────────────────────────────────── */
   const K2 = window.K2 = {
-    version: 'C',
+    version: 'D1',
     env,
     util: { $, $$, clamp, lerp, smooth, pad3, mk, Track },
     lastInput: performance.now(),
     hooks: [],
     onLayout(fn) { this.hooks.push(fn); },
-    footnotes: [
-      ['*', 'slnt is synthetic: Anybody has an ital axis, the lean is a skewX transform.'],
-      ['†', 'Demo figures, like every number on this page.'],
-      ['‡', 'No glyphs were harmed. Several were stretched.']
-    ],
+    footnotes: [],   /* [mark, text] — read from the colophon's #fns at boot; K2.notes.add() appends */
     pigment: { enabled: false, splat() {}, drop() {}, burst() {} },
     fit(line, box, base = 100) {
       box.style.fontSize = base + 'px';
@@ -1339,10 +1614,13 @@ html.has-rig .pc {
   const F = { t: 0, dt: 1 / 60, y: window.scrollY, dy: 0, vel: 0, vw: innerWidth, vh: innerHeight, max: 1, p: 0 };
   const S = (() => {
     const list = [];
+    /* telemetry (PROOF): per-system tick ms, the names that kept the loop awake, an EMA of the frame interval */
+    const stat = { trace: false, awake: [], ms: 16.7, idle: null };
     let raf = 0, last = 0;
     function frame(t) {
       raf = 0;
-      const dt = last ? clamp((t - last) / 1000, 1 / 240, 1 / 20) : 1 / 60;
+      const dt = last ? clamp((t - last) / 1000, 1 / 240, 1 / 20) : 1 / 60, tr = stat.trace;
+      if (tr) { if (last) stat.ms += (Math.min(t - last, 250) - stat.ms) * .08; stat.awake.length = 0; }
       last = t; F.t = t; F.dt = dt;
       for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].pre) list[i].pre(t, dt);
       const y = window.scrollY;
@@ -1353,11 +1631,18 @@ html.has-rig .pc {
       F.p = clamp(y / F.max, 0, 1);
       for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].read) list[i].read(t, dt);
       let busy = F.vel !== 0;
-      for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].tick && list[i].tick(t, dt)) busy = true;
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i];
+        if (s.active === false || !s.tick) continue;
+        if (!tr) { if (s.tick(t, dt)) busy = true; continue; }
+        const a = performance.now(), b = s.tick(t, dt);
+        s.ms = (s.ms || 0) + (performance.now() - a - (s.ms || 0)) * .15;
+        if (b) { busy = true; stat.awake.push(s.name); }
+      }
       /* a system may already have woken the loop during this frame (Lenis emits scroll from pre):
          never queue a second callback, or callbacks double every frame */
       if (busy) { if (!raf) raf = requestAnimationFrame(frame); }
-      else if (!raf) last = 0;
+      else if (!raf) { last = 0; if (stat.idle) stat.idle(); }
     }
     function wake() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame); }
     document.addEventListener('visibilitychange', () => {
@@ -1368,7 +1653,10 @@ html.has-rig .pc {
       add(sys) { list.push(sys); wake(); return sys; },
       remove(sys) { const i = list.indexOf(sys); if (i >= 0) list.splice(i, 1); },
       wake,
-      frame: F
+      frame: F,
+      stat,
+      /* console.table(K2.scheduler.systems()): the loop, as data */
+      systems: () => list.map(s => ({ name: s.name, active: s.active !== false, 'tick ms': +(s.ms || 0).toFixed(3) }))
     };
   })();
   K2.scheduler = S;
@@ -1604,19 +1892,45 @@ html.has-rig .pc {
       v.g.disconnect(); v.g.connect(bp); bp.connect(this.bus);
       v.src.addEventListener('ended', () => bp.disconnect());
     },
-    /* the page gets louder on the way down */
+    /* the LOUD event: a 55Hz swell under all seven strings struck as a chord, the low-pass thrown open */
+    bass() {
+      if (!this.on || !this.gate('bass', 400)) return;
+      const c = this.ctx, t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(55, t);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.5, t + .05); g.gain.exponentialRampToValueAtTime(.001, t + 1.2);
+      o.connect(g); g.connect(this.bus); o.start(t); o.stop(t + 1.25);
+      o.onended = () => { o.disconnect(); g.disconnect(); };
+      for (let i = 0; i < 7; i++) this.play(this.ks[i], .24, (i / 3 - 1) * .5, 1, t + .02 + i * .025);
+      this.lp.frequency.cancelScheduledValues(t); this.lp.frequency.setTargetAtTime(12000, t, .04);
+      clearTimeout(this.bT); this.bT = setTimeout(() => this.setLevel(F.p), 1400);
+    },
+    /* a page turn: paper swished through a falling band, then the leaf settles with a tick */
+    turn() {
+      if (!this.on || !this.gate('turn', 160)) return;
+      const c = this.ctx, t = c.currentTime, bp = c.createBiquadFilter();
+      bp.type = 'bandpass'; bp.Q.value = .9; bp.frequency.setValueAtTime(5200, t); bp.frequency.exponentialRampToValueAtTime(900, t + .2);
+      const v = this.play(this.noise, 0, .25, 1, t, .24);
+      if (!v) return;
+      v.g.gain.setValueAtTime(0, t); v.g.gain.linearRampToValueAtTime(.12, t + .03); v.g.gain.exponentialRampToValueAtTime(.001, t + .22);
+      v.g.disconnect(); v.g.connect(bp); bp.connect(this.bus);
+      v.src.addEventListener('ended', () => bp.disconnect());
+      setTimeout(() => this.tick(.7), 190);
+    },
+    /* WHISPER: the master drops 12 dB for as long as the hush lasts */
+    duck(on) { this.dk = on ? .25 : 1; this.setLevel(F.p); },
+    /* the page gets louder on the way down, and VOL turns the whole instrument up or down */
     setLevel(p) {
       if (!this.ctx) return;
-      const t = this.ctx.currentTime;
-      this.master.gain.setTargetAtTime(.5 + .3 * p, t, .25);
-      this.lp.frequency.setTargetAtTime(1600 * Math.pow(4.75, p), t, .25);
+      const t = this.ctx.currentTime, v = Mode.s.vol, k = .55 + .09 * Math.min(v, 10) + (v > 10 ? .25 : 0);
+      this.master.gain.setTargetAtTime(Math.min(.95, (.5 + .3 * p) * k * (this.dk || 1)), t, .25);
+      this.lp.frequency.setTargetAtTime(Math.min(15000, 1600 * Math.pow(4.75, p) * Math.pow(2, (v - 5) / 4)), t, .25);
     }
   };
   function syncSound() {
+    const loud = Sound.on && Mode.s.vol === 11;
     $$('[data-sound]').forEach(b => {
       b.setAttribute('aria-pressed', String(Sound.on));
-      $('.st', b).textContent = Sound.on ? 'On' : 'Off';
-      b.dataset.cursorLabel = Sound.on ? 'Sound off' : 'Sound on';
+      $('.st', b).textContent = loud ? 'Loud' : Sound.on ? 'On' : 'Off';
     });
   }
   document.addEventListener('visibilitychange', () => {
@@ -1676,20 +1990,44 @@ html.has-rig .pc {
   const nav = $('.nav'), page = $('.page'), menu = $('#menu'), menuBtn = $('#menu-btn');
   const folioP = $('#folio-p'), folioT = $('#folio-t'), folioN = $('.folio-n');
   let navMid = 26, menuOpen = false, menuT = 0;
+  /* the masthead monogram's instance per page: [4, B] — the title ramp, a tape voice, the text setting,
+     two client voices, the board's current stage, Black Extended on the band */
+  const MONO = { '01': [[50, 100], [150, 900]], '02': [[122, 850], [150, 900]], '03': [[80, 520], [80, 520]], '04': [[150, 250], [50, 900]], '05': [[112, 700], [112, 700]], '06': [[150, 900], [150, 900]] };
   const Chrome = {
-    name: 'chrome', active: true, tone: 'paper', key: '', lp: -1,
+    name: 'chrome', active: true, tone: 'paper', key: '', lp: -1, hold: false, n: 1, meter: '', mono: '',
+    segs: $$('.meter i'), m4b: $$('.m4b > span'),
     tick() {
       const tone = Zones.toneAt(F.y + navMid);
       if (tone !== this.tone) { nav.dataset.tone = tone; this.tone = tone; }
       const fz = Zones.folioAt(F.y + F.vh * .35);
-      if (fz && fz.n + fz.title !== this.key) {
+      if (fz && fz.n + fz.title !== this.key && !this.hold) {
         const first = !this.key;
-        this.key = fz.n + fz.title;
+        this.key = fz.n + fz.title; this.n = +fz.n || 1;
         folioP.textContent = fz.n + '/06'; folioT.textContent = fz.title;
         if (!first && !env.reduce && folioN.animate) folioN.animate([{ transform: 'translateY(60%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' });
+        Pages.mark(this.n);
       }
+      this.level();
+      this.monogram();
       if (Sound.on && Math.abs(F.p - this.lp) > .01) { this.lp = F.p; Sound.setLevel(F.p); }
       return false;
+    },
+    /* level meter: lit up to the current page, the next segments flicker with scroll speed */
+    level() {
+      const n = this.n, pk = Math.min(6 - n, Math.round(Math.min(1, Math.abs(F.vel) / 2600) * (6 - n) + (Math.abs(F.vel) > 60 ? .5 : 0)));
+      const key = n * 8 + pk;
+      if (key === this.meter) return;
+      this.meter = key;
+      for (let i = 0; i < 6; i++) { const s = this.segs[i]; s.classList.toggle('on', i < n); s.classList.toggle('pk', i >= n && i < n + pk); }
+    },
+    monogram() {
+      const n = folioP.textContent.slice(0, 2), st = n === '05' ? Board.stage : -1;
+      const key = n + st;
+      if (key === this.mono) return;
+      this.mono = key;
+      const sg = st >= 0 && st < 4 ? Board.stages[st] : null;
+      const ins = st >= 4 ? MONO['06'] : sg ? [[sg.w, sg.g], [sg.w, sg.g]] : MONO[n] || MONO['01'];
+      for (let i = 0; i < this.m4b.length; i++) { const s = this.m4b[i].style, v = ins[i & 1]; s.setProperty('--mw', v[0]); s.setProperty('--mg', v[1]); }
     }
   };
   const focusables = el => $$('a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])', el);
@@ -1699,11 +2037,14 @@ html.has-rig .pc {
     menuOpen = true; menu.hidden = false; menuBtn.setAttribute('aria-expanded', 'true');
     page.inert = true; nav.inert = true;
     K2.lockScroll(true);
-    /* each word fitted to the measure: a specimen crescendo from Work (50/300) to Contact (150/900) */
-    $$('.ml-b', menu).forEach(bx => { if (K2.fit($('.ml-t', bx), bx) > innerHeight * .2) bx.style.fontSize = (innerHeight * .2).toFixed(1) + 'px'; });
+    fitMenu();
     if (env.reduce) menu.classList.add('open');
     else requestAnimationFrame(() => requestAnimationFrame(() => menu.classList.add('open')));
     $('.menu-list a', menu).focus({ preventScroll: true });
+  }
+  /* each word fitted to the measure: a specimen crescendo from Work (50/300) to Contact (150/900); VOL re-fits it live */
+  function fitMenu() {
+    $$('.ml-b', menu).forEach(bx => { if (K2.fit($('.ml-t', bx), bx) > innerHeight * .16) bx.style.fontSize = (innerHeight * .16).toFixed(1) + 'px'; });
   }
   function closeMenu(restore) {
     if (!menuOpen) return;
@@ -1783,7 +2124,8 @@ html.has-rig .pc {
       if (!isFocus && (dc === 'glyph' || dc === 'throw')) { this.kind = 'glyph'; this.label = dc === 'throw' ? (t.dataset.cursorLabel || 'Throw') : ''; }
       else if (!isFocus && (dc === 'chip' || dc === 'paint')) { this.kind = 'chip'; this.paint = dc === 'paint'; this.label = t.dataset.cursorLabel || ''; }
       else if (!isFocus && dc === 'hide') this.kind = 'hide';
-      else { this.kind = 'el'; this.label = t.dataset.cursorLabel || this.verb(t); }
+      /* a control that already shows its label teaches its key instead of repeating itself */
+      else { this.kind = 'el'; this.label = t.dataset.key ? (Keys.on ? 'Key ' + t.dataset.key : '') : t.dataset.cursorLabel || this.verb(t); }
       /* instrument mode: the marks click softly as they lock onto a new control */
       if (t !== was && this.kind === 'el') Sound.tick(.3);
     },
@@ -1809,7 +2151,7 @@ html.has-rig .pc {
       const r = this.rect, boxed = r.ok;
       let L, T, R, B;
       if (boxed) { const pad = this.kind === 'glyph' ? 3 : 6; L = r.l - pad; T = r.t - pad; R = r.r + pad; B = r.b + pad; }
-      else { L = P.x - 9; T = P.y - 9; R = P.x + 9; B = P.y + 9; }
+      else { const h = Events.hush ? 6 : 9; L = P.x - h; T = P.y - h; R = P.x + h; B = P.y + h; }
       this.press *= Math.exp(-dt * 10);
       const ins = this.press * 3;
       const tx = this.tx, ty = this.ty;
@@ -1840,7 +2182,7 @@ html.has-rig .pc {
       if (this.kind === 'glyph' && !lab && this.src) lab = this.axes(this.src);
       else if (this.kind === 'chip' && this.paint) lab = Pigment.gain(P.x, P.y) > 0 ? 'Paint' : '';
       else if (this.kind === 'base' || this.kind === 'hide') lab = '';
-      if (lab !== this.chipS) { this.chip.textContent = lab; this.chipS = lab; }
+      if (lab !== this.chipS) { this.chip.textContent = lab; this.chip.classList.toggle('long', lab.length > 30); this.chipS = lab; }
       const on = !!lab;
       if (on !== this.chipOn) { this.chip.classList.toggle('on', on); this.chipOn = on; }
       if (on) {
