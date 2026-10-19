@@ -2090,7 +2090,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
     K: [640, 560, 490, 430],
     src: null, kind: 'base', label: '', paint: false,
     rect: { l: 0, t: 0, r: 0, b: 0, ok: false },
-    live: false, focus: false, press: 0, chipS: '', chipOn: false, placed: false,
+    live: false, focus: false, press: 0, chipS: '', chipOn: false, placed: false, cw: 0,
     init() {
       if (!env.fine) return;
       root.classList.add('has-rig');
@@ -2138,6 +2138,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
     },
     read() {
       const r = this.rect;
+      if (this.cw < 0 && this.chipOn) this.cw = this.chip.offsetWidth;   /* a new label: measure it once, so it never leaves the viewport */
       r.ok = false;
       if (!this.src || (this.kind !== 'glyph' && this.kind !== 'el')) return;
       if (!this.src.isConnected) { this.src = null; this.kind = 'base'; return; }
@@ -2182,11 +2183,11 @@ html.whisper .rig .c { width: 5px; height: 5px; }
       if (this.kind === 'glyph' && !lab && this.src) lab = this.axes(this.src);
       else if (this.kind === 'chip' && this.paint) lab = Pigment.gain(P.x, P.y) > 0 ? 'Paint' : '';
       else if (this.kind === 'base' || this.kind === 'hide') lab = '';
-      if (lab !== this.chipS) { this.chip.textContent = lab; this.chip.classList.toggle('long', lab.length > 30); this.chipS = lab; }
+      if (lab !== this.chipS) { this.chip.textContent = lab; this.chip.classList.toggle('long', lab.length > 30); this.chipS = lab; this.cw = -1; busy = true; }
       const on = !!lab;
       if (on !== this.chipOn) { this.chip.classList.toggle('on', on); this.chipOn = on; }
       if (on) {
-        const cs = `translate3d(${this.x[2].toFixed(1)}px,${(this.y[2] + 6).toFixed(1)}px,0)`;
+        const cs = `translate3d(${Math.max(4, Math.min(this.x[2], F.vw - Math.max(this.cw, 0) - 8)).toFixed(1)}px,${(this.y[2] + 6).toFixed(1)}px,0)`;
         if (cs !== this.ctf) { this.chip.style.transform = cs; this.ctf = cs; }
       }
       return busy;
@@ -2201,7 +2202,10 @@ html.whisper .rig .c { width: 5px; height: 5px; }
   /* ── 10 · B1 Title page: FIG.1 plucked string ──────────────────────────────
      A damped 1D wave chain (N = 7, free ends) drives each glyph's axes around
      the rest ramp t_i = i/6. Displacement is zero-mean per line, so the
-     measure is conserved; a smoothed scaleX absorbs what is left.          */
+     measure is conserved; a smoothed scaleX absorbs what is left.
+     VOL keeps the line on its measure analytically from the advance grid:
+     louder (wider) sets the name smaller, scaled toward its own baseline;
+     quieter (narrower) holds the size and tracks the sorts out.           */
   const NAME = '4BOOSER', N = 7;
   const SK = 220, SK0 = 38, SC = 7, SH = 1 / 240;          // coupling, on-site, damping, substep
   const RAMP = Float32Array.from({ length: N }, (_, i) => i / (N - 1));
@@ -2216,7 +2220,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
     roK: new Float32Array(N).fill(1),
     adv: new Float32Array(N * 9), kap: new Float32Array(N).fill(1),   /* advance per px of font size on a 3×3 designspace grid */
     wd: new Float32Array(N), wg: new Float32Array(N), gx: new Float32Array(N), gw: new Float32Array(N), xc: new Float32Array(N), rx: new Float32Array(N),
-    str: [], tf: [], acc: 0, still: false, pending: true, fn: 0,
+    str: [], tf: [], acc: 0, still: false, pending: true, fn: 0, vv: -1, trueUp: false,
     touch: new Track(),
     /* DOM per breakpoint: one fitted line on desktop, 4BOO / SER on phones (one chain across the break) */
     build() {
@@ -2254,7 +2258,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
         }
         hl.append(kin, app, ros);
         this.h1.appendChild(hl);
-        this.lines.push({ hl, kin, kl, probe, i0, n: part.length, capEl, baseEl, capLab, baseLab, bounds, bS: [], ro, fs: 100, cw: 1, scale: 1, tf: '', base: 0, capY: 0, kh: 1, topDoc: 0, left: 0, roW: 40 });
+        this.lines.push({ hl, kin, kl, probe, i0, n: part.length, capEl, baseEl, capLab, baseLab, bounds, bS: [], ro, fs: 100, cw: 1, scale: 1, tf: '', base: 0, capY: 0, kh: 1, topDoc: 0, left: 0, roW: 40, v: 1, trk: 0, kv: 1, vS: -1 });
       }
       this.str = this.L.map(() => ''); this.tf = this.L.map(() => '');
       return true;
@@ -2288,9 +2292,10 @@ html.whisper .rig .c { width: 5px; height: 5px; }
       this.lines.forEach((ln, j) => {
         let w = 0;
         for (let i = ln.i0; i < ln.i0 + ln.n; i++) w += real[i];
-        ln.cw = cws[j]; ln.fs = w ? ln.cw / w : 100; ln.scale = 1;
+        ln.cw = cws[j]; ln.fs = w ? ln.cw / w : 100; ln.scale = 1; ln.kv = 1;
         ln.kin.style.fontSize = ln.fs.toFixed(3) + 'px';
       });
+      this.vv = -1; this.trueUp = true;
       this.measure();
     },
     measure() {
@@ -2306,14 +2311,47 @@ html.whisper .rig .c { width: 5px; height: 5px; }
       });
       this.lines.forEach(ln => {
         ln.baseEl.style.top = ln.base.toFixed(1) + 'px';
-        ln.capEl.style.top = ln.capY.toFixed(1) + 'px';
-        const ext = Math.max(8, ln.fs * .05);
-        ln.bounds.forEach(b => { b.style.top = (ln.capY - ext).toFixed(1) + 'px'; b.style.height = (ln.base - ln.capY + 2 * ext).toFixed(1) + 'px'; });
-        if (env.desk) { ln.capLab.style.top = (ln.capY - 4).toFixed(1) + 'px'; ln.baseLab.style.top = (ln.base - 4).toFixed(1) + 'px'; }
-        else { ln.capLab.style.top = (ln.capY - 11).toFixed(1) + 'px'; ln.baseLab.style.top = (ln.base + 4).toFixed(1) + 'px'; }
+        ln.kl.style.transformOrigin = `0 ${ln.base.toFixed(1)}px`;   /* VOL scales the name toward its baseline */
+        ln.vS = -1; this.app(ln);
         ln.bS = []; ln.ro.forEach(r => { r.tf = ''; r.s1 = r.s2 = ''; });
       });
       this.still = false; this.pending = true;
+    },
+    /* cap line, advance boundaries and labels for the size the line is printed at (v = VOL scale) */
+    app(ln) {
+      if (ln.vS === ln.v) return;
+      ln.vS = ln.v;
+      const fs = ln.fs * ln.v, ext = Math.max(8, fs * .05);
+      ln.capY = ln.base - this.cap * fs;
+      ln.capEl.style.top = ln.capY.toFixed(1) + 'px';
+      for (const b of ln.bounds) { b.style.top = (ln.capY - ext).toFixed(1) + 'px'; b.style.height = (ln.base - ln.capY + 2 * ext).toFixed(1) + 'px'; }
+      if (env.desk) { ln.capLab.style.top = (ln.capY - 4).toFixed(1) + 'px'; ln.baseLab.style.top = (ln.base - 4).toFixed(1) + 'px'; }
+      else { ln.capLab.style.top = (ln.capY - 11).toFixed(1) + 'px'; ln.baseLab.style.top = (ln.base + 4).toFixed(1) + 'px'; }
+    },
+    /* VOL → per line: v (uniform scale ≤ 1) when the biased rest ramp is wider than the measure,
+       else trk (px between sorts) to keep the edge-to-edge measure at the designed size */
+    volFit() {
+      for (const ln of this.lines) {
+        let nr = 0, nv = 0;
+        for (let i = ln.i0; i < ln.i0 + ln.n; i++) {
+          const rw = 50 + 100 * RAMP[i], rg = 100 + 800 * RAMP[i];
+          nr += this.advance(i, rw, rg); nv += this.advance(i, Vol.w(rw), Vol.g(rg)) * ln.kv;
+        }
+        if (nv >= nr) { ln.v = nr / nv; ln.trk = 0; }
+        else { ln.v = 1; ln.trk = (nr - nv) * ln.fs / Math.max(1, ln.n - 1); }
+      }
+    },
+    /* after a fit or a settled VOL: true the prediction against the laid-out line once (read phase, no transforms) */
+    read() {
+      if (!this.trueUp || Intro.running) return;
+      this.trueUp = false;
+      for (const ln of this.lines) {
+        let p = 0;
+        for (let i = ln.i0; i < ln.i0 + ln.n; i++) p += this.advance(i, this.wd[i], this.wg[i]) * ln.fs;
+        const real = ln.kl.offsetWidth;
+        if (p > 0 && real > 0) ln.kv = clamp(real / p, .9, 1.1);
+      }
+      this.vv = -1;
     },
     /* the input driving the string this frame: finger, intro ghost brush, or a recent mouse */
     source(t) {
@@ -2331,8 +2369,8 @@ html.whisper .rig .c { width: 5px; height: 5px; }
       Sound.pluck(i, 1, panOf(cx));
       K2.pigment.burst(cx, cy, { strength: 1, letter: i, size: r.height });
       if (env.reduce) {
-        k.style.fontVariationSettings = `'wdth' 150, 'wght' 900`; this.str[i] = '';
-        setTimeout(() => { k.style.fontVariationSettings = this.restAxes(i); this.str[i] = this.restAxes(i); }, 320);
+        k.style.fontVariationSettings = Vol.fv(150, 900); this.str[i] = '';
+        setTimeout(() => this.write(1, true), 320);
         return;
       }
       this.sa[i] = 1; this.sv[i] = 0; this.hold[i] = .12; this.v[i] += 6;
@@ -2372,6 +2410,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
         breath = smooth(0, 1000, tau) * (1 - smooth(6800, 8000, tau));
       }
       const scrollF = Math.abs(F.vel) > 40 && !env.reduce ? clamp(F.vel / 60, -60, 60) * 2.2 : 0; /* scroll plucks the first glyph */
+      if (this.vv !== Vol.ver) { this.vv = Vol.ver; this.volFit(); this.pending = true; }
       if (this.still && !src && !breath && !scrollF && !this.pending && !Intro.running) return false;
       this.still = false; this.pending = false;
 
@@ -2382,8 +2421,8 @@ html.whisper .rig .c { width: 5px; height: 5px; }
         const vx = src.vx / 1000;
         let mx = 0, sum = 0;
         for (let j = 0; j < this.lines.length; j++) {
-          const ln = this.lines[j], cy = ln.topDoc - F.y + ln.kh / 2, dy = src.y - cy;
-          const gate = Math.abs(dy) < .8 * ln.kh, R = .95 * ln.fs, Rg = .9 * ln.fs;
+          const ln = this.lines[j], fv = ln.fs * ln.v, cy = ln.topDoc - F.y + ln.base - .36 * fv, dy = src.y - cy;
+          const gate = Math.abs(dy) < .8 * ln.kh * ln.v, R = .95 * fv, Rg = .9 * fv;
           for (let i = ln.i0; i < ln.i0 + ln.n; i++) {
             const dx = this.xc[i] - src.x;
             if (gate) {
@@ -2440,36 +2479,41 @@ html.whisper .rig .c { width: 5px; height: 5px; }
           if (s > 0) tt += (1 - tt) * Math.min(s, 1); else if (s < 0) tt *= 1 + .6 * Math.max(s, -1);
           wd = 50 + 100 * tt + 100 * this.ow[i]; wg = 100 + 800 * tt + 800 * this.og[i];
         }
-        wd = Math.round(clamp(wd, 50, 150) * 10) / 10; wg = Math.round(clamp(wg, 100, 900));
+        wd = Math.round(clamp(Vol.w(clamp(wd, 50, 150)), 50, 150) * 10) / 10; wg = Math.round(clamp(Vol.g(clamp(wg, 100, 900)), 100, 900));
         const k = this.L[i];
         k._w = this.wd[i] = wd; k._g = this.wg[i] = wg;
         const fv = `'wdth' ${wd}, 'wght' ${wg}`;
         if (fv !== this.str[i]) { k.style.fontVariationSettings = fv; this.str[i] = fv; }
-        this.kick[i] *= Math.exp(-dt * 22);
-        const sk = env.reduce ? 0 : clamp(this.v[i] * 5, -12, 12), ky = this.kick[i];
-        const tf = Math.abs(sk) < .05 && Math.abs(ky) < .002 ? '' : `translate3d(0,${ky.toFixed(3)}em,0) skewX(${(-sk).toFixed(2)}deg)`;
-        if (tf !== this.tf[i]) { k.style.transform = tf; this.tf[i] = tf; }
       }
       for (let j = 0; j < this.lines.length; j++) {
         const ln = this.lines[j], i1 = ln.i0 + ln.n;
-        /* width-fit: predicted line width → scaleX in the same frame (never wider than the measure) */
+        /* width-fit: predicted line width (tracking included) → scale in the same frame, never wider than the measure */
         let x = 0;
-        for (let i = ln.i0; i < i1; i++) { const w = this.advance(i, this.wd[i], this.wg[i]) * ln.fs; this.gx[i] = x; this.gw[i] = w; x += w; }
-        const cap = x > 0 ? ln.cw / x : 1;
+        for (let i = ln.i0; i < i1; i++) { const w = this.advance(i, this.wd[i], this.wg[i]) * ln.fs * ln.kv; this.gx[i] = x; this.gw[i] = w; x += w + (i < i1 - 1 ? ln.trk : 0); }
+        const cap = x > 0 ? ln.cw / (x * ln.v) : 1;
         ln.scale = Math.min(clamp(cap, .6, 1.25), cap);
-        const ltf = `scaleX(${ln.scale.toFixed(4)})`;
+        const sx = ln.scale * ln.v, ltf = ln.v === 1 ? `scaleX(${sx.toFixed(4)})` : `scale(${sx.toFixed(4)},${ln.v.toFixed(4)})`;
         if (ltf !== ln.tf) { ln.kl.style.transform = ltf; ln.tf = ltf; }
+        this.app(ln);
+        /* glyph transforms: tracking offset, the strike kick, lean with wave velocity */
+        for (let i = ln.i0; i < i1; i++) {
+          const k = this.L[i];
+          this.kick[i] *= Math.exp(-dt * 22);
+          const sk = env.reduce ? 0 : clamp(this.v[i] * 5, -12, 12), ky = this.kick[i], tx = (i - ln.i0) * ln.trk;
+          const tf = Math.abs(sk) < .05 && Math.abs(ky) < .002 && !tx ? '' : `translate3d(${tx.toFixed(1)}px,${ky.toFixed(3)}em,0) skewX(${(-sk).toFixed(2)}deg)`;
+          if (tf !== this.tf[i]) { k.style.transform = tf; this.tf[i] = tf; }
+        }
         /* advance boundaries ride the glyph edges */
         for (let b = 0; b <= ln.n; b++) {
           const i = ln.i0 + Math.min(b, ln.n - 1);
-          const s = `translate3d(${((b < ln.n ? this.gx[i] : this.gx[i] + this.gw[i]) * ln.scale).toFixed(1)}px,0,0)`;
+          const s = `translate3d(${((b < ln.n ? this.gx[i] : this.gx[i] + this.gw[i]) * sx).toFixed(1)}px,0,0)`;
           if (s !== ln.bS[b]) { ln.bounds[b].style.transform = s; ln.bS[b] = s; }
         }
         /* readouts centred under each glyph, swept apart where neighbours squeeze to hairline */
         const rw = ln.roW, gap = 6;
         let lim = 0;
         for (let i = ln.i0; i < i1; i++) {
-          const cx = (this.gx[i] + this.gw[i] / 2) * ln.scale;
+          const cx = (this.gx[i] + this.gw[i] / 2) * sx;
           this.xc[i] = ln.left + cx;
           this.rx[i] = Math.max(cx - rw / 2, lim); lim = this.rx[i] + rw + gap;
         }
@@ -2711,6 +2755,22 @@ html.whisper .rig .c { width: 5px; height: 5px; }
       this.P = acc; this.maxW = maxW; this.wtf = this.words.map(() => '');
       this.dirty = true;
     }
+    /* VOL changed the voices' widths: re-space the marquee (and add clones if it no longer covers the tape)
+       without touching the string's state, so a ringing tape keeps ringing */
+    measureWords() { this.nw = this.set.map(w => w.offsetWidth); }
+    rewidth() {
+      const nw = this.nw, k = nw.length;
+      if (!nw || !k) return;
+      const sum = nw.reduce((a, b) => a + b, 0) || 1, maxW = Math.max(...nw);
+      while (this.words.length < Math.ceil((this.L + 2 * maxW) / sum) * k) {
+        const j = this.words.length % k, c = this.set[j].cloneNode(true);
+        c.classList.add('cl'); this.el.appendChild(c); this.words.push(c); this.wtf.push('');
+      }
+      let acc = 0;
+      for (let q = 0; q < this.words.length; q++) { const w = nw[q % k]; this.ww[q] = w; this.wb[q] = acc; acc += w; }
+      this.P = acc; this.maxW = maxW; this.nw = null;
+      this.render();
+    }
     nAt(s) {
       const x = clamp(s / this.D, 0, this.N - 1.0001), j = x | 0, fr = x - j, u = clamp(s / this.L, 0, 1);
       return this.S * 4 * u * (1 - u) + this.d[j] + (this.d[j + 1] - this.d[j]) * fr;
@@ -2829,7 +2889,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
       tp.bump(at * tp.L, 1400 * amp); tp.pluckSound(at * tp.L, amp);
       S.wake();
     },
-    sec: $('.strings'), field: $('.str-field'), tapes: [], topDoc: 0, left: 0,
+    sec: $('.strings'), field: $('.str-field'), tapes: [], topDoc: 0, left: 0, vv: 0, due: false,
     GEO: { d: [[.25, .75], [.73, .27]], p: [[.22, .74], [.72, .24]] }, /* [y at left, y at right] per tape, field-relative */
     init() { this.tapes = $$('.str', this.field).map(el => new Tape(el)); this.sec.classList.add('live'); },
     layout() {
@@ -2837,8 +2897,13 @@ html.whisper .rig .c { width: 5px; height: 5px; }
       this.topDoc = r.top + window.scrollY; this.left = r.left;
       const W = this.field.clientWidth, H = this.field.clientHeight;
       this.tapes.forEach(tp => { tp.layout(W, H, env.desk); tp.render(); });
+      this.vv = Vol.ver;
     },
+    /* VOL: read the voices' new widths in the read phase, re-space them in tick */
+    read() { if (this.vv !== Vol.ver) { this.vv = Vol.ver; this.tapes.forEach(tp => tp.measureWords()); this.due = true; } },
+    revol() { this.tapes.forEach(tp => { tp.measureWords(); tp.rewidth(); }); this.vv = Vol.ver; this.due = false; },
     tick(t, dt) {
+      if (this.due) { this.due = false; this.tapes.forEach(tp => tp.rewidth()); }
       if (env.reduce) return false;
       const ptr = P.seen && P.inside && P.type !== 'touch' && t - P.last < 400 ? P : null;
       for (let i = 0; i < this.tapes.length; i++) this.tapes[i].frame(t, dt, ptr);
@@ -3772,7 +3837,7 @@ void main () {
   const HIST = 64;
   const Work = {
     name: 'work', active: false,
-    sec: $('#work'), list: $('.rows'), rows: [], hov: null, kb: null, act: -1, frozen: false,
+    sec: $('#work'), list: $('.rows'), rows: [], hov: null, kb: null, act: -1, frozen: false, vv: 0,
     rr: { l: 0, t: 0, r: 0, b: 0, ok: false },
     card: $('.pc'), cv: $('.pc canvas'), cap: $('.pc-cap'), cc: null, pl: new Plates(),
     shown: 0, placed: false, x: 0, y: 0, mx: 1, my: .5, mvx: 0, mvy: 0, tf: '', op: '', vis: false, drawn: -1,
@@ -3848,18 +3913,38 @@ void main () {
     kinWrite(T) {
       const L = this.kin.L;
       for (let j = 0; j < L.length; j++) {
-        const q = this.kinAxes(j, T), wd = Math.round((50 + 100 * q) * 2) / 2, wg = Math.round(100 + 800 * q);
+        const q = this.kinAxes(j, T), wd = Math.round(Vol.w(50 + 100 * q) * 2) / 2, wg = Math.round(Vol.g(100 + 800 * q));
         const fv = `'wdth' ${wd}, 'wght' ${wg}`;
         if (fv !== this.kin.str[j]) { L[j].style.fontVariationSettings = fv; this.kin.str[j] = fv; L[j]._w = wd; L[j]._g = wg; }
       }
     },
-    /* the axes a row letter is set in right now (start and end of the title flight) */
-    axes(row, j) { const l = row._L[j]; return l._w != null ? [l._w, l._g] : [row._w, row._g]; },
+    /* the axes a row letter is set in right now, VOL included (start and end of the title flight) */
+    axes(row, j) { const l = row._L[j]; return l._w != null ? [l._w, l._g] : [Vol.w(row._w), Vol.g(row._g)]; },
     layout() {
+      this.fitTitles();
+      this.kin.str.fill('');
+      this.kinWrite(performance.now() / 1000);
+      /* preview card (fine pointers) and inline plates (phones) */
+      if (env.fine) {
+        const d = DPR(1.5);
+        this.cc = fitCanvas(this.cv, CARD.w + 2 * CARD.px, CARD.h + 2 * CARD.py, d);
+        this.pl.size(CARD.w, CARD.h, d);
+        this.drawn = -1;
+      }
+      const ic = this.inl;
+      if (!env.desk) {
+        const cw = ic.cvs[0].offsetWidth, ch = ic.cvs[0].offsetHeight, d = DPR(1.5);
+        ic.pl.size(cw, ch, d);
+        ic.cs = ic.cvs.map(cv => fitCanvas(cv, cw, ch, d));
+        ic.cvs.forEach((cv, i) => this.inlineDraw(i, 1.5 + i, 0));
+      }
+    },
+    /* the five voices on their measure (layout, and again whenever VOL moves them) */
+    fitTitles() {
       const desk = env.desk, rows = this.rows;
       this.list.style.removeProperty('--rt-fs');
       rows.forEach(r => { $('.r-title', r).style.fontSize = ''; });
-      if (this.kin.L.length) this.kin.L.forEach(l => { l.style.fontVariationSettings = `'wdth' 125, 'wght' 700`; });
+      if (this.kin.L.length) this.kin.L.forEach(l => { l.style.fontVariationSettings = Vol.fv(125, 700); });
       const base = parseFloat(getComputedStyle($('.r-title', rows[0])).fontSize) || 60;
       if (desk) {
         /* one size for all five voices: the widest title must leave the dot leaders their 24px */
@@ -3876,21 +3961,7 @@ void main () {
       }
       rows.forEach(r => { const rb = r.getBoundingClientRect(); r._te = r._btn.getBoundingClientRect().right - rb.left; r._fs = parseFloat(getComputedStyle(r._btn).fontSize) || base; });
       this.kin.str.fill('');
-      this.kinWrite(performance.now() / 1000);
-      /* preview card (fine pointers) and inline plates (phones) */
-      if (env.fine) {
-        const d = DPR(1.5);
-        this.cc = fitCanvas(this.cv, CARD.w + 2 * CARD.px, CARD.h + 2 * CARD.py, d);
-        this.pl.size(CARD.w, CARD.h, d);
-        this.drawn = -1;
-      }
-      const ic = this.inl;
-      if (!desk) {
-        const cw = ic.cvs[0].offsetWidth, ch = ic.cvs[0].offsetHeight, d = DPR(1.5);
-        ic.pl.size(cw, ch, d);
-        ic.cs = ic.cvs.map(cv => fitCanvas(cv, cw, ch, d));
-        ic.cvs.forEach((cv, i) => this.inlineDraw(i, 1.5 + i, 0));
-      }
+      this.vv = Vol.ver;
     },
     inlineDraw(i, T, my) {
       const ic = this.inl, c = ic.cs[i];
@@ -3909,6 +3980,7 @@ void main () {
     tick(t, dt) {
       const T = t / 1000;
       let busy = false;
+      if (this.vv !== Vol.ver && !Case.isOpen) { this.fitTitles(); this.kinWrite(T); }   /* VOL is moving the voices on screen */
       if (this.kin.L.length && !this.frozen && !env.reduce) { this.kinWrite(T); busy = true; }
       /* the page scrolled the hovered row out from under a still pointer */
       const r = this.rr;
@@ -4329,8 +4401,8 @@ void main () {
      scrubbed, so it reverses for free. Reduced motion: a static heading.  */
   const Thresh = {
     name: 'thresh', active: false,
-    sec: $('#process'), pin: $('.thr-pin'), a: $('.thr-a'), at: $('.thr-a .thr-t'), b: $('.thr-b'), bt: $('.thr-b .thr-t'), ink: $('.thr-ink'),
-    G: [], O: 1, live: false, top: 0, run: 1, p: -1, w0: [], w1: [], gs: [], os: '', as: '', ks: '', loud: false, ox: 0, oy: 0, pw: 1, ph: 1,
+    sec: $('#process'), pin: $('.thr-pin'), a: $('.thr-a'), at: $('.thr-a .thr-t'), b: $('.thr-b'), bt: $('.thr-b .thr-t'), ink: $('.thr-ink'), vv: 0,
+    G: [], O: 1, live: false, top: 0, run: 1, p: -1, w0: [], w1: [], gs: [], os: '', as: '', ks: '', loud: false, ox: 0, oy: 0, pw: 1, ph: 1, trk: 0,
     init() {
       const word = this.bt.textContent.trim();
       this.bt.textContent = '';
@@ -4346,20 +4418,23 @@ void main () {
       this.G.forEach(g => { g.style.cssText = ''; });
       this.bt.style.cssText = ''; this.at.style.cssText = ''; this.ink.style.opacity = '';
       this.gs = this.G.map(() => ['', '', '']); this.os = this.as = this.ks = '';
-      K2.fit(this.bt, this.b); K2.fit(this.at, this.a);
+      const fb = K2.vol.fit(this.bt, this.b); K2.fit(this.at, this.a);
       /* MOVES fills the measure; the hairline (Anybody 50/100 is very narrow) takes the height that is left */
       const room = (this.live ? this.pin.clientHeight : innerHeight) * .62, scale = (el, k) => { el.style.fontSize = (parseFloat(el.style.fontSize) * k).toFixed(2) + 'px'; };
       if (this.b.offsetHeight > room * .6) scale(this.b, room * .6 / this.b.offsetHeight);
       const left = room - this.b.offsetHeight, ha = this.a.offsetHeight;
       if (ha > left) scale(this.a, left / ha);
-      if (!this.live) return;
+      /* a quieter VOL narrows MOVES: it keeps its measure by tracking out (only the gap VOL opened, never at rest) */
+      const n = this.G.length, gap = fb.cw - this.bt.offsetWidth;
+      this.trk = Vol.a < 0 && gap > 1 ? gap / Math.max(1, n - 1) : 0;
+      if (!this.live) { if (this.trk) this.bt.style.letterSpacing = (gap / n).toFixed(2) + 'px'; return; }
       /* measure each glyph at 150 and at 50, then set them absolutely so thinning one never moves another */
-      const n = this.G.length, x = [], l0 = this.bt.getBoundingClientRect().left;
-      for (let j = 0; j < n; j++) { x[j] = this.G[j].getBoundingClientRect().left - l0; this.w0[j] = this.G[j].offsetWidth; }
+      const x = [], l0 = this.bt.getBoundingClientRect().left;
+      for (let j = 0; j < n; j++) { x[j] = this.G[j].getBoundingClientRect().left - l0 + j * this.trk; this.w0[j] = this.G[j].offsetWidth; }
       this.bt.classList.add('thin');
       for (let j = 0; j < n; j++) this.w1[j] = this.G[j].offsetWidth;
       this.bt.classList.remove('thin');
-      const lw = this.bt.offsetWidth, lh = this.bt.offsetHeight;
+      const lw = this.bt.offsetWidth + (n - 1) * this.trk, lh = this.bt.offsetHeight;
       this.bt.style.width = lw + 'px'; this.bt.style.height = lh + 'px';
       this.G.forEach((g, j) => { g.style.left = x[j] + 'px'; });
       sec.classList.add('abs');
@@ -4377,6 +4452,7 @@ void main () {
     },
     tick() {
       if (!this.live) return false;
+      if (this.vv !== Vol.ver && Vol.moving) { this.layout(); this.vv = Vol.ver; }   /* on screen while VOL moves: re-set live */
       const p = clamp((F.y - this.top) / this.run, 0, 1);
       if (p === this.p) return false;
       this.p = p;
@@ -4386,7 +4462,7 @@ void main () {
       for (let j = 0; j < this.G.length; j++) {
         if (j === this.O) continue;
         const g = this.G[j], c = this.gs[j], dir = j < this.O ? -1 : 1, w = lerp(this.w0[j], this.w1[j], q);
-        const fv = q > 0 ? `'wdth' ${(150 - 100 * q).toFixed(1)}, 'wght' 900` : '';
+        const fv = q > 0 ? Vol.fv(150 - 100 * q, 900) : '';
         const tf = q > 0 ? `translate3d(${((this.w0[j] - w) / 2 + dir * q * vw * .2).toFixed(1)}px,0,0)` : '';
         const op = q > 0 ? (1 - q).toFixed(3) : '';
         if (fv !== c[0]) { g.style.fontVariationSettings = fv; c[0] = fv; }
@@ -4410,20 +4486,23 @@ void main () {
      pin releases into the identical blue band.                           */
   const STAGE_SVH = 60, FLOOD_SVH = 70, FLAP0 = 90, FLAP = 70, FLAP_STAG = 30;
   const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', BLANK = { ch: ' ', w: 150, g: 900, bl: false, fv: '' };
-  const face = (ch, w, g, bl) => ({ ch, w, g, bl, fv: `'wdth' ${Math.round(w)}, 'wght' ${Math.round(g)}` });
+  /* a face keeps its own instance; the printed one goes through VOL (re-derived when VOL moves) */
+  const faceFv = s => (s.ch === ' ' ? '' : `'wdth' ${Math.round(Vol.w(s.w))}, 'wght' ${Math.round(Vol.g(s.g))}`);
+  const face = (ch, w, g, bl) => { const s = { ch, w, g, bl, fv: '' }; s.fv = faceFv(s); return s; };
   class Tile {
     constructor() {
       this.el = mk('span', 'tile');
       this.lv = ['t', 'b', 'ft', 'fb'].map(c => {
         const l = mk('span', 'lf ' + c), g = mk('b'), sh = mk('i');
         l.append(g, sh); this.el.appendChild(l);
-        return { l, g, sh, ch: null, fv: null, bl: null, tf: '', so: '', on: c === 't' || c === 'b' };
+        return { l, g, sh, ch: null, fv: null, bl: null, tf: '', so: '', on: c === 't' || c === 'b', s: null };
       });
       this.cur = BLANK; this.q = []; this.t0 = 0; this.first = true; this.started = false;
       this.paint(0, BLANK); this.paint(1, BLANK);
     }
     paint(k, s) {
       const v = this.lv[k];
+      v.s = s;
       if (v.ch !== s.ch) { v.g.textContent = s.ch; v.ch = s.ch; }
       if (v.fv !== s.fv) { v.g.style.fontVariationSettings = s.fv; v.fv = s.fv; }
       if (v.bl !== s.bl) { v.l.classList.toggle('blue', s.bl); v.bl = s.bl; }
@@ -4435,6 +4514,12 @@ void main () {
       if (so !== v.so) { v.sh.style.opacity = so; v.so = so; }
     }
     set(s) { this.q.length = 0; this.cur = s; this.started = false; this.paint(0, s); this.paint(1, s); this.show(2, false); this.show(3, false); }
+    /* VOL moved: every face this tile holds or will show re-derives its printed instance */
+    revol() {
+      for (const s of this.q) s.fv = faceFv(s);
+      this.cur.fv = faceFv(this.cur);
+      for (let k = 0; k < 4; k++) { const v = this.lv[k]; if (v.s) { v.s.fv = faceFv(v.s); this.paint(k, v.s); } }
+    }
     start(q, t0) { if (this.started) { this.started = false; this.paint(0, this.cur); this.paint(1, this.cur); this.show(2, false); this.show(3, false); } this.q = q; this.t0 = t0; this.first = true; }
     /* one flap: the old top leaf falls 0 → -90°, then the new bottom leaf falls 90 → 0° */
     step(t) {
@@ -4462,7 +4547,7 @@ void main () {
     sec: $('#instances'), pin: $('.inst-pin'), boardEl: $('.board'), flood: $('.flood'), fc: null,
     nEl: $('#inst-n'), iEl: $('#inst-i'), rail: $$('.inst-bar .rail i'), dEl: $('#inst-d'), lEl: $('#inst-l'), copyEl: $('.inst-copy'),
     ds: $('.ds'), dsP: $('.ds-p'), dsD: $('.ds-d'), dsX: $('.ds-x'), dsY: $('.ds-y'), dsN: $$('.ds-n'), dsR: $('#ds-r'),
-    stages: [], tiles: [], live: false, top: 0, run: 1, svh: 1, stage: -1, fp: -1, u: -1, size: 1, busy: false,
+    stages: [], tiles: [], live: false, top: 0, run: 1, svh: 1, stage: -1, fp: -1, u: -1, size: 1, busy: false, vv: 0,
     fw: 0, fh: 0, cols: 16, rows: 10, prev: null, ink: [], blue: [], dS: ['', '', '', '', ''],
     NODES: [[0, 1], [.25, .625], [.62, .25], [1, 0]],
     init() {
@@ -4541,8 +4626,10 @@ void main () {
       this.run = Math.max(1, this.sec.offsetHeight - this.pin.offsetHeight);
       this.u = -1; this.fp = -1;
     },
+    revol() { this.tiles.forEach(tl => tl.revol()); this.vv = Vol.ver; },
     tick(t) {
       if (!this.live) return false;
+      if (this.vv !== Vol.ver) this.revol();
       const run = F.y - this.top, sh = this.svh * STAGE_SVH / 100, u = run / sh;
       const fp = clamp((run - 4 * sh) / (this.svh * FLOOD_SVH / 100), 0, 1);
       /* stage with hysteresis; the flood stage (4) blanks the tiles to IKB */
@@ -4615,7 +4702,7 @@ void main () {
     form: $('#mk'), input: $('#mk-in'), chips: $$('#mk .chip'), typeT: 0,
     init() {
       this.lines = $$('.ld', this.el).map((ld, i) => {
-        const t = $('.ld-t', ld), ln = { i, el: ld, t, shelf: $('.ld-shelf', ld), probe: mk('i', 'probe'), glyphs: [], w: +ld.style.getPropertyValue('--w'), g: +ld.style.getPropertyValue('--g'), fs: 0, base: 0 };
+        const t = $('.ld-t', ld), ln = { i, el: ld, t, shelf: $('.ld-shelf', ld), probe: mk('i', 'probe'), glyphs: [], w: +ld.style.getPropertyValue('--w'), g: +ld.style.getPropertyValue('--g'), vw: 0, vg: 0, ls: 0, fs: 0, base: 0 };
         this.split(ln, t.textContent);
         return ln;
       });
@@ -4640,8 +4727,15 @@ void main () {
       ln.t.appendChild(ln.probe);
     },
     sanitize: w => String(w || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 12),
+    /* fitted at the current VOL, never larger than the designed (VOL 05) size: a line VOL narrows
+       keeps its measure by tracking out the gap */
     fitLine(ln, fs) {
-      ln.fs = fs || K2.fit(ln.t, ln.el);
+      if (fs) { ln.el.style.fontSize = fs.toFixed(2) + 'px'; ln.fs = fs; ln.ls = 0; }
+      else {
+        const f = K2.vol.fit(ln.t, ln.el);
+        ln.fs = f.fs; ln.ls = f.fs < f.fsV - .5 ? (f.cw - f.w) / Math.max(1, ln.glyphs.length - 1) : 0;
+      }
+      ln.t.style.letterSpacing = ln.ls ? ln.ls.toFixed(2) + 'px' : '';
       ln.base = ln.probe.getBoundingClientRect().top - ln.el.getBoundingClientRect().top;
       ln.shelf.style.top = ln.base.toFixed(1) + 'px';
     },
@@ -4651,10 +4745,15 @@ void main () {
     layout() {
       Phys.unfix();
       const [a, b, c] = this.lines;
-      this.lines.forEach(ln => this.fitLine(ln));
-      if (b.fs > c.fs * .8) { b.el.style.fontSize = (c.fs * .8).toFixed(2) + 'px'; this.fitLine(b, c.fs * .8); }
-      if (a.fs > b.fs) { a.el.style.fontSize = b.fs.toFixed(2) + 'px'; this.fitLine(a, b.fs); }
+      this.lines.forEach(ln => { ln.vw = Vol.w(ln.w); ln.vg = Vol.g(ln.g); ln.t.style.letterSpacing = ''; this.fitLine(ln); });
+      if (b.fs > c.fs * .8) this.fitLine(b, c.fs * .8);
+      if (a.fs > b.fs) this.fitLine(a, b.fs);
       Phys.measure();
+    },
+    /* VOL settled: re-set the lines and fly the home sorts to their new homes (loose ones stay loose) */
+    revol() {
+      if (!Phys.live) { this.layout(); return; }
+      Phys.keep = true; this.layout(); Phys.keep = false;
     },
     /* the static swap: re-set the middle line, then tell everyone */
     typeset(word) {
@@ -4769,19 +4868,19 @@ void main () {
           const r = el.getBoundingClientRect(), bx = r.left - R.left, by = r.top - R.top;
           el.style.setProperty('--aw', r.width.toFixed(2) + 'px');
           if (el.classList.contains('sp')) return;
-          const ink = this.ink(el.textContent, ln, r.width);
+          const ink = this.ink(el.textContent, ln, r.width - ln.ls);
           const top = base - ink.a, bot = Math.min(base + Math.min(ink.d, 0), base) - .5;
           const w = Math.max(4, ink.r - ink.l), h = Math.max(4, bot - top), cx = ink.l + w / 2, hx = bx + cx, hy = top + h / 2;
           let g = el._g;
           if (!g) {
             g = el._g = { el, li, dot: /[.,]/.test(el.textContent), b: null, inW: false, state: 'wait', w: 0, h: 0, hx, hy, bx, by, fs: 0,
-              baseW: ln.w, baseG: ln.g, sq: 0, sqv: 0, bold: 0, tf: null, fv: null, I: 0, x0: 0, y0: 0, a0: 0, t0: 0, dur: 0, lift: 0, hitT: -1e9, outT: 0 };
+              baseW: ln.vw, baseG: ln.vg, sq: 0, sqv: 0, bold: 0, tf: null, fv: null, I: 0, x0: 0, y0: 0, a0: 0, t0: 0, dur: 0, lift: 0, hitT: -1e9, outT: 0 };
             el.dataset.cursor = 'throw'; el.dataset.cursorLabel = 'Throw';
             this.G.push(g);
             if (keep) g.fresh = true;
           }
           const moved = Math.abs(g.hx - hx) + Math.abs(g.hy - hy);
-          g.li = li; g.bx = bx; g.by = by; g.fs = ln.fs; g.baseW = ln.w; g.baseG = ln.g; g.float = base - bot > 3;
+          g.li = li; g.bx = bx; g.by = by; g.fs = ln.fs; g.baseW = ln.vw; g.baseG = ln.vg; g.float = base - bot > 3;
           el.style.transformOrigin = `${cx.toFixed(2)}px ${(hy - by).toFixed(2)}px`;
           if (!g.b || Math.abs(g.w - w) > .5 || Math.abs(g.h - h) > .5) this.body(g, w, h, hx, hy);
           g.hx = hx; g.hy = hy;
@@ -4813,7 +4912,7 @@ void main () {
     /* ink box of one sort at its line's instance (canvas metrics, trued to the DOM advance) */
     ink(ch, ln, adv) {
       const c = this.mc || (this.mc = mk('canvas').getContext('2d'));
-      c.font = cfont(ln.w, ln.g, ln.fs);
+      c.font = cfont(ln.vw, ln.vg, ln.fs);
       const m = c.measureText(ch), k = m.width > 0 ? adv / m.width : 1;
       if (!(m.actualBoundingBoxAscent > 0)) return { l: adv * .06, r: adv * .94, a: ln.fs * Hero.cap, d: 0 };
       return { l: -(m.actualBoundingBoxLeft || 0) * k, r: (m.actualBoundingBoxRight || m.width) * k, a: m.actualBoundingBoxAscent, d: m.actualBoundingBoxDescent || 0 };
@@ -5264,10 +5363,11 @@ void main () {
       this.el.textContent = '';
       for (const ch of this.text) { const s = mk('span', 'em', ch); this.el.appendChild(s); this.L.push(s); }
       this.str = this.L.map(() => '');
-      const copy = () => { this.ripple(); K2.copy(this.text, this.el); };
-      $('#copy').addEventListener('click', copy);
-      this.el.addEventListener('click', () => { const s = getSelection(); if (!s || s.isCollapsed) copy(); });
+      $('#copy').addEventListener('click', () => this.copy());
+      this.el.addEventListener('click', () => { const s = getSelection(); if (!s || s.isCollapsed) this.copy(); });
     },
+    /* from a click or a key (both count as the user gesture the clipboard needs) */
+    copy() { this.ripple(); return K2.copy(this.text, this.el); },
     fit() {
       const box = this.el.parentElement, cs = this.el.style;
       cs.fontSize = '';
@@ -5280,7 +5380,7 @@ void main () {
       const n = this.L.length, q = (t - this.t0) / 520, c = -2 + q * (n + 4), done = q >= 1;
       for (let i = 0; i < n; i++) {
         const a = done ? 0 : Math.exp(-((i - c) * (i - c)) / 2.4);
-        const fv = a < .01 ? '' : `'wdth' ${(96 + 54 * a).toFixed(1)}, 'wght' ${Math.round(640 + 220 * a)}`;
+        const fv = a < .01 ? '' : Vol.fv(96 + 54 * a, 640 + 220 * a);
         if (fv !== this.str[i]) { this.L[i].style.fontVariationSettings = fv; this.str[i] = fv; }
       }
       if (done) this.t0 = -1;
@@ -5462,22 +5562,23 @@ void main () {
   const Rewind = {
     name: 'rewind', active: true, on: false, t0: 0, rows: [], mid: null, was: null, off: null,
     init() {
-      $('#fns').append(...K2.footnotes.map(([m, s]) => { const li = mk('li'); li.append(mk('b', '', m), mk('span', '', s)); return li; }));
       $('#rewind').addEventListener('click', () => this.run());
       this.rows = Work.rows;
       this.mid = new Float32Array(this.rows.length); this.was = new Int8Array(this.rows.length); this.off = new Float64Array(this.rows.length);
     },
     run() {
       const top = $('#top');
+      /* the director's top event: anything page-scale (the LOUD event, a demonstration) yields to it */
+      Director.run('rewind', { dur: 4200 });
       K2.loud.kick();
-      if (env.reduce) { K2.scrollTo(0, { immediate: true, focus: top }); return; }
+      if (env.reduce) { K2.scrollTo(0, { immediate: true, focus: top }); Director.end('rewind'); return; }
       Sound.whoosh();
       $$('#rewind > span').forEach((sp, i) => sp.animate([{ transform: 'none' }, { transform: 'translateY(-140%)', opacity: 0, offset: .45 }, { transform: 'translateY(140%)', opacity: 0, offset: .46 }, { transform: 'none', opacity: 1 }], { duration: 700, delay: i * 70, easing: 'cubic-bezier(.6,0,.2,1)' }));
       setTimeout(() => {
         this.on = true; this.t0 = performance.now(); this.was.fill(0); S.wake();
         K2.scrollTo(0, {
           duration: 2.4, easing: x => (x < .5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2), lock: true, focus: top,
-          onComplete: () => { this.on = false; K2.intro.play({ short: true }); }
+          onComplete: () => { this.on = false; Director.end('rewind'); K2.intro.play({ short: true }); }
         });
       }, 260);
     },
