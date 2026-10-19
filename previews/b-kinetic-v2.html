@@ -202,8 +202,8 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
 .fd-s i.x.on { background: currentColor; }
 .fd-n { min-width: 2ch; }
 .fader:focus-visible { outline-offset: 6px; }
-.vol-btn, .pf { display: none; align-items: center; gap: .5em; padding: 4px 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.pf { display: inline-flex; }
+.vol-btn, .pf { display: inline-flex; align-items: center; gap: .5em; padding: 4px 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.vol-btn { display: none; }   /* the fader collapses to this button under 1100px */
 .pf .o, .md-row .o { width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
 [data-proof][aria-pressed="true"] .o { background: currentColor; }
 .kc {
@@ -1078,7 +1078,12 @@ html.whisper .rig .c { width: 5px; height: 5px; }
 @media (max-width: 760px) {
   .toc { width: auto; }
   .toc-l a { min-height: 46px; }
-  .ks-in { padding-left: var(--gut-l); }
+  .toc-t { font-size: 21px; }
+  /* phones lead with the touch routes; the keys follow for iPad keyboards */
+  .ks-in { display: flex; flex-direction: column; padding-left: var(--gut-l); }
+  .ks-l, .ks-last { order: 2; }
+  .ks-foot { order: 3; }
+  .ks-t { margin-top: 0; }
   .ks-h { font-size: 38px; }
   .ks-l li { grid-template-columns: 6rem minmax(0, 1fr); }
   .ks-l .ks-st { grid-column: 2; justify-self: start; }
@@ -2030,7 +2035,8 @@ html.whisper .rig .c { width: 5px; height: 5px; }
       this.mono = key;
       const sg = st >= 0 && st < 4 ? Board.stages[st] : null;
       const ins = st >= 4 ? MONO['06'] : sg ? [[sg.w, sg.g], [sg.w, sg.g]] : MONO[n] || MONO['01'];
-      for (let i = 0; i < this.m4b.length; i++) { const s = this.m4b[i].style, v = ins[i & 1]; s.setProperty('--mw', v[0]); s.setProperty('--mg', v[1]); }
+      /* floored at 62/200: a 20px masthead stays a legible hairline */
+      for (let i = 0; i < this.m4b.length; i++) { const s = this.m4b[i].style, v = ins[i & 1]; s.setProperty('--mw', Math.max(62, v[0])); s.setProperty('--mg', Math.max(200, v[1])); }
     }
   };
   const focusables = el => $$('a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])', el);
@@ -2219,7 +2225,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
     roK: new Float32Array(N).fill(1),
     adv: new Float32Array(N * 9), kap: new Float32Array(N).fill(1),   /* advance per px of font size on a 3×3 designspace grid */
     wd: new Float32Array(N), wg: new Float32Array(N), gx: new Float32Array(N), gw: new Float32Array(N), xc: new Float32Array(N), rx: new Float32Array(N),
-    str: [], tf: [], acc: 0, still: false, pending: true, fn: 0, vv: -1, trueUp: false,
+    str: [], tf: [], acc: 0, still: false, pending: true, fn: 0, vv: -1, trueUp: 0,
     touch: new Track(),
     /* DOM per breakpoint: one fitted line on desktop, 4BOO / SER on phones (one chain across the break) */
     build() {
@@ -2294,7 +2300,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
         ln.cw = cws[j]; ln.fs = w ? ln.cw / w : 100; ln.scale = 1; ln.kv = 1;
         ln.kin.style.fontSize = ln.fs.toFixed(3) + 'px';
       });
-      this.vv = -1; this.trueUp = true;
+      this.vv = -1; this.trueUp = 2;
       this.measure();
     },
     measure() {
@@ -2340,11 +2346,13 @@ html.whisper .rig .c { width: 5px; height: 5px; }
         else { ln.v = 1; ln.trk = (nr - nv) * ln.fs / Math.max(1, ln.n - 1); }
       }
     },
-    /* after a fit or a settled VOL: true the prediction against the laid-out line once (read phase, no transforms) */
+    /* after a fit or a settled VOL: true the prediction against the laid-out line once (read phase, no transforms);
+       trueUp counts down 2 → 1 on the next write, so the line being read is the one wd/wg describe */
     read() {
-      if (!this.trueUp || Intro.running) return;
-      this.trueUp = false;
+      if (this.trueUp !== 1 || Intro.running) return;
+      this.trueUp = 0;
       for (const ln of this.lines) {
+        if (!Vol.a) { ln.kv = 1; continue; }   /* at VOL 05 the rest ramp is the measure by construction */
         let p = 0;
         for (let i = ln.i0; i < ln.i0 + ln.n; i++) p += this.advance(i, this.wd[i], this.wg[i]) * ln.fs;
         const real = ln.kl.offsetWidth;
@@ -2468,6 +2476,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
     },
     write(dt, final) {
       this.fn = (this.fn + 1) & 1023;
+      if (this.trueUp > 1) { this.trueUp = 1; S.wake(); }
       const txt = final || !(this.fn & 1);
       for (let i = 0; i < N; i++) {
         let wd, wg;
@@ -5675,13 +5684,17 @@ void main () {
     },
     tick() {
       if (this.due) { this.due = false; this.settle(); }
+      else if (this.moving) {
+        if (menuOpen) fitMenu();                       /* the phone menu's words answer the fader live */
+        if (!Phys.live && Phys.active) Loud.layout();  /* a static headline on screen re-sets live (sorts on springs re-home once, on settle) */
+      }
       return this.moving;
     },
     /* the bias came to rest: every display system re-fits once, exactly, then the pins re-measure */
     settle() {
       Strings.revol(); Work.fitTitles(); Thresh.layout(); Thresh.vv = this.ver; Board.revol(); Loud.revol(); Mail.fit();
       if (menuOpen) fitMenu();
-      Hero.trueUp = true; Hero.pending = true;
+      Hero.trueUp = 2; Hero.pending = true;
       Zones.measure(); measurePins();
     },
     /* a display line fitted at the current bias, never above its designed (VOL 05) size;
@@ -5821,7 +5834,7 @@ void main () {
     init() {
       this.el.addEventListener('pointerdown', () => {
         const t = performance.now();
-        this.taps = this.taps.filter(x => t - x < 1500); this.taps.push(t);
+        this.taps = this.taps.filter(x => t - x < 2000); this.taps.push(t);
         Sound.tick(.8); Sound.buzz(5);
         if (!env.reduce && this.el.animate) this.el.animate([{ transform: 'rotate(-8deg) scale(.88)' }, { transform: 'rotate(-8deg)' }], { duration: 240, easing: 'cubic-bezier(.2,1.6,.5,1)' });
         if (this.taps.length >= 5) { this.taps = []; K2.mode.set({ vol: 11 }); }
@@ -5945,7 +5958,7 @@ void main () {
       this.links = PAGES.map(([href, title], i) => {
         const li = mk('li'), a = mk('a'), t = mk('span', 'toc-t', title), q = i / 5;
         a.href = href; a.dataset.n = i + 1; a.dataset.cursorLabel = 'Turn';
-        t.style.cssText = `--w:${50 + 100 * q};--g:${Math.round(100 + 800 * q)}`;
+        t.style.cssText = `--w:${60 + 90 * q};--g:${Math.round(200 + 700 * q)}`;   /* the contents are a ramp, kept legible at 25px */
         a.append(mk('span', 'toc-cur', '▸'), mk('span', 'idx', pad2(i + 1)), t, mk('i', 'lead'), mk('span', 'lbl', 'p.' + pad2(i + 1)));
         li.appendChild(a); this.list.appendChild(li);
         return a;
@@ -6046,7 +6059,7 @@ void main () {
         }
         /* the sheet is the table: caps ramp from 50/100 to 150/900 down the page */
         const li = mk('li'), caps = mk('span', 'ks-caps'), a = mk('span', 'ks-a'), st = mk('span', 'ks-st'), q = ri / (KEYS.length - 1);
-        row.capEls = row.caps.map(c => { const k = mk('kbd', 'cap', c); k.style.cssText = `--w:${50 + 100 * q};--g:${Math.round(100 + 800 * q)}`; caps.appendChild(k); return k; });
+        row.capEls = row.caps.map(c => { const k = mk('kbd', 'cap', c); k.style.cssText = `--w:${60 + 90 * q};--g:${Math.round(200 + 700 * q)}`; caps.appendChild(k); return k; });
         a.append(mk('span', '', row.label), mk('i', 'lead'));
         li.append(caps, a, st);
         row.stEl = st;
@@ -6201,7 +6214,7 @@ void main () {
       for (const s of this.secs) { const r = s.el.getBoundingClientRect(); s.top = r.top + y; s.h = r.height; s.x = r.left; s.w = r.width; }
       const I = [], fsOf = el => Math.round(parseFloat(getComputedStyle(el).fontSize) || 0);
       const add = (el, sec, kind, tag, ref) => { if (el) I.push({ el, sec, kind, tag, ref, ok: false }); };
-      Hero.lines.forEach(ln => add(ln.kin, 0, 'hero', () => `Anybody · ${ln.n} sorts · ${Math.round(ln.fs * ln.v)}px · fit ${Math.round(ln.cw)}${ln.trk ? ' · tr +' + ln.trk.toFixed(1) : ''}`, ln));
+      Hero.lines.forEach(ln => add(ln.kin, 0, 'hero', () => `Anybody · ${ln.n} sorts · ${Math.round(ln.fs * ln.v)}px · fit ${Math.round(ln.cw)}${ln.trk > .05 ? ' · tr +' + ln.trk.toFixed(1) : ''}`, ln));
       const tg = $('.tagline'), tgf = fsOf(tg);
       add(tg, 0, 'line', () => `Anybody 68/560 · ${tgf}px`);
       Strings.tapes.forEach((tp, i) => add(tp.el, 1, 'tape', () => `Tape ${'BA'[i]} · ${tp.N} nodes · ${Math.round(tp.fs)}px · ${tp.set.length} voices`, tp));
@@ -6344,7 +6357,7 @@ void main () {
         const x = Hero.xc[k], y = y0 - Hero.u[k] * 40, u = Hero.u[k];
         c.fillRect(x - 3, y - 3, 6, 6);
         c.fillRect(x, y + 3, 1, Math.max(0, y0 + 16 - y));
-        c.fillText(`${u < 0 ? '−' : '+'}${Math.abs(u).toFixed(2)}`, x - 13, y - 7);
+        if (env.desk) c.fillText(`${u < 0 ? '−' : '+'}${Math.abs(u).toFixed(2)}`, x - 13, y - 7);
       }
     },
     /* a tape as the sim sees it: its nodes along the curve, every 3rd marked */
@@ -6602,7 +6615,7 @@ void main () {
       console.log('%cK2.help()%c lists the calls you can play.', mono + 'color: #1D2CF3;', 'font: 11px ui-monospace, monospace;');
       K2.help = () => {
         console.log('%cK2 — playable calls', mono + 'color: #1D2CF3;');
-        HELP.forEach(([c, d]) => console.log('%c' + c.padEnd(48) + '%c' + d, 'font: 11px ui-monospace, monospace; color: #1D2CF3;', 'font: 11px ui-monospace, monospace; color: #5C5F69;'));
+        HELP.forEach(([c, d]) => console.log('%c' + c.padEnd(54) + '%c' + d, 'font: 11px ui-monospace, monospace; color: #1D2CF3;', 'font: 11px ui-monospace, monospace; color: #5C5F69;'));
       };
     },
     /* a mono readout while the window resizes: what the fit engine re-set, and how long it took */
