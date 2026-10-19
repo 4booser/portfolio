@@ -4841,11 +4841,11 @@ void main () {
       this.el.classList.remove('phys');
       Loud.layout(); this.caption();
     },
-    /* before the lines are fitted: natural advances, no transforms */
+    /* before the lines are fitted: natural advances at the line's own (VOL-biased) instance, no transforms */
     unfix() {
       if (!this.live) return;
       this.el.classList.remove('phys');
-      for (const g of this.G) { g.el.style.transform = ''; g.tf = null; }
+      for (const g of this.G) { g.el.style.transform = ''; g.tf = null; g.el.style.fontVariationSettings = ''; g.fv = null; }
     },
     /* after the lines are fitted: homes, bodies, shelves, floor, walls (all in .loud px) */
     measure() {
