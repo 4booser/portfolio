@@ -857,6 +857,7 @@ html.has-rig .pc {
   .ant { grid-row: auto; }
   .fns { grid-template-columns: minmax(0, 1fr); }
   .rewind { font-size: 11px; }
+  .ld-floor { letter-spacing: .04em; }
 }
 @media (max-width: 760px) and (max-height: 700px) {
   .ds-w { display: none; }
@@ -1785,7 +1786,7 @@ html.has-rig .pc {
       else if (!isFocus && dc === 'hide') this.kind = 'hide';
       else { this.kind = 'el'; this.label = t.dataset.cursorLabel || this.verb(t); }
       /* instrument mode: the marks click softly as they lock onto a new control */
-      if (t !== was && (this.kind === 'el' || this.kind === 'glyph')) Sound.tick(.3);
+      if (t !== was && this.kind === 'el') Sound.tick(.3);
     },
     verb(t) {
       const tag = t.tagName;
@@ -4360,7 +4361,7 @@ void main () {
     KX: .06, KY: .045, CV: .1, KA: .05, CA: .14,    /* home spring (per step²) and damping (per step) */
     SQK: .16, SQC: .3,                              /* axis-squash spring */
     KNOCK: 1.6, FLING: .8, VMAX: 38, VFALL: 34,     /* pointer px/ms; body px/step caps */
-    IDLE: 9000, LAG: [42, 42, 95], GAP: 130
+    IDLE: 9000, LAG: [34, 34, 80], GAP: 90, DROP0: 9
   };
   const easeOutBack = x => { const c = 1.9, y = x - 1; return 1 + (c + 1) * y * y * y + c * y * y; };
   const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
@@ -4419,6 +4420,7 @@ void main () {
       this.bandTop = B.top - R.top; this.wallL = B.left - R.left; this.wallR = B.right - R.left;
       this.floorY = this.floorEl.getBoundingClientRect().top - R.top;
       const keep = this.keep, seen = new Set(), bases = [];
+      if (!keep) this.letGo(true);
       Loud.lines.forEach((ln, li) => {
         const lr = ln.el.getBoundingClientRect(), base = lr.top - R.top + ln.base;
         bases.push(base);
@@ -4431,7 +4433,7 @@ void main () {
           const w = Math.max(4, ink.r - ink.l), h = Math.max(4, bot - top), cx = ink.l + w / 2, hx = bx + cx, hy = top + h / 2;
           let g = el._g;
           if (!g) {
-            g = el._g = { el, li, ch: el.textContent, dot: /[.,]/.test(el.textContent), b: null, inW: false, state: 'wait', w: 0, h: 0, hx, hy, bx, by, fs: 0,
+            g = el._g = { el, li, dot: /[.,]/.test(el.textContent), b: null, inW: false, state: 'wait', w: 0, h: 0, hx, hy, bx, by, fs: 0,
               baseW: ln.w, baseG: ln.g, sq: 0, sqv: 0, bold: 0, tf: null, fv: null, I: 0, x0: 0, y0: 0, a0: 0, t0: 0, dur: 0, lift: 0, hitT: -1e9, outT: 0 };
             el.dataset.cursor = 'throw'; el.dataset.cursorLabel = 'Throw';
             this.G.push(g);
@@ -4453,12 +4455,12 @@ void main () {
       /* the static world: walls at the band edges, a thick floor under the hairline, one shelf per baseline */
       this.statics.forEach(s => M.Composite.remove(W, s));
       const span = this.wallR - this.wallL, hi = this.bandTop - 4000, lo = this.floorY + 600;
-      const st = (x, y, w, h, cat, kind) => M.Bodies.rectangle(x, y, w, h, { isStatic: true, friction: .6, collisionFilter: { category: cat, mask: CAT.GLYPH | CAT.FALL }, label: kind });
+      const st = (x, y, w, h, cat) => M.Bodies.rectangle(x, y, w, h, { isStatic: true, friction: .6, collisionFilter: { category: cat, mask: CAT.GLYPH | CAT.FALL } });
       this.statics = [
-        st(this.wallL - 200, (hi + lo) / 2, 400, lo - hi, CAT.WALL, 'wall'),
-        st(this.wallR + 200, (hi + lo) / 2, 400, lo - hi, CAT.WALL, 'wall'),
-        st((this.wallL + this.wallR) / 2, this.floorY + 300, span + 800, 600, CAT.FLOOR, 'floor')
-      ].concat(bases.map((b, i) => { const s = st((this.wallL + this.wallR) / 2, b + 40, span, 80, CAT.SHELF[i], 'shelf'); s._shelf = i; return s; }));
+        st(this.wallL - 200, (hi + lo) / 2, 400, lo - hi, CAT.WALL),
+        st(this.wallR + 200, (hi + lo) / 2, 400, lo - hi, CAT.WALL),
+        st((this.wallL + this.wallR) / 2, this.floorY + 300, span + 800, 600, CAT.FLOOR)
+      ].concat(bases.map((b, i) => { const s = st((this.wallL + this.wallR) / 2, b + 40, span, 80, CAT.SHELF[i]); s._shelf = i; return s; }));
       M.Composite.add(W, this.statics);
       this.el.classList.add('phys');
       this.rest = false;
@@ -4475,15 +4477,20 @@ void main () {
       if (!(m.actualBoundingBoxAscent > 0)) return { l: adv * .06, r: adv * .94, a: ln.fs * Hero.cap, d: 0 };
       return { l: -(m.actualBoundingBoxLeft || 0) * k, r: (m.actualBoundingBoxRight || m.width) * k, a: m.actualBoundingBoxAscent, d: m.actualBoundingBoxDescent || 0 };
     },
+    /* (re)build a sort's body; a rebuilt body keeps its place, spin and world membership */
     body(g, w, h, x, y) {
-      const M = this.M;
-      if (g.b && g.inW) M.Composite.remove(this.E.world, g.b);
+      const M = this.M, old = g.b, was = g.inW;
+      if (old && was) M.Composite.remove(this.E.world, old);
       const r = g.dot ? Math.min(w, h) * .45 : Math.min(4, w * .12, h * .12);
-      g.b = M.Bodies.rectangle(x, y, w, h, {
+      const b = g.b = M.Bodies.rectangle(old ? old.position.x : x, old ? old.position.y : y, w, h, {
         chamfer: { radius: r }, friction: g.dot ? .3 : .45, frictionStatic: .8, frictionAir: .012, restitution: g.dot ? .42 : .18,
         density: .0011 + .0007 * g.baseG / 900, slop: .02, sleepThreshold: 40
       });
-      g.b._g = g; g.I = g.b.inertia; g.w = w; g.h = h; g.inW = false;
+      b._g = g; g.I = b.inertia; g.w = w; g.h = h; g.inW = false;
+      if (old) { M.Body.setAngle(b, old.angle); M.Body.setVelocity(b, old.velocity); M.Body.setAngularVelocity(b, old.angularVelocity); }
+      this.filter(g);
+      if (g.state === 'fall') M.Body.setInertia(b, Infinity);
+      this.world(g, was);
     },
     filter(g) {
       const f = g.b.collisionFilter, s = g.state;
@@ -4532,7 +4539,7 @@ void main () {
       const M = this.M, b = g.b, V = this.V, top = Math.max(this.bandTop, -this.vy0);
       V.x = g.hx; V.y = Math.min(g.hy - g.h - 8, top - g.h / 2 - 24 - Math.random() * 60);
       M.Body.setPosition(b, V); M.Body.setAngle(b, 0);
-      V.x = 0; V.y = 6; M.Body.setVelocity(b, V); M.Body.setAngularVelocity(b, 0);
+      V.x = 0; V.y = PH.DROP0; M.Body.setVelocity(b, V); M.Body.setAngularVelocity(b, 0);
       M.Body.setInertia(b, Infinity);
       g.q = false; g.state = 'fall'; this.filter(g); this.world(g, true); M.Sleeping.set(b, false);
     },
@@ -4616,6 +4623,7 @@ void main () {
     swap(word) {
       const w = Loud.sanitize(word);
       if (!w || w === Loud.word) return false;
+      this.queue = this.queue.filter(q => q.g.li !== 1);
       for (const g of this.G) if (g.li === 1) this.evict(g);
       this.G = this.G.filter(g => g.li !== 1);
       this.keep = true;
@@ -4651,7 +4659,7 @@ void main () {
       if (e.pointerType === 'mouse') e.preventDefault();
       try { el.setPointerCapture(e.pointerId); } catch (x) { /* capture is best effort */ }
       const M = this.M, b = g.b;
-      if (g.state === 'fly') this.place(g, 'home');
+      if (g.state === 'fly') this.loosen(g, 0, 0, 0);   /* caught mid-flight: it stays where it is */
       const wx = e.clientX - this.lx, wy = e.clientY - this.vy0;
       M.Sleeping.set(b, false);
       const c = M.Constraint.create({ pointA: { x: wx, y: wy }, bodyB: b, pointB: { x: wx - b.position.x, y: wy - b.position.y }, stiffness: .2, damping: .1, length: 0 });
@@ -4818,7 +4826,13 @@ void main () {
       b.positionPrev.y -= gy;
       if (g.state === 'fall') {
         /* a mark that hangs above the baseline (an apostrophe) lands at its height, not on the shelf */
-        if (g.float && b.position.y >= g.hy) { V.x = g.hx; V.y = g.hy; M.Body.setPosition(b, V); this.land(g, v.y); return; }
+        if (g.float && b.position.y >= g.hy) {
+          const vy = v.y;
+          V.x = g.hx; V.y = g.hy; M.Body.setPosition(b, V);
+          V.x = 0; V.y = -Math.min(3, vy * .12); M.Body.setVelocity(b, V);
+          this.land(g, vy);
+          return;
+        }
         if (v.y > PH.VFALL) { V.x = 0; V.y = PH.VFALL; M.Body.setVelocity(b, V); }
         return;
       }
@@ -5102,11 +5116,15 @@ void main () {
     get visible() { return Ant.active; }
   };
 
-  /* REWIND ↑ PLAY IT AGAIN: kick, a 2.4s run to the top (every scrubbed system plays backwards), calibration replay */
+  /* REWIND ↑ PLAY IT AGAIN: the sorts get an upward kick, a 2.4s run to the top scrubs every system
+     backwards (the work rows flash their blue band as they cross the centre), calibration replays */
   const Rewind = {
+    name: 'rewind', active: true, on: false, t0: 0, rows: [], mid: null, was: null, off: null,
     init() {
       $('#fns').append(...K2.footnotes.map(([m, s]) => { const li = mk('li'); li.append(mk('b', '', m), mk('span', '', s)); return li; }));
       $('#rewind').addEventListener('click', () => this.run());
+      this.rows = Work.rows;
+      this.mid = new Float32Array(this.rows.length); this.was = new Int8Array(this.rows.length); this.off = new Float64Array(this.rows.length);
     },
     run() {
       const top = $('#top');
@@ -5114,10 +5132,34 @@ void main () {
       if (env.reduce) { K2.scrollTo(0, { immediate: true, focus: top }); return; }
       Sound.whoosh();
       $$('#rewind > span').forEach((sp, i) => sp.animate([{ transform: 'none' }, { transform: 'translateY(-140%)', opacity: 0, offset: .45 }, { transform: 'translateY(140%)', opacity: 0, offset: .46 }, { transform: 'none', opacity: 1 }], { duration: 700, delay: i * 70, easing: 'cubic-bezier(.6,0,.2,1)' }));
-      setTimeout(() => K2.scrollTo(0, {
-        duration: 2.4, easing: x => (x < .5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2), lock: true, focus: top,
-        onComplete: () => K2.intro.play({ short: true })
-      }), 260);
+      setTimeout(() => {
+        this.on = true; this.t0 = performance.now(); this.was.fill(0); S.wake();
+        K2.scrollTo(0, {
+          duration: 2.4, easing: x => (x < .5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2), lock: true, focus: top,
+          onComplete: () => { this.on = false; K2.intro.play({ short: true }); }
+        });
+      }, 260);
+    },
+    read() {
+      if (!this.on) return;
+      for (let i = 0; i < this.rows.length; i++) { const r = this.rows[i].getBoundingClientRect(); this.mid[i] = r.top + r.height / 2; }
+    },
+    tick(t) {
+      if (this.on && t - this.t0 > 4000) this.on = false;
+      let busy = this.on;
+      for (let i = 0; i < this.rows.length; i++) {
+        const row = this.rows[i];
+        if (this.on) {
+          const side = this.mid[i] < F.vh / 2 ? -1 : 1;
+          if (this.was[i] && side !== this.was[i] && !Case.isOpen) { row.style.setProperty('--o', '0%'); row.classList.add('is-on'); this.off[i] = t + 260; }
+          this.was[i] = side;
+        }
+        if (this.off[i]) {
+          if (t >= this.off[i]) { this.off[i] = 0; if (Work.hov !== row) row.classList.remove('is-on'); }
+          else busy = true;
+        }
+      }
+      return busy;
     }
   };
   K2.rewind = { run: () => Rewind.run() };
@@ -5193,7 +5235,7 @@ void main () {
   Pigment.init();
   Rewind.init();
   syncSound();
-  [LenisSys, ScrollTween, PointerSys, Intro, Hero, Strings, Text, Work, Case, Thresh, Board, Pigment, Phys, Ant, Mail, Chrome, Rig].forEach(s => S.add(s));
+  [LenisSys, ScrollTween, PointerSys, Intro, Hero, Strings, Text, Work, Case, Thresh, Board, Pigment, Phys, Ant, Mail, Rewind, Chrome, Rig].forEach(s => S.add(s));
   layout();
   watch($('.hero'), Hero); watch(Strings.field, Strings); watch(Text.sec, Text);
   watch(Work.sec, Work); watch(Thresh.sec, Thresh); watch(Board.sec, Board); watch(Ant.el, Ant); watch(Loud.el, Phys);
