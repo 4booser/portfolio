@@ -966,9 +966,9 @@ html.has-rig .pc {
 .ks {
   position: fixed; top: 0; right: 0; bottom: 0; z-index: var(--z-sheet); width: min(520px, 100vw); box-sizing: border-box;
   overflow-y: auto; overscroll-behavior: contain; background: var(--paper); color: var(--ink); border-left: 1px solid var(--ink);
-  transform: translateX(101%); transition: transform .5s var(--ease); visibility: hidden;
+  transform: translateX(101%); transition: transform .5s var(--ease), visibility 0s .5s; visibility: hidden;
 }
-.ks.open { transform: none; visibility: visible; }
+.ks.open { transform: none; visibility: visible; transition: transform .5s var(--ease); }
 .ks .lbl, .ks .idx { color: var(--mute); }
 .ks-in { padding: calc(env(safe-area-inset-top, 0px) + 16px) var(--gut-r) calc(env(safe-area-inset-bottom, 0px) + 28px) 28px; }
 .ks-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
@@ -979,7 +979,7 @@ html.has-rig .pc {
 }
 .ks-sub { margin: 0 0 18px; }
 .ks-l, .ks-g { list-style: none; margin: 0; padding: 0; }
-.ks-l li { display: grid; grid-template-columns: 7.2rem minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--hair); }
+.ks-l li { display: grid; grid-template-columns: 6.2rem minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--hair); }
 .ks-caps { display: flex; flex-wrap: wrap; gap: 5px; }
 .cap {
   display: inline-grid; place-items: center; min-width: 44px; height: 44px; box-sizing: border-box; padding: 0 8px 2px;
@@ -1010,6 +1010,7 @@ html.has-rig .pc {
 }
 .stamp.on { display: flex; }
 .stamp.inv { color: var(--paper); }
+.stamp.on-blue { color: var(--ink); }
 .stamp-w {
   font-family: var(--f-display); font-weight: 400; text-transform: uppercase; white-space: nowrap;
   font-variation-settings: 'wdth' 150, 'wght' 900; font-size: clamp(76px, 17vw, 250px); line-height: .8;
@@ -1047,9 +1048,10 @@ html.proof .nav:is([data-tone="ink"], [data-tone="blue"]) .m4b { -webkit-text-st
 .band .fnref:hover sup { color: inherit; }
 .fns li { position: relative; padding: 4px 6px; margin: -4px -6px; transition: background-color .4s var(--ease), color .4s var(--ease); }
 .fns li:focus { outline: none; }
-.fns li.ring { background: var(--paper); color: var(--ink); }
+.fns li.ring { background: var(--paper); color: var(--ink); padding: 11px 18px; margin: -11px -18px; }
 .fns li.ring b { color: var(--blue); }
-.fn-ring { position: absolute; left: -12px; top: -9px; width: calc(100% + 24px); height: calc(100% + 18px); overflow: visible; pointer-events: none; }
+/* the proof ellipse sits inside the paper slip: IKB on IKB would vanish */
+.fn-ring { position: absolute; left: 3px; top: 2px; width: calc(100% - 6px); height: calc(100% - 4px); overflow: visible; pointer-events: none; }
 .fn-ring ellipse { fill: none; stroke: var(--blue); stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 1; }
 .fn-back { margin-left: auto; padding-left: 10px; white-space: nowrap; color: var(--blue); text-decoration: none; }
 .fns li.new { animation: fn-in .5s var(--ease-out); }
@@ -1993,7 +1995,7 @@ html.whisper .rig .c { width: 5px; height: 5px; }
   let navMid = 26, menuOpen = false, menuT = 0;
   /* the masthead monogram's instance per page: [4, B] — the title ramp, a tape voice, the text setting,
      two client voices, the board's current stage, Black Extended on the band */
-  const MONO = { '01': [[50, 100], [150, 900]], '02': [[122, 850], [150, 900]], '03': [[80, 520], [80, 520]], '04': [[150, 250], [50, 900]], '05': [[112, 700], [112, 700]], '06': [[150, 900], [150, 900]] };
+  const MONO = { '01': [[62, 200], [150, 900]], '02': [[122, 850], [150, 900]], '03': [[80, 520], [80, 520]], '04': [[150, 250], [50, 900]], '05': [[112, 700], [112, 700]], '06': [[150, 900], [150, 900]] };
   const Chrome = {
     name: 'chrome', active: true, tone: 'paper', key: '', lp: -1, hold: false, n: 1, meter: '', mono: '',
     segs: $$('.meter i'), m4b: $$('.m4b > span'),
@@ -5791,7 +5793,8 @@ void main () {
     },
     stamp(word, sub, thin) {
       const el = this.el;
-      el.classList.toggle('inv', Zones.toneAt(F.y + F.vh / 2) !== 'paper'); el.classList.toggle('wh', !!thin);
+      const tone = Zones.toneAt(F.y + F.vh / 2);
+      el.classList.toggle('inv', tone === 'ink'); el.classList.toggle('on-blue', tone === 'blue'); el.classList.toggle('wh', !!thin);
       this.word.textContent = word; this.sub.textContent = sub;
       if (this.anim) this.anim.cancel();
       el.classList.add('on');
@@ -5852,7 +5855,7 @@ void main () {
       if (!this.big) el.dataset.key = '+ −';
       el.addEventListener('pointerdown', e => {
         if (e.button > 0) return;
-        this.r = seg.getBoundingClientRect(); this.id = e.pointerId;
+        this.r = this.segs.map(s => { const b = s.getBoundingClientRect(); return [b.left, b.right]; }); this.id = e.pointerId;
         try { el.setPointerCapture(e.pointerId); } catch (x) { /* capture is best effort */ }
         this.at(e.clientX);
       });
@@ -5867,8 +5870,14 @@ void main () {
         Faders.go(clamp(n, 0, 11));
       });
     }
-    /* a quarter into the first segment is 01; the last slot is the overload 11 */
-    at(x) { const r = this.r; if (r) Faders.go(clamp(Math.ceil((x - r.left) / r.width * 11 - .25), 0, 11)); }
+    /* the nearest segment sets its value (left of the first one is 00); past the end is the overload 11 */
+    at(x) {
+      const r = this.r;
+      if (!r) return;
+      let v = 0, d = Infinity;
+      if (x >= r[0][0] - 2) for (let i = 0; i < 11; i++) { const c = Math.abs(x - (r[i][0] + r[i][1]) / 2); if (c < d) { d = c; v = i + 1; } }
+      Faders.go(v);
+    }
     sync(v) {
       if (v === this.v) return;
       this.v = v;
@@ -6102,7 +6111,8 @@ void main () {
         this.el.hidden = false;
         page.inert = true; nav.inert = true;
         K2.lockScroll(true);
-        if (env.reduce) this.el.classList.add('open'); else requestAnimationFrame(() => requestAnimationFrame(() => this.el.classList.add('open')));
+        void this.el.offsetWidth;   /* commit the closed state, so the slide-in transition runs */
+        this.el.classList.add('open');
         this.x.focus({ preventScroll: true });
         return;
       }
@@ -6255,6 +6265,7 @@ void main () {
       this.redlines();
       c.restore();
       if (e < 1) {
+        c.font = '500 9px "IBM Plex Mono", ui-monospace, monospace';
         c.fillStyle = PC.IKB; c.fillRect(0, clipY - 1, W, 1);
         this.tag(W - 8, clipY - 4, `${this.dir > 0 ? 'Plotting' : 'Lifting'} · ${pad3(e * 100)}%`, this.tone(clipY - 2), true);
       }
@@ -6307,7 +6318,7 @@ void main () {
           if (it.kind === 'tile') { c.fillStyle = this.col(1, .6); c.fillRect(x, Math.round(y + h / 2), w, 1); }
           if (it.kind === 'hero') this.chain(i);
         }
-        if (it.tag) this.tag(x, y > 30 ? y - 3 : y + h + 15, it.tag(), this.tone(y > 30 ? y - 8 : y + h + 8));
+        if (it.tag && it.kind !== 'tape') this.tag(x, y > 30 ? y - 3 : y + h + 15, it.tag(), this.tone(y > 30 ? y - 8 : y + h + 8));
       }
       if (this.secs[4].vis && Thresh.live) this.origin();
       if (this.secs[6].vis && Phys.live) this.hulls();
@@ -6319,20 +6330,20 @@ void main () {
     },
     /* FIG.1 as built: seven nodes on springs above the cap line, their live displacement */
     chain(i) {
-      const c = this.c, ln = this.items[i].ref, y0 = this.R[i * 4 + 1] + ln.capY - 30;
+      const c = this.c, ln = this.items[i].ref, y0 = this.R[i * 4 + 1] + ln.capY - 16;
       c.strokeStyle = this.col(0, .75); c.fillStyle = PC.IKB;
       c.beginPath();
       for (let k = ln.i0; k < ln.i0 + ln.n - 1; k++) {
-        const ax = Hero.xc[k], ay = y0 - Hero.u[k] * 60, bx = Hero.xc[k + 1], by = y0 - Hero.u[k + 1] * 60, z = 8;
+        const ax = Hero.xc[k], ay = y0 - Hero.u[k] * 40, bx = Hero.xc[k + 1], by = y0 - Hero.u[k + 1] * 40, z = 8;
         c.moveTo(ax, ay);
         for (let s = 1; s < z; s++) { const f = s / z; c.lineTo(lerp(ax, bx, f), lerp(ay, by, f) + (s & 1 ? -3 : 3)); }
         c.lineTo(bx, by);
       }
       c.stroke();
       for (let k = ln.i0; k < ln.i0 + ln.n; k++) {
-        const x = Hero.xc[k], y = y0 - Hero.u[k] * 60, u = Hero.u[k];
+        const x = Hero.xc[k], y = y0 - Hero.u[k] * 40, u = Hero.u[k];
         c.fillRect(x - 3, y - 3, 6, 6);
-        c.fillRect(x, y + 3, 1, Math.max(0, y0 + 10 - y));
+        c.fillRect(x, y + 3, 1, Math.max(0, y0 + 16 - y));
         c.fillText(`${u < 0 ? '−' : '+'}${Math.abs(u).toFixed(2)}`, x - 13, y - 7);
       }
     },
@@ -6345,7 +6356,13 @@ void main () {
       for (let j = 0; j < tp.N; j++) { const s = j * tp.D, n = tp.nAt(s), x = ox + s * cs - n * sn, y = oy + s * sn + n * cs; if (j) c.lineTo(x, y); else c.moveTo(x, y); }
       c.stroke();
       c.fillStyle = PC.IKB;
-      for (let j = 0; j < tp.N; j += 3) { const s = j * tp.D, n = tp.nAt(s); c.fillRect(ox + s * cs - n * sn - 2, oy + s * sn + n * cs - 2, 4, 4); }
+      let tx = -1, ty = 0;
+      for (let j = 0; j < tp.N; j += 3) {
+        const s = j * tp.D, n = tp.nAt(s), x = ox + s * cs - n * sn, y = oy + s * sn + n * cs;
+        c.fillRect(x - 2, y - 2, 4, 4);
+        if (tx < 0 && x > this.gl + 8 && y > 40 && y < F.vh - 120) { tx = x; ty = y; }
+      }
+      if (tx >= 0) this.tag(tx, ty - tp.h / 2 - 8, this.items[i].tag(), 0);   /* the tag rides the first node on screen */
     },
     /* the zoom origin inside the O's stroke, with the live scale */
     origin() {
