@@ -34,8 +34,8 @@
   --ease: cubic-bezier(.76, 0, .24, 1);
   --ease-out: cubic-bezier(.16, 1, .3, 1);
 
-  /* stacking: content < pigment < grain < nav < case sheet < phone menu < cursor < toast */
-  --z-pigment: 70; --z-grain: 75; --z-nav: 80; --z-case: 100; --z-menu: 110; --z-cursor: 120; --z-toast: 130;
+  /* stacking: content < riso card < pigment < grain < nav < case sheet < title flight < phone menu < cursor < toast */
+  --z-plate: 60; --z-pigment: 70; --z-grain: 75; --z-nav: 80; --z-case: 100; --z-flight: 105; --z-menu: 110; --z-cursor: 120; --z-toast: 130;
   color-scheme: light;
 }
 @media (min-width: 761px) {
@@ -119,7 +119,8 @@ sup.fn { font-family: var(--f-mono); font-size: .8em; line-height: 0; vertical-a
   display: flex; align-items: baseline; gap: 14px; margin: 0;
   padding-top: 11px; border-top: 1px solid currentColor;
 }
-.rhead .rh-n { font-variant-numeric: tabular-nums; }
+.rhead .rh-n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rhead > span:last-child { text-align: right; }
 .rhead .rh-t { margin: 0; font: inherit; letter-spacing: inherit; }
 .rhead .lead {
   flex: 1; min-width: 24px; height: 2px; align-self: flex-end; margin-bottom: .42em;
@@ -365,23 +366,469 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
   font-variant-numeric: tabular-nums; letter-spacing: -.02em;
 }
 
-/* ── Shells for later stages ──────────────────────────────────────────────── */
+/* ── Shared controls on ink / IKB ─────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px 11px;
+  font-family: var(--f-mono); font-size: 11px; line-height: 1.2; letter-spacing: .08em; text-transform: uppercase;
+  color: inherit; border: 1px solid currentColor; text-decoration: none;
+  transition: background-color .3s var(--ease), color .3s var(--ease);
+}
+.btn .o { width: 8px; height: 8px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
+.btn[aria-pressed="true"] .o { background: currentColor; }
+.case .btn:focus-visible, .band .btn:focus-visible { background: var(--paper); color: var(--blue); }
+@media (hover: hover) { .case .btn:hover, .band .btn:hover { background: var(--paper); color: var(--blue); } }
+
+/* ── B4 In use: an index of five voices ───────────────────────────────────── */
 .work { padding-block: clamp(40px, 6vw, 90px) clamp(60px, 8vw, 120px); }
+.rows, .work-key { --rcols: 3.4rem auto minmax(24px, 1fr) minmax(0, 15rem) 3.4rem 6.4rem; }
+.work-key {
+  display: grid; grid-template-columns: var(--rcols); gap: 16px;
+  margin-top: clamp(32px, 4.6vw, 72px); padding-bottom: 8px; border-bottom: 1px solid var(--ink);
+  color: var(--mute); font-size: 10px;
+}
+.work-key span:nth-child(2) { grid-column: span 2; }
+.work-key span:nth-child(n+4) { text-align: right; }
+.rows { list-style: none; margin: 0; padding: 0; }
+.row {
+  position: relative; isolation: isolate;
+  display: grid; grid-template-columns: var(--rcols); grid-template-areas: "num title lead desc year plate";
+  align-items: baseline; gap: 16px;
+  padding-block: clamp(14px, 1.6vw, 24px) clamp(12px, 1.4vw, 20px);
+  border-bottom: 1px solid var(--ink); color: var(--ink);
+  transition: color .4s var(--ease);
+}
+/* v1's blue wipe, grown from the edge the pointer entered */
+.row::before {
+  content: ""; position: absolute; z-index: -1;
+  inset: -1px calc(-1 * var(--gut-r)) 0 calc(-1 * var(--gut-l));
+  background: var(--blue); transform: scaleY(0); transform-origin: 50% var(--o, 100%);
+  transition: transform .55s var(--ease);
+}
+.row.is-on, .row.is-kb { color: var(--paper); }
+.row.is-on::before, .row.is-kb::before { transform: scaleY(1); }
+.r-num { grid-area: num; font-variant-numeric: tabular-nums; }
+.r-title {
+  grid-area: title; margin: 0; min-width: 0;
+  font-family: var(--f-display); font-weight: 400; font-size: var(--rt-fs, clamp(30px, 4.6vw, 80px));
+  line-height: .9; text-transform: uppercase; white-space: nowrap;
+}
+/* each title is set permanently in its client's instance */
+.r-btn {
+  text-align: left; white-space: nowrap;
+  font-variation-settings: 'wdth' var(--w, 100), 'wght' var(--g, 500); letter-spacing: var(--tr, 0em); font-style: var(--st, normal);
+}
+.r-btn::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.r-btn:focus-visible { outline-color: var(--paper); }
+.rl { display: inline-block; }
+.row.fly-src .rl { visibility: hidden; }
+.r-lead {
+  grid-area: lead; height: 2px; opacity: .5;
+  background: radial-gradient(circle, currentColor .9px, transparent 1.25px) 0 50% / 6px 2px repeat-x;
+}
+.r-desc { grid-area: desc; display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 15px; line-height: 1.3; }
+.r-inst { color: var(--mute); transition: color .4s var(--ease); }
+.row.is-on .r-inst, .row.is-kb .r-inst { color: var(--mute-inv); }
+.r-year { grid-area: year; justify-self: end; font-variant-numeric: tabular-nums; }
+.r-plate { grid-area: plate; justify-self: end; white-space: nowrap; }
+.r-arrow { display: inline-block; margin-left: 6px; transition: transform .5s var(--ease); }
+.row.is-on .r-arrow, .row.is-kb .r-arrow { transform: rotate(-45deg); }
+.r-media { grid-area: media; display: none; }
+.r-media canvas { display: block; width: 100%; height: 100%; }
+.work-cap { display: flex; justify-content: space-between; gap: 16px; margin: 14px 0 0; color: var(--mute); font-size: 10px; }
 .work .folio { margin-top: clamp(40px, 6vw, 90px); }
-.thresh { padding-block: clamp(80px, 12vw, 180px) clamp(60px, 9vw, 140px); }
-.thr-h { margin: 0; font-family: var(--f-display); font-weight: 400; text-transform: uppercase; line-height: .82; letter-spacing: -.01em; }
-.thr-h span { display: block; }
-.thr-h .thin { font-variation-settings: 'wdth' 50, 'wght' 100; font-size: clamp(48px, 9vw, 150px); }
-.thr-h .fat { font-variation-settings: 'wdth' 150, 'wght' 900; font-size: clamp(64px, 17vw, 300px); }
-.inst { background: var(--ink); color: var(--paper); padding-block: clamp(70px, 9vw, 120px) clamp(40px, 6vw, 80px); }
+
+/* the riso plate card: flat, crop-marked, two plates (desktop, fine pointer) */
+.pc { display: none; }
+html.has-rig .pc {
+  display: block; position: fixed; left: 0; top: 0; z-index: var(--z-plate); pointer-events: none;
+  width: 340px; height: 255px; opacity: 0; visibility: hidden; will-change: transform, opacity;
+}
+.pc canvas { position: absolute; left: -120px; top: -60px; width: 580px; height: 375px; display: block; }
+.pc-m { position: absolute; font: 400 13px/1 var(--f-mono); color: var(--ink); transform: translate(-50%, -50%); }
+.pc-m.a { left: -10px; top: -10px; } .pc-m.b { left: calc(100% + 10px); top: -10px; }
+.pc-m.c { left: -10px; top: calc(100% + 10px); } .pc-m.d { left: calc(100% + 10px); top: calc(100% + 10px); }
+.pc-cap {
+  position: absolute; left: 0; top: calc(100% + 20px); white-space: nowrap; font-size: 10px;
+  background: var(--paper); color: var(--ink); padding: 3px 6px 2px;
+}
+
+/* ── B4 Case sheet: IKB plate grown from the row band ─────────────────────── */
+.case {
+  position: fixed; inset: 0; z-index: var(--z-case);
+  background: var(--blue); color: var(--paper);
+  clip-path: inset(var(--ct, 0px) 0 var(--cb, 0px) 0);
+  transition: transform .5s var(--ease-out);
+}
+.case.open { clip-path: inset(0 0 0 0); }
+.case.drag { transition: none; }
+.case .lbl, .case .idx { color: var(--mute-inv); }
+.case :focus-visible { outline-color: var(--paper); }
+.case-scroll { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; }
+.case-in {
+  min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+}
+.case-bar { display: flex; align-items: center; gap: 12px 24px; padding-bottom: 14px; border-bottom: 1px solid var(--hair-inv); }
+.case-bar #case-count { font-variant-numeric: tabular-nums; }
+.case-inst { flex: 1; min-width: 0; }
+.case-head { padding-block: clamp(28px, 7vh, 88px) clamp(18px, 4vh, 44px); }
+.case-title {
+  margin: 0; font-family: var(--f-display); font-weight: 400; text-transform: uppercase;
+  font-size: 12vw; line-height: .84; letter-spacing: 0; font-variation-settings: 'wdth' 150, 'wght' 900;
+}
+.case-title.it { font-style: italic; }
+.case-title .cw { display: inline-block; white-space: nowrap; }
+.case-title .cl { display: inline-block; }
+.case-title.fly-dst .cl { opacity: 0; }
+.case-grid {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px 16px; align-items: start;
+  padding-top: 18px; border-top: 1px solid var(--hair-inv);
+}
+.case-fig { grid-column: 1 / span 6; margin: 0; display: flex; flex-direction: column; gap: 18px; }
+.case-fig[hidden], .kp[hidden] { display: none; }
+.case-plate { position: relative; aspect-ratio: 4 / 3; margin: 10px; }
+.case-plate canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.case-plate .pc-m { color: var(--paper); }
+.case-fig figcaption { margin: 0 10px; }
+.case-copy { grid-column: 8 / -1; display: flex; flex-direction: column; gap: 16px; }
+.case-copy p { margin: 0; font-size: 17px; line-height: 1.45; max-width: 36em; }
+.case-copy p:first-child {
+  font-family: var(--f-display); font-variation-settings: 'wdth' 80, 'wght' 520;
+  font-size: clamp(22px, 2.1vw, 32px); line-height: 1.08; letter-spacing: -.005em; text-wrap: pretty;
+}
+.case-meta { grid-column: 8 / -1; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.case-meta div { display: flex; flex-direction: column; gap: 3px; padding-top: 7px; border-top: 1px solid var(--hair-inv); }
+.case-meta dd { margin: 0; }
+.case-act {
+  grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px;
+  margin-top: clamp(8px, 3vh, 40px); padding-top: 16px; border-top: 1px solid var(--hair-inv);
+}
+.case-next { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
+.cn-t {
+  font-family: var(--f-display); font-variation-settings: 'wdth' 120, 'wght' 800; text-transform: uppercase;
+  font-size: clamp(26px, 3vw, 46px); line-height: .9;
+}
+.cn-t span { display: inline-block; transition: transform .5s var(--ease); }
+@media (hover: hover) { .case-next:hover .cn-t span { transform: translateX(8px); } }
+.case-in > :not(.case-head) { transform: translateY(26px); opacity: 0; transition: transform .8s var(--ease-out), opacity .4s; }
+.case.rise .case-in > :not(.case-head), .case.open .case-in > :not(.case-head) { transform: none; opacity: 1; transition-delay: .32s; }
+.case.kp-on .case-copy { grid-column: 1 / span 7; }
+.case.kp-on .case-meta { grid-column: 9 / -1; }
+
+/* TITLE FLIGHT: the row's own letters, one object from row to header */
+.flight { position: fixed; inset: 0; z-index: var(--z-flight); pointer-events: none; overflow: clip; }
+.fl-l {
+  position: absolute; left: 0; top: 0; display: block; white-space: pre; will-change: transform;
+  font-family: var(--f-display); font-weight: 400; text-transform: uppercase; line-height: 1; color: var(--paper);
+}
+.flight.it .fl-l { font-style: italic; }
+
+/* Case 05 KINETIK: the product, live */
+.kp { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) clamp(240px, 23vw, 330px); gap: 28px clamp(24px, 4vw, 64px); align-items: start; }
+.kp-stage { display: flex; flex-direction: column; gap: 14px; min-width: 0; align-items: flex-start; }
+.kp-in {
+  width: 100%; box-sizing: border-box; margin: 0; padding: 0 .1em .08em; border: 0; border-bottom: 1px solid var(--hair-inv); border-radius: 0;
+  background: transparent; color: var(--paper); caret-color: var(--paper);
+  font-family: var(--f-display); font-weight: 400; font-size: 120px; line-height: 1.12;
+  font-variation-settings: 'wdth' 132, 'wght' 812;
+}
+.kp-in.it { font-style: italic; }
+.kp-in:focus-visible { outline: none; border-bottom-color: var(--paper); }
+.kp-mw { position: absolute; width: 0; height: 0; overflow: hidden; visibility: hidden; pointer-events: none; }
+.kp-mir { display: inline-block; white-space: pre; font-family: var(--f-display); font-size: 100px; font-variation-settings: 'wdth' 150, 'wght' 900; }
+.kp-mir.it { font-style: italic; }
+.kp-css {
+  align-self: stretch; margin: 0; padding: 12px 14px; border: 1px solid var(--hair-inv); white-space: pre-wrap;
+  font: 400 12px/1.6 var(--f-mono); letter-spacing: .02em; text-transform: none; font-variant-numeric: tabular-nums;
+}
+.kp-ctl { display: flex; flex-direction: column; gap: 14px; }
+.kp-pad {
+  position: relative; aspect-ratio: 1; touch-action: none; border: 1px solid var(--hair-inv);
+  background-image: linear-gradient(var(--hair-inv) 1px, transparent 1px), linear-gradient(90deg, var(--hair-inv) 1px, transparent 1px);
+  background-size: 25% 25%; background-position: -1px -1px;
+}
+.kp-pad i { position: absolute; left: 0; top: 0; display: block; pointer-events: none; }
+.kp-gx { width: 100%; height: 1px; background: rgba(230, 231, 227, .55); }
+.kp-gy { width: 1px; height: 100%; background: rgba(230, 231, 227, .55); }
+.kp-h { width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--paper); box-shadow: 0 0 0 4px var(--blue), 0 0 0 5px var(--paper); }
+.kp-t { position: absolute; font-size: 9px; color: var(--mute-inv); }
+.kp-t.t1 { left: 6px; top: 5px; } .kp-t.t2 { left: 6px; bottom: 5px; } .kp-t.t3 { left: 6px; bottom: -18px; } .kp-t.t4 { right: 0; bottom: -18px; }
+.kp-fad { display: grid; gap: 4px; margin-top: 14px; }
+.kp-fad label { display: grid; grid-template-columns: 3.4em minmax(0, 1fr) 2.6em; align-items: center; gap: 10px; }
+.kp-fad output { text-align: right; font-variant-numeric: tabular-nums; }
+.kp-r { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; }
+.kp-r::-webkit-slider-runnable-track { height: 1px; background: var(--paper); }
+.kp-r::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; margin-top: -6px; border: 0; border-radius: 50%; background: var(--paper); }
+.kp-r::-moz-range-track { height: 1px; background: var(--paper); }
+.kp-r::-moz-range-thumb { width: 13px; height: 13px; border: 0; border-radius: 50%; background: var(--paper); }
+.kp-it { align-self: flex-start; }
+
+/* ── B5 Threshold: into the O (paper → ink) ───────────────────────────────── */
+.thresh { position: relative; background: var(--paper); }
+.thr-pin { position: relative; padding-block: clamp(80px, 12vw, 180px) clamp(60px, 9vw, 140px); }
+.thr-top { display: flex; justify-content: space-between; gap: 16px; margin-bottom: clamp(20px, 3vw, 40px); color: var(--mute); }
+.thr-h { margin: 0; font-family: var(--f-display); font-weight: 400; text-transform: uppercase; line-height: .8; letter-spacing: 0; }
+.thr-a, .thr-b { display: block; white-space: nowrap; }
+.thr-a { font-variation-settings: 'wdth' 50, 'wght' 100; font-size: clamp(48px, 20vw, 330px); }
+.thr-b { font-variation-settings: 'wdth' 150, 'wght' 900; font-size: clamp(48px, 17vw, 280px); margin-top: .06em; }
+.thr-t, .thr-b .fl { display: inline-block; }
+.thr-t.thin .fl { font-variation-settings: 'wdth' 50, 'wght' 900; }
+.thr-ink, .thr-zone { display: none; }
+.thresh.live { height: 160svh; }
+.thresh.live .thr-pin {
+  position: sticky; top: 0; height: 100svh; box-sizing: border-box; overflow: clip;
+  display: flex; flex-direction: column; justify-content: center; padding-block: 0;
+}
+.thresh.live .thr-top { position: absolute; left: var(--gut-l); right: var(--gut-r); top: calc(var(--top) - 10px); margin: 0; }
+.thresh.live.abs .thr-b .thr-t { position: relative; display: block; }
+.thresh.live.abs .thr-b .fl { position: absolute; left: 0; top: 0; }
+.thresh.live .thr-ink { display: block; position: absolute; inset: 0; background: var(--ink); opacity: 0; pointer-events: none; }
+.thresh.live .thr-zone { display: block; position: absolute; left: 0; right: 0; top: 38svh; bottom: 0; pointer-events: none; }
+
+/* ── B6 Instances: the Solari board (pinned on ink) ───────────────────────── */
+.inst { position: relative; background: var(--ink); color: var(--paper); }
 .inst .folio, .band .folio { border-color: var(--hair-inv); color: var(--mute-inv); }
-.inst .folio { margin-top: clamp(60px, 8vw, 120px); }
+.band .lbl, .inst .lbl, .band .idx, .inst .idx { color: var(--mute-inv); }
+.inst-in { position: relative; padding-block: clamp(70px, 9vw, 120px) clamp(40px, 6vw, 80px); }
+.inst-bar, .board, .inst-low, .flood, .inst-zone { display: none; }
+.stages { list-style: none; margin: clamp(28px, 4vw, 56px) 0 clamp(40px, 6vw, 80px); padding: 0; }
+.stage {
+  display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) minmax(0, 24rem);
+  grid-template-areas: "n w w" ". i p" ". . l"; gap: 10px 16px; padding-block: 18px 24px; border-top: 1px solid var(--hair-inv);
+}
+.st-n { grid-area: n; color: var(--mute-inv); }
+.st-w {
+  grid-area: w; margin: 0; font-family: var(--f-display); font-weight: 400; text-transform: uppercase;
+  font-size: clamp(48px, 10vw, 150px); line-height: .82; font-variation-settings: 'wdth' var(--w), 'wght' var(--g);
+}
+.st-i { grid-area: i; color: var(--mute-inv); }
+.stage p { grid-area: p; margin: 0; }
+.st-l { grid-area: l; list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--mute-inv); }
+/* no pin (reduced motion, no JS): a static row of IKB flap tiles leads into the band */
+.inst:not(.live) .inst-in::after {
+  content: ""; display: block; height: 40px; margin-top: 8px;
+  background: repeating-linear-gradient(90deg, var(--blue) 0 calc(6.25% - 4px), transparent calc(6.25% - 4px) 6.25%);
+}
+.inst.live { height: 410svh; }
+.inst.live .inst-pin { position: sticky; top: 0; height: 100svh; overflow: clip; }
+.inst.live .inst-in {
+  height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: clamp(12px, 2.4vh, 28px);
+  padding-block: calc(env(safe-area-inset-top, 0px) + 72px) 18px;
+}
+.inst.live .stages { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.inst.live .folio { margin-top: 0; }
+.inst.live .inst-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.inst-bar span { font-variant-numeric: tabular-nums; }
+.rail { display: inline-flex; gap: 6px; }
+.rail i { display: block; width: 26px; height: 2px; background: var(--hair-inv); transition: background-color .3s; }
+.rail i.on { background: var(--paper); }
+.inst.live .board { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: clamp(4px, .55vw, 9px); margin-top: auto; }
+.tile {
+  position: relative; aspect-ratio: 5 / 7; perspective: 900px;
+  font-family: var(--f-display); font-size: var(--tfs, 100px); text-transform: uppercase; color: var(--paper);
+}
+.lf {
+  position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: #1A1A1F;
+  -webkit-backface-visibility: hidden; backface-visibility: hidden;
+}
+.lf.t, .lf.ft { top: 0; border-radius: 3px 3px 0 0; transform-origin: 50% 100%; }
+.lf.b, .lf.fb { top: 50%; border-radius: 0 0 3px 3px; transform-origin: 50% 0; }
+.lf.ft, .lf.fb { z-index: 2; visibility: hidden; }
+.lf.blue { background: var(--blue); }
+.lf b {
+  position: absolute; left: 0; right: 0; top: 0; height: 200%;
+  display: flex; align-items: center; justify-content: center; padding-top: .1em; box-sizing: border-box;
+  font-weight: 400; line-height: 1;
+}
+.lf.b b, .lf.fb b { top: -100%; }
+.lf i { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+.tile::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; margin-top: -.5px; z-index: 3; background: rgba(0, 0, 0, .6); }
+.inst.live .inst-low { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; align-items: start; margin-bottom: auto; }
+.inst-copy { grid-column: 1 / span 7; }
+.inst-d {
+  margin: 0; max-width: 32ch; font-family: var(--f-display); font-variation-settings: 'wdth' 80, 'wght' 460;
+  font-size: clamp(20px, 2vw, 30px); line-height: 1.1; text-wrap: pretty;
+}
+.inst-l { margin: 12px 0 0; color: var(--mute-inv); }
+/* designspace plot: wdth × wght, the four instances, the dot travelling between them */
+.ds-w { grid-column: 9 / -1; justify-self: end; width: min(100%, 26vh, 250px); padding: 0 0 22px 22px; box-sizing: content-box; }
+.ds {
+  position: relative; aspect-ratio: 1; border: 1px solid var(--hair-inv);
+  background-image: linear-gradient(var(--hair-inv) 1px, transparent 1px), linear-gradient(90deg, var(--hair-inv) 1px, transparent 1px);
+  background-size: 25% 25%; background-position: -1px -1px;
+}
+.ds svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ds-p { fill: none; stroke: var(--paper); stroke-width: .6; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.ds i { position: absolute; left: 0; top: 0; display: block; pointer-events: none; }
+.ds-n { width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border: 1px solid var(--paper); border-radius: 50%; box-sizing: border-box; background: var(--ink); transition: background-color .3s; }
+.ds-n.on { background: var(--paper); }
+.ds-x { width: 100%; height: 1px; background: var(--blue); }
+.ds-y { width: 1px; height: 100%; background: var(--blue); }
+.ds .ds-d { width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 3px var(--ink), 0 0 0 4px var(--blue); }
+.ds-l { position: absolute; font-size: 9px; letter-spacing: .05em; white-space: nowrap; color: var(--mute-inv); transform: translate(9px, -50%); }
+.ds-l.r { transform: translate(calc(-100% - 9px), -50%); }
+.ds-ax { position: absolute; font-size: 9px; color: var(--mute-inv); white-space: nowrap; }
+.ds-ax.x { left: 0; right: 0; top: calc(100% + 6px); display: flex; justify-content: space-between; }
+.ds-ax.y { right: calc(100% + 6px); top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; }
+.ds-r { margin: 28px 0 0; text-align: right; font-variant-numeric: tabular-nums; }
+/* B7 flood: a diagonal wave of flaps, ink → IKB */
+.flood { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+.inst.live .flood.on { display: block; }
+.inst.live .inst-zone { display: block; position: absolute; left: 0; right: 0; top: 268svh; bottom: 0; pointer-events: none; }
+
+/* ── B8 Colophon: the LOUD band ───────────────────────────────────────────── */
 .band { background: var(--blue); color: var(--paper); }
 .band-in { padding-block: clamp(64px, 9vw, 130px) calc(env(safe-area-inset-bottom, 0px) + 24px); }
-.band .lbl, .inst .lbl, .band .idx, .inst .idx { color: var(--mute-inv); }
-.foot-bar {
-  display: flex; justify-content: space-between; gap: 10px 24px; flex-wrap: wrap;
-  margin-top: clamp(60px, 8vw, 120px); padding-top: 14px; border-top: 1px solid var(--hair-inv);
+.band .dot { background: var(--paper); }
+.band .dot::after { border-color: var(--paper); }
+.loud { margin-top: clamp(32px, 5vw, 80px); }
+.ld {
+  position: relative; isolation: isolate; display: block; white-space: nowrap;
+  font-family: var(--f-display); font-weight: 400; text-transform: uppercase; line-height: .8; color: var(--paper);
+  font-size: clamp(48px, 16vw, 260px);
+}
+.ld + .ld { margin-top: clamp(8px, 1vw, 16px); }
+.ld-t { display: inline-block; font-variation-settings: 'wdth' var(--w), 'wght' var(--g); }
+.lg { display: inline-block; }
+.ld-shelf { position: absolute; left: 0; right: 0; top: var(--base, 80%); z-index: -1; height: 1px; background: rgba(230, 231, 227, .34); }
+.mk {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px;
+  margin-top: clamp(28px, 4vw, 56px); padding-top: 18px; border-top: 1px solid var(--hair-inv);
+}
+.mk-row {
+  display: flex; align-items: baseline; gap: .32em; min-width: 0;
+  font-family: var(--f-display); text-transform: uppercase; font-size: clamp(26px, 3vw, 46px); line-height: 1;
+}
+.mk-a { font-variation-settings: 'wdth' 50, 'wght' 300; }
+.mk-b { font-variation-settings: 'wdth' 150, 'wght' 900; }
+.mk-in {
+  width: 7.4em; min-width: 0; margin: 0; padding: 0 0 .06em; border: 0; border-bottom: 1px solid var(--paper); border-radius: 0;
+  background: transparent; color: var(--paper); caret-color: var(--paper);
+  font: inherit; font-variation-settings: 'wdth' 100, 'wght' 600; text-transform: uppercase;
+}
+.mk-in::placeholder { color: rgba(230, 231, 227, .45); }
+.mk-in:focus-visible { outline-offset: 6px; }
+.mk-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 9px 12px 8px; border: 1px solid var(--hair-inv); transition: background-color .3s var(--ease), color .3s var(--ease), border-color .3s; }
+.chip[aria-pressed="true"] { background: var(--paper); color: var(--blue); border-color: var(--paper); }
+@media (hover: hover) { .chip:hover { border-color: var(--paper); } }
+.contact { margin-top: clamp(48px, 6vw, 96px); padding-top: 18px; border-top: 1px solid var(--hair-inv); row-gap: 40px; align-items: start; grid-template-rows: auto 1fr; }
+.c-mail { grid-column: 1 / span 8; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; min-width: 0; }
+.email {
+  margin: 0; white-space: nowrap; font-family: var(--f-display); font-variation-settings: 'wdth' 96, 'wght' 640;
+  font-size: clamp(30px, 4.6vw, 78px); line-height: 1; letter-spacing: -.01em;
+}
+.c-act { display: flex; flex-wrap: wrap; gap: 10px; }
+.c-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 15px; }
+.c-col:nth-child(2), .c-col:nth-child(3) { grid-column: span 3; }
+.c-col:nth-child(4) { grid-column: span 2; }
+.c-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.c-col a { text-decoration: none; background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 1px; transition: background-size .4s var(--ease); }
+.c-col a:focus-visible { background-size: 100% 1px; }
+@media (hover: hover) { .c-col a:hover { background-size: 100% 1px; } }
+.c-av { display: flex; align-items: center; gap: 10px; }
+.c-clock { font-variant-numeric: tabular-nums; }
+/* Your Anthropometry: a paper print hung on the band */
+.ant { grid-column: 9 / -1; grid-row: 1 / span 2; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.ant::before {
+  content: ""; display: block; height: 26px; margin-bottom: -14px;
+  background:
+    linear-gradient(to top right, transparent calc(50% - .6px), var(--hair-inv) 50%, transparent calc(50% + .6px)) 0 0 / 50% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - .6px), var(--hair-inv) 50%, transparent calc(50% + .6px)) 100% 0 / 50% 100% no-repeat;
+}
+.ant-print { position: relative; background: var(--paper); color: var(--ink); padding: 8% 8% 5%; }
+.ant-img { position: relative; aspect-ratio: 3 / 4; outline: 1px solid rgba(14, 14, 16, .14); }
+.ant-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ant-empty {
+  position: absolute; inset: 0; margin: 0; display: none; place-content: center; gap: 10px; padding: 16px;
+  text-align: center; color: var(--mute); font-size: 10px;
+}
+.ant-empty::before { content: "+"; font-size: 16px; color: var(--blue); }
+.ant.empty .ant-empty { display: grid; }
+.ant-sig {
+  margin: .5em 0 0; min-height: 1em; text-align: right; overflow-wrap: anywhere;
+  font-family: var(--f-display); font-style: italic; font-variation-settings: 'wdth' 120, 'wght' 560;
+  font-size: clamp(22px, 2vw, 30px); line-height: 1;
+}
+.ant-sig.blank { color: var(--mute); font-style: normal; font-variation-settings: 'wdth' 100, 'wght' 300; font-family: var(--f-mono); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; }
+.ant-cap { display: flex; flex-direction: column; gap: 4px; }
+.ant-cap span { font-variant-numeric: tabular-nums; }
+.ant-sign { display: flex; flex-direction: column; gap: 6px; }
+.ant-sign input {
+  width: 100%; box-sizing: border-box; margin: 0; padding: 6px 0; border: 0; border-bottom: 1px solid var(--paper); border-radius: 0;
+  background: transparent; color: var(--paper); caret-color: var(--paper);
+  font-family: var(--f-display); font-style: italic; font-variation-settings: 'wdth' 120, 'wght' 560; font-size: 20px; text-transform: none; letter-spacing: 0;
+}
+.ant-sign input::placeholder { color: rgba(230, 231, 227, .45); }
+.fns {
+  list-style: none; margin: clamp(48px, 6vw, 90px) 0 0; padding: 14px 0 0; border-top: 1px solid var(--hair-inv);
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px;
+  color: var(--mute-inv); text-transform: none; letter-spacing: .02em;
+}
+.fns li { display: flex; gap: 8px; }
+.fns b { font-weight: 400; color: var(--paper); }
+.rewind {
+  display: flex; align-items: center; gap: 16px; width: 100%; margin-top: clamp(28px, 4vw, 56px); padding: 22px 0;
+  border-block: 1px solid var(--paper); font-size: 12px;
+  transition: background-color .35s var(--ease), color .35s var(--ease), padding .45s var(--ease);
+}
+.rewind .lead {
+  flex: 1; min-width: 24px; height: 2px; opacity: .6;
+  background: radial-gradient(circle, currentColor .9px, transparent 1.25px) 0 50% / 6px 2px repeat-x;
+}
+.rewind:focus-visible { background: var(--paper); color: var(--blue); padding-inline: 16px; outline: none; }
+@media (hover: hover) { .rewind:hover { background: var(--paper); color: var(--blue); padding-inline: 16px; } }
+.foot-bar { display: flex; justify-content: space-between; gap: 10px 24px; flex-wrap: wrap; margin-top: 16px; color: var(--mute-inv); }
+
+/* ── B4–B8 on phones ──────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .work-key { display: none; }
+  .rows { margin-top: 24px; border-top: 1px solid var(--ink); }
+  .row {
+    grid-template-columns: auto minmax(24px, 1fr) auto;
+    grid-template-areas: "num lead year" "title title title" "desc desc plate" "media media media";
+    gap: 10px 12px; padding-block: 14px 18px;
+  }
+  .r-title { font-size: 12vw; }
+  .r-desc { font-size: 14px; }
+  .r-plate { align-self: end; }
+  .r-media { display: block; aspect-ratio: 16 / 9; margin-top: 4px; }
+  .work-cap { flex-direction: column; gap: 4px; }
+  .case-bar { flex-wrap: wrap; }
+  .case-inst { order: 3; flex-basis: 100%; }
+  .case-bar .btn { margin-left: auto; }
+  .case-fig, .case-copy, .case-meta, .case.kp-on .case-copy, .case.kp-on .case-meta { grid-column: 1 / -1; }
+  .case-copy p { font-size: 16px; }
+  .case-act { flex-direction: column; align-items: stretch; }
+  .case-next { align-items: flex-start; text-align: left; }
+  .kp { grid-template-columns: minmax(0, 1fr); }
+  .kp-ctl { max-width: 340px; }
+  .thresh.live { height: 140svh; }
+  .thresh.live .thr-zone { top: 26svh; }
+  .stage { grid-template-columns: 2.4rem minmax(0, 1fr); grid-template-areas: "n w" ". i" ". p" ". l"; }
+  .inst.live .inst-in { padding-top: calc(env(safe-area-inset-top, 0px) + 64px); gap: 14px; }
+  .inst.live .board { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .inst-bar .rail { display: none; }
+  .inst.live .inst-low { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+  .inst-copy { grid-column: 1; }
+  .inst-d { font-size: 18px; }
+  .ds-w { grid-column: 2; width: 92px; padding: 0 0 18px 18px; }
+  .ds-l { display: none; }
+  .ds-r { margin-top: 22px; font-size: 9px; letter-spacing: .02em; }
+  .mk-row { font-size: 26px; flex-wrap: wrap; }
+  .mk-in { width: 6.4em; }
+  .c-mail, .c-col:nth-child(n), .ant { grid-column: 1 / -1; }
+  .ant { grid-row: auto; }
+  .fns { grid-template-columns: minmax(0, 1fr); }
+  .rewind { font-size: 11px; }
+}
+@media (max-width: 760px) and (max-height: 700px) {
+  .ds-w { display: none; }
+}
+
+/* ── B4–B8 reduced motion ─────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .row, .row::before, .r-arrow, .r-inst, .case, .case-in > :not(.case-head), .chip, .rewind, .rail i, .ds-n { transition: none !important; }
 }
 
 /* ── Toast ────────────────────────────────────────────────────────────────── */
@@ -534,36 +981,223 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
     <p class="folio mono"><span>Specimen No. 02 — Text setting</span><span>03</span></p>
   </section>
 
-  <!-- B4 · In Use (4B—04): index, riso plates, title flight, case sheet — later stage -->
+  <!-- B4 · In use (4B—04): five voices, riso plates, title flight -->
   <section class="work wrap" id="work" data-nav="paper" data-folio="04" data-title="In Use" aria-labelledby="work-h" tabindex="-1">
     <div class="rhead mono"><span class="rh-n">4B—04</span><h2 class="rh-t" id="work-h">In use</h2><i class="lead" aria-hidden="true"></i><span>05 plates</span></div>
-    <div class="work-body"></div>
+    <div class="work-key mono" aria-hidden="true"><span>No.</span><span>Title, set in the client’s instance</span><span>Description · instance</span><span>Year</span><span>Plate</span></div>
+    <ol class="rows">
+      <li class="row" style="--w:150;--g:250">
+        <span class="r-num mono">01</span>
+        <h3 class="r-title"><button class="r-btn" type="button" aria-haspopup="dialog" aria-controls="case" data-cursor-label="Open">Aurora Bank</button></h3>
+        <i class="r-lead" aria-hidden="true"></i>
+        <span class="r-desc">Fintech app redesign<span class="r-inst mono">Light Extended · 150/250</span></span>
+        <span class="r-year mono">2026</span>
+        <span class="r-plate mono" aria-hidden="true">Plate 01<span class="r-arrow">→</span></span>
+        <div class="r-media" aria-hidden="true"><canvas></canvas></div>
+      </li>
+      <li class="row" style="--w:50;--g:900">
+        <span class="r-num mono">02</span>
+        <h3 class="r-title"><button class="r-btn" type="button" aria-haspopup="dialog" aria-controls="case" data-cursor-label="Open">Pulse Records</button></h3>
+        <i class="r-lead" aria-hidden="true"></i>
+        <span class="r-desc">Label site with a live visualizer<span class="r-inst mono">Black Compressed · 50/900</span></span>
+        <span class="r-year mono">2025</span>
+        <span class="r-plate mono" aria-hidden="true">Plate 02<span class="r-arrow">→</span></span>
+        <div class="r-media" aria-hidden="true"><canvas></canvas></div>
+      </li>
+      <li class="row" style="--w:112;--g:520;--tr:.04em">
+        <span class="r-num mono">03</span>
+        <h3 class="r-title"><button class="r-btn" type="button" aria-haspopup="dialog" aria-controls="case" data-cursor-label="Open">Atlas Freight</button></h3>
+        <i class="r-lead" aria-hidden="true"></i>
+        <span class="r-desc">Live 3D map of a freight fleet<span class="r-inst mono">Medium, tracked +4% · 112/520</span></span>
+        <span class="r-year mono">2025</span>
+        <span class="r-plate mono" aria-hidden="true">Plate 03<span class="r-arrow">→</span></span>
+        <div class="r-media" aria-hidden="true"><canvas></canvas></div>
+      </li>
+      <li class="row" style="--w:70;--g:200;--st:italic">
+        <span class="r-num mono">04</span>
+        <h3 class="r-title"><button class="r-btn" type="button" aria-haspopup="dialog" aria-controls="case" data-cursor-label="Open">Nocturne</button></h3>
+        <i class="r-lead" aria-hidden="true"></i>
+        <span class="r-desc">Store for a fragrance house<span class="r-inst mono">Light Italic · 70/200</span></span>
+        <span class="r-year mono">2024</span>
+        <span class="r-plate mono" aria-hidden="true">Plate 04<span class="r-arrow">→</span></span>
+        <div class="r-media" aria-hidden="true"><canvas></canvas></div>
+      </li>
+      <li class="row" style="--w:100;--g:500" data-kin>
+        <span class="r-num mono">05</span>
+        <h3 class="r-title"><button class="r-btn" type="button" aria-haspopup="dialog" aria-controls="case" data-cursor-label="Open">Kinetik</button></h3>
+        <i class="r-lead" aria-hidden="true"></i>
+        <span class="r-desc">Variable font playground<span class="r-inst mono">Every instance · 50–150/100–900</span></span>
+        <span class="r-year mono">2024</span>
+        <span class="r-plate mono" aria-hidden="true">Plate 05<span class="r-arrow">→</span></span>
+        <div class="r-media" aria-hidden="true"><canvas></canvas></div>
+      </li>
+    </ol>
+    <p class="work-cap mono"><span><span class="idx">FIG.3</span>Riso plates — ink + IKB, printed a hair out of register</span><span>Open a plate for the full case</span></p>
     <p class="folio mono"><span>Specimen No. 02 — In use</span><span>04</span></p>
   </section>
 
-  <!-- B5 · Threshold (pinned paper → ink) — later stage -->
-  <section class="thresh wrap" id="process" data-nav="paper" data-folio="05" data-title="Instances" aria-labelledby="thr-h" tabindex="-1">
-    <h2 class="thr-h" id="thr-h"><span class="thin">How a project</span> <span class="fat">moves</span></h2>
-  </section>
-
-  <!-- B6/B7 · Instances board + flood (4B—05) — later stage -->
-  <section class="inst" id="instances" data-nav="ink" data-folio="05" data-title="Instances" aria-labelledby="inst-h">
-    <div class="wrap">
-      <div class="rhead mono"><span class="rh-n">4B—05</span><h2 class="rh-t" id="inst-h">Instances</h2><i class="lead" aria-hidden="true"></i><span>04 stages</span></div>
-      <div class="inst-body"></div>
-      <p class="folio mono"><span>Specimen No. 02 — Instances</span><span>05</span></p>
+  <!-- B5 · Threshold: into the O (paper → ink) -->
+  <section class="thresh" id="process" data-nav="paper" data-folio="05" data-title="Instances" aria-labelledby="thr-h" tabindex="-1">
+    <div class="thr-pin wrap">
+      <div class="thr-top mono" aria-hidden="true"><span>4B—05 Instances</span><span>Scroll into the O ↓</span></div>
+      <h2 class="thr-h" id="thr-h"><span class="sr">How a project moves</span><span class="thr-a" aria-hidden="true"><span class="thr-t">How a project</span></span><span class="thr-b" aria-hidden="true"><span class="thr-t">Moves</span></span></h2>
+      <i class="thr-ink" aria-hidden="true"></i>
     </div>
+    <span class="thr-zone" data-nav="ink" aria-hidden="true"></span>
   </section>
 
-  <!-- B8 · Colophon: LOUD finale (4B—06) — later stage -->
+  <!-- B6/B7 · Instances: split-flap board, designspace, flood to IKB (4B—05) -->
+  <section class="inst" id="instances" data-nav="ink" data-folio="05" data-title="Instances" aria-labelledby="inst-h">
+    <div class="inst-pin">
+      <div class="inst-in wrap">
+        <div class="rhead mono"><span class="rh-n">4B—05</span><h2 class="rh-t" id="inst-h">Instances</h2><i class="lead" aria-hidden="true"></i><span>04 stages</span></div>
+        <div class="inst-bar mono" aria-hidden="true"><span id="inst-n">Stage 01 / 04</span><span class="rail"><i></i><i></i><i></i><i></i></span><span id="inst-i">Thin Compressed · 50/100</span></div>
+        <div class="board" aria-hidden="true"></div>
+        <div class="inst-low" aria-hidden="true">
+          <div class="inst-copy"><p class="inst-d" id="inst-d"></p><p class="inst-l mono" id="inst-l"></p></div>
+          <div class="ds-w">
+            <div class="ds">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false"><path class="ds-p" pathLength="1" d="M0 100L25 62.5L62 25L100 0"/></svg>
+              <i class="ds-x"></i><i class="ds-y"></i>
+              <i class="ds-n" style="left:0;top:100%"></i><i class="ds-n" style="left:25%;top:62.5%"></i><i class="ds-n" style="left:62%;top:25%"></i><i class="ds-n" style="left:100%;top:0"></i>
+              <span class="ds-l mono" style="left:0;top:100%">Thin Comp.</span><span class="ds-l mono" style="left:25%;top:62.5%">Regular</span><span class="ds-l mono r" style="left:62%;top:25%">Bold</span><span class="ds-l mono r" style="left:100%;top:0">Black Ext.</span>
+              <i class="ds-d"></i>
+              <span class="ds-ax x mono"><span>50</span><span>wdth</span><span>150</span></span>
+              <span class="ds-ax y mono"><span>900</span><span>wght</span><span>100</span></span>
+            </div>
+            <p class="ds-r mono" id="ds-r">wdth 050.0 · wght 100</p>
+          </div>
+        </div>
+        <ol class="stages">
+          <li class="stage" style="--w:50;--g:100"><span class="st-n mono">01</span><h3 class="st-w">Strategy</h3><span class="st-i mono">Thin Compressed · 50/100</span><p>Workshops, audits and a sharp brief. We decide what the site has to make people feel, and what it has to make them do.</p><ul class="st-l mono"><li>Discovery workshop</li><li>UX audit</li><li>Content map</li></ul></li>
+          <li class="stage" style="--w:75;--g:400"><span class="st-n mono">02</span><h3 class="st-w">Design</h3><span class="st-i mono">Regular · 75/400</span><p>Art direction, type systems and interaction prototypes, built to be animated rather than decorated. You see the motion before a line of production code.</p><ul class="st-l mono"><li>Art direction</li><li>Design system</li><li>Motion prototypes</li></ul></li>
+          <li class="stage" style="--w:112;--g:700"><span class="st-n mono">03</span><h3 class="st-w">Develop</h3><span class="st-i mono">Bold · 112/700</span><p>Production front-ends in TypeScript, React and Next.js. Fast on a 4G phone, usable by keyboard and easy for your team to edit.</p><ul class="st-l mono"><li>Next.js build</li><li>CMS integration</li><li>Core Web Vitals</li></ul></li>
+          <li class="stage" style="--w:150;--g:900"><span class="st-n mono">04</span><h3 class="st-w">Motion</h3><span class="st-i mono">Black Extended · 150/900</span><p>WebGL scenes, shaders, scroll choreography and micro-interactions that feel tactile at 60 fps. This is where the project gets loud.</p><ul class="st-l mono"><li>Three.js / GLSL</li><li>Scroll systems</li><li>Interaction design</li></ul></li>
+        </ol>
+        <p class="folio mono"><span>Specimen No. 02 — Instances</span><span>05</span></p>
+      </div>
+      <canvas class="flood" aria-hidden="true"></canvas>
+    </div>
+    <span class="inst-zone" data-nav="blue" aria-hidden="true"></span>
+  </section>
+
+  <!-- B8 · Colophon: the LOUD band (4B—06) -->
   <footer class="band" id="contact" data-nav="blue" data-folio="06" data-title="Colophon" aria-labelledby="col-h" tabindex="-1">
     <div class="band-in wrap">
       <div class="rhead mono"><span class="rh-n">4B—06</span><h2 class="rh-t" id="col-h">Colophon</h2><i class="lead" aria-hidden="true"></i><span>Set in Anybody, Archivo, IBM Plex Mono</span></div>
-      <div class="band-body"></div>
-      <div class="foot-bar mono"><span>© 2026 4booser</span><span>Demo content — name, projects, numbers and links are placeholders</span></div>
+      <div class="loud" id="loud">
+        <h3 class="sr" id="loud-h">Let’s make something loud.</h3>
+        <div class="ld-lines" aria-hidden="true">
+          <span class="ld" style="--w:50;--g:300"><span class="ld-t">Let’s make</span><i class="ld-shelf"></i></span>
+          <span class="ld" style="--w:100;--g:600"><span class="ld-t">Something</span><i class="ld-shelf"></i></span>
+          <span class="ld" style="--w:150;--g:900"><span class="ld-t">Loud.</span><i class="ld-shelf"></i></span>
+        </div>
+      </div>
+      <form class="mk" id="mk" autocomplete="off">
+        <div class="mk-row">
+          <span class="mk-a" aria-hidden="true">Make</span>
+          <label class="sr" for="mk-in">Your word, up to 12 letters, digits or spaces</label>
+          <input class="mk-in" id="mk-in" type="text" maxlength="12" placeholder="Something" spellcheck="false" autocapitalize="characters" enterkeyhint="go">
+          <span class="mk-b" aria-hidden="true">Loud.</span>
+        </div>
+        <div class="mk-chips mono" role="group" aria-label="Or pick a word">
+          <button class="chip" type="button" aria-pressed="true">Something</button><button class="chip" type="button" aria-pressed="false">Noise</button><button class="chip" type="button" aria-pressed="false">Waves</button><button class="chip" type="button" aria-pressed="false">History</button><button class="chip" type="button" aria-pressed="false">It move</button>
+        </div>
+        <p class="sr" id="loud-live" aria-live="polite"></p>
+      </form>
+      <div class="contact grid12">
+        <div class="c-mail">
+          <span class="mono lbl"><span class="idx">01</span>Email</span>
+          <p class="email" id="email" data-cursor="copy" data-cursor-label="Copy">hello@4booser.dev</p>
+          <div class="c-act">
+            <button class="btn" id="copy" type="button" data-cursor-label="Copy">Copy email</button>
+            <a class="btn" id="mailto" href="mailto:hello@4booser.dev?subject=Let%E2%80%99s%20make%20something%20loud" data-cursor-label="Write">Write: make something loud ↗</a>
+          </div>
+        </div>
+        <div class="c-col">
+          <span class="mono lbl"><span class="idx">02</span>Elsewhere</span>
+          <ul><li><a href="https://github.com/4booser" target="_blank" rel="noopener" data-cursor-label="↗ GitHub">GitHub ↗</a></li><li>Telegram @4booser</li><li>Dribbble 4booser</li></ul>
+        </div>
+        <div class="c-col">
+          <span class="mono lbl"><span class="idx">03</span>Availability</span>
+          <span class="c-av"><span class="dot" aria-hidden="true"></span>Freelance, Q1 2027</span>
+          <span>Remote, worldwide</span>
+        </div>
+        <div class="c-col">
+          <span class="mono lbl"><span class="idx">04</span>Local time</span>
+          <span class="c-clock" data-clock>--:--:-- UTC</span>
+        </div>
+        <figure class="ant empty" id="ant">
+          <div class="ant-print">
+            <div class="ant-img"><canvas class="ant-cv" aria-hidden="true"></canvas><p class="ant-empty mono">No pigment yet.<br>Move across the page to paint.</p></div>
+            <p class="ant-sig blank" id="ant-sig" aria-hidden="true">Unsigned</p>
+          </div>
+          <figcaption class="ant-cap mono">
+            <span>ANT 4B–<span id="ant-no">0000</span> <span class="lc">(Untitled Anthropometry)</span>, 2026</span>
+            <span class="lbl">Pigment on screen · <span id="ant-dur">00 min 00 s</span> · <span id="ant-px">0</span> px of stroke · <span id="ant-drops">0</span> drops</span>
+          </figcaption>
+          <label class="ant-sign mono"><span class="lbl"><span class="idx">05</span>Sign the plate</span><input id="ant-in" type="text" maxlength="24" spellcheck="false" autocomplete="off" placeholder="Your name"></label>
+        </figure>
+      </div>
+      <ol class="fns mono" id="fns" aria-label="Footnotes"></ol>
+      <button class="rewind mono" id="rewind" type="button" data-cursor-label="Rewind"><span>Rewind ↑</span><i class="lead" aria-hidden="true"></i><span>Play it again</span></button>
+      <div class="foot-bar mono"><span>© 2026 4booser</span><span>Demo content — name, projects, numbers and links are placeholders</span><span>06</span></div>
     </div>
   </footer>
 </main>
+
+<!-- B4 · Case sheet: the IKB plate grown from the row band -->
+<div class="case" id="case" role="dialog" aria-modal="true" aria-labelledby="case-title" hidden>
+  <div class="case-scroll" data-lenis-prevent>
+    <div class="case-in wrap">
+      <div class="case-bar mono">
+        <span id="case-count">Plate 01 / 05</span>
+        <span class="case-inst lbl" id="case-inst"></span>
+        <button class="btn" id="case-close" type="button" data-cursor-label="Close">Close <span aria-hidden="true">✕</span></button>
+      </div>
+      <div class="case-head"><h2 class="case-title" id="case-title"></h2></div>
+      <div class="case-grid">
+        <figure class="case-fig">
+          <div class="case-plate"><canvas aria-hidden="true"></canvas><span class="pc-m a" aria-hidden="true">+</span><span class="pc-m b" aria-hidden="true">+</span><span class="pc-m c" aria-hidden="true">+</span><span class="pc-m d" aria-hidden="true">+</span></div>
+          <figcaption class="mono lbl" id="case-cap"></figcaption>
+        </figure>
+        <div class="kp" id="kp" hidden>
+          <div class="kp-stage">
+            <label class="mono lbl" for="kp-in"><span class="idx">01</span>Type anything</label>
+            <input class="kp-in" id="kp-in" type="text" value="Kinetik" maxlength="18" spellcheck="false" autocomplete="off">
+            <pre class="kp-css" id="kp-css"><code></code></pre>
+            <button class="btn" id="kp-copy" type="button" data-cursor-label="Copy">Copy CSS</button>
+          </div>
+          <div class="kp-ctl">
+            <span class="mono lbl"><span class="idx">02</span>Axis pad — x wdth · y wght</span>
+            <div class="kp-pad" data-cursor="chip" data-cursor-label="Drag" aria-hidden="true">
+              <i class="kp-gx"></i><i class="kp-gy"></i><i class="kp-h"></i>
+              <span class="kp-t mono t1">900</span><span class="kp-t mono t2">100</span><span class="kp-t mono t3">50</span><span class="kp-t mono t4">150</span>
+            </div>
+            <div class="kp-fad mono">
+              <label><span>wdth</span><input class="kp-r" id="kp-w" type="range" min="50" max="150" step="1" value="132"><output id="kp-wo" for="kp-w">132</output></label>
+              <label><span>wght</span><input class="kp-r" id="kp-g" type="range" min="100" max="900" step="1" value="812"><output id="kp-go" for="kp-g">812</output></label>
+            </div>
+            <button class="btn kp-it" id="kp-it" type="button" aria-pressed="false">Italic <i class="o" aria-hidden="true"></i></button>
+          </div>
+        </div>
+        <div class="case-copy" id="case-copy"><p></p><p></p><p></p></div>
+        <dl class="case-meta mono">
+          <div><dt class="lbl"><span class="idx">01</span>Year</dt><dd id="case-year"></dd></div>
+          <div><dt class="lbl"><span class="idx">02</span>Instance</dt><dd id="case-ins"></dd></div>
+          <div><dt class="lbl"><span class="idx">03</span>Role</dt><dd id="case-role"></dd></div>
+          <div><dt class="lbl"><span class="idx">04</span>Stack</dt><dd id="case-stack"></dd></div>
+        </dl>
+        <div class="case-act">
+          <span class="mono lbl">Demo case — example content · Esc closes</span>
+          <button class="case-next" id="case-next" type="button" data-cursor-label="Next"><span class="mono lbl" id="case-nn"></span><span class="cn-t">Next case <span aria-hidden="true">→</span></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="flight" aria-hidden="true"></div>
+<div class="pc" aria-hidden="true"><canvas></canvas><span class="pc-m a">+</span><span class="pc-m b">+</span><span class="pc-m c">+</span><span class="pc-m d">+</span><span class="pc-cap mono"></span></div>
 
 <div class="toast mono" id="toast" role="status" aria-live="polite"></div>
 
@@ -629,9 +1263,13 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
        K2.toast(msg) · K2.copy(text, selectEl) → Promise<bool> · K2.fit(lineEl, boxEl) → px
        K2.intro { play({short}), skip(), running } · K2.hero { strike(i), letters } · K2.strings { pluck(tape, at, amp) }
        K2.onLayout(fn) · K2.layout() · K2.env · K2.footnotes · K2.util
+       K2.work { open(i), close(), isOpen } — case sheet + title flight (html.case-open while open)
+       K2.loud { word, lines, sanitize(w), typeset(w), setWord(w), kick(), layout() } — stage C replaces setWord/kick
+       K2.plate { el, canvas, setStats({ px, drops }), setEmpty(b), number, signature, visible } — stage B renders
+       K2.rewind.run() — kick, 2.4s scroll to the top, short calibration replay
      ──────────────────────────────────────────────────────────────────────── */
   const K2 = window.K2 = {
-    version: 'A1',
+    version: 'A2',
     env,
     util: { $, $$, clamp, lerp, smooth, pad3, mk, Track },
     lastInput: performance.now(),
@@ -671,8 +1309,10 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
       for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].read) list[i].read(t, dt);
       let busy = F.vel !== 0;
       for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].tick && list[i].tick(t, dt)) busy = true;
-      if (busy) raf = requestAnimationFrame(frame);
-      else last = 0;
+      /* a system may already have woken the loop during this frame (Lenis emits scroll from pre):
+         never queue a second callback, or callbacks double every frame */
+      if (busy) { if (!raf) raf = requestAnimationFrame(frame); }
+      else if (!raf) last = 0;
     }
     function wake() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame); }
     document.addEventListener('visibilitychange', () => {
@@ -1870,7 +2510,1201 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
     K2.pigment.drop(e.clientX, e.clientY, { strength: 1 });
   });
 
-  /* ── 15 · Layout + boot ─────────────────────────────────────────────────── */
+  /* ── 15 · Riso plates: two-plate generative art ──────────────────────────────
+     One "iso-type" system in five modes: each artwork sets its client's
+     initial (or name) in the client's own instance and prints as two plates
+     on transparent canvases, K (ink) and B (IKB). print() lays paper, then
+     multiplies B and K so they overprint to navy. B sits about 1px out of
+     register; callers add slip and an optional per-strip slit-scan lag.    */
+  const C = { ink: '#0E0E10', blue: '#1D2CF3', paper: '#E6E7E3' };
+  const TAU = Math.PI * 2, K_ALPHA = .86;
+  const DPR = cap => Math.min(window.devicePixelRatio || 1, cap);
+  /* canvas has no wdth property: the font-stretch keywords land on the axis (50–150%) */
+  const STRETCH = [[50, 'ultra-condensed'], [62.5, 'extra-condensed'], [75, 'condensed'], [87.5, 'semi-condensed'], [100, 'normal'], [112.5, 'semi-expanded'], [125, 'expanded'], [150, 'extra-expanded']];
+  function cfont(wd, wg, px, it) {
+    let s = STRETCH[0];
+    for (let i = 1; i < STRETCH.length; i++) if (Math.abs(STRETCH[i][0] - wd) < Math.abs(s[0] - wd)) s = STRETCH[i];
+    return `${it ? 'italic ' : ''}${Math.round(wg)} ${s[1]} ${px.toFixed(1)}px Anybody, "Arial Narrow", sans-serif`;
+  }
+  /* one glyph whose ink rises cap px above the baseline y, its ink starting at x; returns the ink width */
+  function glyph(c, ch, wd, wg, it, x, y, cap) {
+    c.font = cfont(wd, wg, 100, it);
+    const fs = 100 * cap / (c.measureText(ch).actualBoundingBoxAscent || 70);
+    c.font = cfont(wd, wg, fs, it);
+    const m = c.measureText(ch), l = m.actualBoundingBoxLeft || 0;
+    c.fillText(ch, x + l, y);
+    return l + (m.actualBoundingBoxRight || m.width);
+  }
+  /* registration target on clean paper, printed on both plates: misregistration doubles it */
+  function target(c, x, y, r, col) {
+    c.save();
+    c.globalCompositeOperation = 'destination-out'; c.fillRect(x - r * 2, y - r * 2, r * 4, r * 4);
+    c.globalCompositeOperation = 'source-over'; c.strokeStyle = col; c.lineWidth = 1;
+    c.beginPath(); c.arc(x, y, r, 0, TAU);
+    c.moveTo(x - r * 1.7, y); c.lineTo(x + r * 1.7, y); c.moveTo(x, y - r * 1.7); c.lineTo(x, y + r * 1.7);
+    c.stroke(); c.restore();
+  }
+  const GRID = new Float32Array(2 * 19 * 14), ROUTE = [2, 10, 5, 8, 8, 9, 11, 4, 14, 5, 16, 2];
+  const ARTS = [
+    /* 01 Aurora Bank · curtain: a halftone aurora (B) behind a Light Extended A and ruled swell (K) */
+    (k, b, w, h, t) => {
+      const s = Math.max(7, w / 38);
+      b.fillStyle = C.blue;
+      for (let y = s / 2; y < h; y += s) for (let x = s / 2; x < w; x += s) {
+        const u = x / w, v = y / h, d = (v - .34 - .13 * Math.sin(u * 5.2 + t * .5) - .05 * Math.sin(u * 14 - t * .8)) / .2;
+        const r = s * .56 * Math.sqrt(Math.exp(-d * d) * (.72 + .28 * Math.sin(u * 9 + v * 5 - t * 1.1)));
+        if (r > .45) { b.beginPath(); b.arc(x, y, r, 0, TAU); b.fill(); }
+      }
+      k.fillStyle = C.ink; k.strokeStyle = C.ink; k.textBaseline = 'alphabetic';
+      glyph(k, 'A', 150, 250, false, w * .36 + Math.sin(t * .3) * 4, h * .86, h * .6);
+      for (let i = 0; i < 8; i++) {
+        const y0 = h * (.6 + i * .046);
+        k.lineWidth = .6 + i * .24; k.beginPath();
+        for (let x = 0; x <= w + 6; x += 6) { const y = y0 + Math.sin(x * .021 + t * .9 + i * .55) * (1.5 + i * .6); if (x) k.lineTo(x, y); else k.moveTo(x, y); }
+        k.stroke();
+      }
+    },
+    /* 02 Pulse Records · rings: B rings pumping at 128 bpm from the bowl of a Black Compressed P (K), knocked out */
+    (k, b, w, h, t) => {
+      k.fillStyle = C.ink; k.textBaseline = 'alphabetic';
+      const cap = h * .8, x0 = w * .1, pw = glyph(k, 'P', 50, 900, false, x0, h * .9, cap);
+      const cx = x0 + pw * .5, cy = h * .9 - cap * .72, beat = t * 128 / 60, env = Math.pow(1 - beat % 1, 2.4);
+      const sp = Math.max(9, w / 22), R = Math.hypot(w, h) * 1.05, off = (t * 26) % sp;
+      b.strokeStyle = C.blue;
+      for (let r = off + 3; r < R; r += sp) {
+        const a = .5 + .5 * Math.sin(r * .055 - beat * Math.PI);
+        b.lineWidth = sp * (.14 + .5 * a * (.4 + .6 * env)); b.beginPath(); b.arc(cx, cy, r, 0, TAU); b.stroke();
+      }
+      k.save(); k.globalCompositeOperation = 'destination-out'; k.lineWidth = Math.max(1.5, sp * .12);
+      for (let r = off + 3 + sp * .5; r < R; r += sp) { k.beginPath(); k.arc(cx, cy, r, 0, TAU); k.stroke(); }
+      k.restore();
+    },
+    /* 03 Atlas Freight · grid: a tracked Medium A (B) under a field-warped grid (K) and the live route */
+    (k, b, w, h, t) => {
+      b.fillStyle = C.blue; b.textBaseline = 'alphabetic';
+      glyph(b, 'A', 112, 520, false, w * .06, h * .9, h * .78);
+      const gx = 18, gy = 13, mx = w * (.55 + .28 * Math.sin(t * .6)), my = h * (.5 + .26 * Math.cos(t * .8)), sg = Math.min(w, h) * .26;
+      for (let j = 0; j <= gy; j++) for (let i = 0; i <= gx; i++) {
+        const x = i * w / gx, y = j * h / gy, dx = x - mx, dy = y - my, q = 1 + .55 * Math.exp(-(dx * dx + dy * dy) / (2 * sg * sg)), o = 2 * (j * 19 + i);
+        GRID[o] = mx + dx * q; GRID[o + 1] = my + dy * q;
+      }
+      k.strokeStyle = C.ink; k.lineWidth = .8; k.beginPath();
+      for (let j = 0; j <= gy; j++) for (let i = 0; i <= gx; i++) { const o = 2 * (j * 19 + i); if (i) k.lineTo(GRID[o], GRID[o + 1]); else k.moveTo(GRID[o], GRID[o + 1]); }
+      for (let i = 0; i <= gx; i++) for (let j = 0; j <= gy; j++) { const o = 2 * (j * 19 + i); if (j) k.lineTo(GRID[o], GRID[o + 1]); else k.moveTo(GRID[o], GRID[o + 1]); }
+      k.stroke();
+      k.lineWidth = 3.2; k.setLineDash([9, 5]); k.lineDashOffset = -t * 22; k.beginPath();
+      for (let r = 0; r < ROUTE.length; r += 2) { const o = 2 * (ROUTE[r + 1] * 19 + ROUTE[r]); if (r) k.lineTo(GRID[o], GRID[o + 1]); else k.moveTo(GRID[o], GRID[o + 1]); }
+      k.stroke(); k.setLineDash([]);
+      k.fillStyle = C.ink;
+      for (let r = 0; r < ROUTE.length; r += 2) { const o = 2 * (ROUTE[r + 1] * 19 + ROUTE[r]); k.fillRect(GRID[o] - 4, GRID[o + 1] - 4, 8, 8); }
+      const seg = (t * .45) % 1 * (ROUTE.length / 2 - 1), si = seg | 0, f = seg - si;
+      const a = 2 * (ROUTE[2 * si + 1] * 19 + ROUTE[2 * si]), z = 2 * (ROUTE[2 * si + 3] * 19 + ROUTE[2 * si + 2]);
+      b.beginPath(); b.arc(lerp(GRID[a], GRID[z], f), lerp(GRID[a + 1], GRID[z + 1], f), 8, 0, TAU); b.fill();
+    },
+    /* 04 Nocturne · halftone: a halftone moon (B), a Light Italic N and star grain (K) */
+    (k, b, w, h, t) => {
+      const s = Math.max(6, w / 44), mx = w * (.64 + .05 * Math.sin(t * .35)), my = h * .42, R = h * .38;
+      b.fillStyle = C.blue;
+      for (let y = s / 2; y < h; y += s) for (let x = s / 2; x < w; x += s) {
+        const m = clamp(1.12 - Math.hypot(x - mx, y - my) / R, 0, 1), wv = .5 + .5 * Math.sin(x * .03 + t * .7) * Math.cos(y * .035 - t * .5);
+        const r = s * .52 * Math.sqrt(clamp(m * .96 + wv * .1 * (1 - m), 0, 1));
+        if (r > .4) { b.beginPath(); b.arc(x, y, r, 0, TAU); b.fill(); }
+      }
+      k.fillStyle = C.ink; k.textBaseline = 'alphabetic';
+      glyph(k, 'N', 70, 200, true, w * .08, h * .9, h * .76);
+      for (let i = 0; i < 48; i++) {
+        const a = .5 + .5 * Math.sin(t * 1.7 + i * 2.3);
+        if (a < .4) continue;
+        const sx = (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1, sy = (Math.sin(i * 78.233) * 24634.6345 % 1 + 1) % 1;
+        k.fillRect(sx * w, sy * h * .92, 1.5, 1.5);
+      }
+    },
+    /* 05 Kinetik · waterfall: the name sweeping both axes row by row (K) over a weight meter per row (B) */
+    (k, b, w, h, t) => {
+      const n = 6, rh = h / n;
+      k.fillStyle = C.ink; k.textBaseline = 'alphabetic'; b.fillStyle = C.blue;
+      for (let i = 0; i < n; i++) {
+        const q = .5 + .5 * Math.sin(t * 1.3 - i * .7);
+        b.fillRect(0, i * rh + rh * .14, w * (.1 + .9 * q), rh * .72);
+        k.font = cfont(50 + 100 * q, 100 + 800 * q, rh * 1.02);
+        const tw = k.measureText('KINETIK').width || 1;
+        k.save(); k.translate(4, (i + 1) * rh - rh * .14); k.scale((w - 8) / tw, 1); k.fillText('KINETIK', 0, 0); k.restore();
+      }
+    }
+  ];
+  class Plates {
+    constructor() {
+      this.k = document.createElement('canvas'); this.b = document.createElement('canvas');
+      this.kc = this.k.getContext('2d'); this.bc = this.b.getContext('2d');
+      this.w = 0; this.h = 0; this.d = 1;
+    }
+    size(w, h, d) {
+      w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h));
+      if (w === this.w && h === this.h && d === this.d) return;
+      this.w = w; this.h = h; this.d = d;
+      this.k.width = this.b.width = Math.round(w * d); this.k.height = this.b.height = Math.round(h * d);
+    }
+    draw(i, t) {
+      const kc = this.kc, bc = this.bc, d = this.d;
+      kc.setTransform(1, 0, 0, 1, 0, 0); kc.clearRect(0, 0, this.k.width, this.k.height); kc.setTransform(d, 0, 0, d, 0, 0);
+      bc.setTransform(1, 0, 0, 1, 0, 0); bc.clearRect(0, 0, this.b.width, this.b.height); bc.setTransform(d, 0, 0, d, 0, 0);
+      ARTS[i](kc, bc, this.w, this.h, t);
+      target(kc, this.w - 15, 15, 5, C.ink); target(bc, this.w - 15, 15, 5, C.blue);
+    }
+  }
+  /* lay the plates on paper at (x, y) in the target's CSS px: B slips by (mx, my);
+     lag = { n, x, y } offsets each of n horizontal strips (the slit-scan tear) */
+  function print(c, pl, x, y, mx, my, lag) {
+    const w = pl.w, h = pl.h, n = lag ? lag.n : 1, sh = h / n, sk = pl.k.height / n, sw = pl.k.width, d = pl.d;
+    for (let j = 0; j < n; j++) {
+      const ox = x + (lag ? lag.x[j] : 0), oy = y + (lag ? lag.y[j] : 0) + j * sh;
+      c.save(); c.beginPath(); c.rect(ox, oy, w, sh + (j < n - 1 ? .5 : 0)); c.clip();
+      c.globalCompositeOperation = 'source-over'; c.fillStyle = C.paper; c.fillRect(ox, oy, w, sh + 1);
+      c.globalCompositeOperation = 'multiply';
+      c.drawImage(pl.b, 0, j * sk - my * d, sw, sk, ox + mx, oy, w, sh);
+      c.globalAlpha = K_ALPHA; c.drawImage(pl.k, 0, j * sk, sw, sk, ox, oy, w, sh);
+      c.restore();
+    }
+  }
+  /* canvas sized to its CSS box; returns the 2D context with the DPR transform */
+  function fitCanvas(cv, w, h, d) {
+    const bw = Math.max(1, Math.round(w * d)), bh = Math.max(1, Math.round(h * d));
+    if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+    const c = cv.getContext('2d');
+    c.setTransform(d, 0, 0, d, 0, 0);
+    return c;
+  }
+
+  /* ── 16 · B4 In use: five voices, the riso card, inline plates ───────────────
+     Titles are set permanently in each client's instance; KINETIK walks its
+     axes. Desktop: a flat two-plate card parks beside the hovered title, its
+     IKB plate slipping with cursor speed, its strips tearing in time on fast
+     flicks. Phones: inline plates slip with scroll velocity.               */
+  const PROJECTS = [
+    { role: 'Product design, motion, front-end', stack: 'React Native · Reanimated · Figma', mode: 'Curtain', body: [
+      'A calmer bank: one-thumb navigation, balances that count instead of jump, and one motion system shared by iOS and Android.',
+      'Aurora’s app felt like a spreadsheet. We set every figure in a light extended cut, gave changes a short count so they read as motion rather than alarms, and moved the main actions within reach of a thumb.',
+      'Motion tokens live in one file that both platforms read, so a designer can change an ease once and see it everywhere. The result ships weekly without a separate animation pass.'] },
+    { role: 'Art direction, WebGL', stack: 'Three.js · GLSL · Web Audio', mode: 'Rings', body: [
+      'A label site where every release gets its own shader, driven live by the track playing in the corner of the screen.',
+      'Pulse releases loud records for small rooms. Titles are set Black Compressed so a whole artist name fits on one phone line, and the visualizer reads the audio on the GPU.',
+      'When a device is busy the shader steps down to a still poster, so the catalogue stays fast on a cheap phone and the music never stutters.'] },
+    { role: 'Data visualization, front-end', stack: 'D3 · WebGL · TypeScript', mode: 'Grid', body: [
+      'A live 3D map of a freight fleet: thousands of routes, filtered from the keyboard and readable on a dispatcher’s laptop.',
+      'Dispatchers used to read the fleet from five tabs and a wall map. Now routes carry tracked mono labels, delays show as heat, and every filter has a key.',
+      'The map draws in a single WebGL pass with a plain table underneath, so the same data is there for screen readers and spreadsheets.'] },
+    { role: 'E-commerce design, development', stack: 'Next.js · Shopify', mode: 'Halftone', body: [
+      'A storefront paced like a perfume note: slow reveals, a scent finder and a checkout that stays out of the way.',
+      'Nocturne sells three scents a year. Product names whisper in a light italic while the cart stays loud enough to use, and pages reveal top note to base.',
+      'The scent finder asks four quiet questions and remembers nothing it does not need. The store runs on Next.js with Shopify behind it.'] },
+    { role: 'Type tooling, open source', stack: 'TypeScript · Web Components', mode: 'Waterfall', body: [
+      'An open-source playground for variable fonts: drag across two axes, type anything and copy the CSS.',
+      'It started as a tool for this page, a way to find the exact instance a word needs before it goes into a layout.',
+      'Try it above. The pad moves width on x and weight on y, the line is live text you can select, and the readout is exactly what you paste.'] }
+  ];
+  const CARD = { w: 340, h: 255, px: 120, py: 60, n: 40, lagMs: 4.5 };
+  const HIST = 64;
+  const Work = {
+    name: 'work', active: false,
+    sec: $('#work'), list: $('.rows'), rows: [], hov: null, kb: null, act: -1, frozen: false,
+    rr: { l: 0, t: 0, r: 0, b: 0, ok: false },
+    card: $('.pc'), cv: $('.pc canvas'), cap: $('.pc-cap'), cc: null, pl: new Plates(),
+    shown: 0, placed: false, x: 0, y: 0, mx: 1, my: .5, mvx: 0, mvy: 0, tf: '', op: '', vis: false, drawn: -1,
+    hx: new Float32Array(HIST), hy: new Float32Array(HIST), ht: new Float64Array(HIST), head: 0,
+    lag: { n: CARD.n, x: new Float32Array(CARD.n), y: new Float32Array(CARD.n) },
+    inl: { pl: new Plates(), cvs: [], cs: [], vis: new Uint8Array(5), on: 0, last: 0 },
+    kin: { row: null, L: [], str: [] },
+    init() {
+      this.rows = $$('.row', this.list);
+      this.rows.forEach((row, i) => {
+        const btn = $('.r-btn', row), name = btn.textContent.trim(), st = row.style;
+        Object.assign(row, {
+          _i: i, _btn: btn, _name: name, _inst: $('.r-inst', row).textContent, _year: $('.r-year', row).textContent,
+          _w: +st.getPropertyValue('--w') || 100, _g: +st.getPropertyValue('--g') || 500,
+          _tr: parseFloat(st.getPropertyValue('--tr')) || 0, _it: st.getPropertyValue('--st').trim() === 'italic', _te: 0, _fs: 0
+        });
+        btn.setAttribute('aria-label', `${name}, plate ${String(i + 1).padStart(2, '0')}`);
+        btn.textContent = '';
+        row._L = [];
+        name.split(' ').forEach((word, j) => {
+          if (j) btn.appendChild(document.createTextNode(' '));
+          const wd = mk('span', 'rw');
+          for (const ch of word) { const l = mk('span', 'rl', ch); wd.appendChild(l); row._L.push(l); }
+          btn.appendChild(wd);
+        });
+        if (row.hasAttribute('data-kin')) { this.kin.row = row; this.kin.L = row._L; this.kin.str = row._L.map(() => ''); }
+        const edge = e => { const r = row.getBoundingClientRect(); return e.clientY < r.top + r.height / 2 ? '0%' : '100%'; };
+        row.addEventListener('pointerenter', e => {
+          if (Case.isOpen) return;
+          row.style.setProperty('--o', edge(e)); row.classList.add('is-on');
+          if (e.pointerType !== 'touch') { this.hov = row; this.activate(i); S.wake(); }
+        });
+        row.addEventListener('pointerleave', e => { row.style.setProperty('--o', edge(e)); this.leave(row); });
+        btn.addEventListener('focus', () => {
+          let kb = true;
+          try { kb = btn.matches(':focus-visible'); } catch (x) { kb = true; }
+          if (!kb || Case.isOpen) return;
+          row.style.setProperty('--o', '100%'); row.classList.add('is-kb'); this.kb = row; this.activate(i); S.wake();
+        });
+        btn.addEventListener('blur', () => { row.classList.remove('is-kb'); if (this.kb === row) this.kb = null; });
+        btn.addEventListener('click', () => Case.open(i));
+      });
+      this.cc = this.cv.getContext('2d');
+      this.inl.cvs = this.rows.map(r => $('.r-media canvas', r));
+      const io2 = new IntersectionObserver(es => {
+        es.forEach(e => { const i = this.inl.cvs.indexOf(e.target); if (i >= 0) this.inl.vis[i] = e.isIntersecting ? 1 : 0; });
+        this.inl.on = this.inl.vis.reduce((a, b) => a + b, 0);
+        S.wake();
+      });
+      this.inl.cvs.forEach(cv => io2.observe(cv));
+    },
+    leave(row) {
+      if (!row.classList.contains('fly-src')) row.classList.remove('is-on');
+      if (this.hov === row) this.hov = null;
+    },
+    activate(i) {
+      if (i === this.act) return;
+      this.act = i;
+      this.cap.textContent = `${String(i + 1).padStart(2, '0')} — ${this.rows[i]._name} · 2 plates`;
+      this.mvx += 420; this.mvy -= 160; /* a fresh plate lands slightly out of register, then settles */
+      this.drawn = -1;
+    },
+    freeze(on) { this.frozen = on; },
+    /* off screen the system sleeps: drop the hover so the card cannot hang over other sections */
+    onVis(v) {
+      if (v) return;
+      if (this.hov) this.leave(this.hov);
+      this.shown = 0; this.placed = false;
+      if (this.vis) { this.card.style.visibility = 'hidden'; this.card.style.opacity = '0'; this.op = '0'; this.vis = false; }
+    },
+    /* KINETIK animates through its axes slowly; at rest (reduced motion) it is the ramp */
+    kinAxes(j, T) { return env.reduce ? j / (this.kin.L.length - 1) : .5 + .5 * Math.sin(T * .85 - j * .62); },
+    kinWrite(T) {
+      const L = this.kin.L;
+      for (let j = 0; j < L.length; j++) {
+        const q = this.kinAxes(j, T), wd = Math.round((50 + 100 * q) * 2) / 2, wg = Math.round(100 + 800 * q);
+        const fv = `'wdth' ${wd}, 'wght' ${wg}`;
+        if (fv !== this.kin.str[j]) { L[j].style.fontVariationSettings = fv; this.kin.str[j] = fv; L[j]._w = wd; L[j]._g = wg; }
+      }
+    },
+    /* the axes a row letter is set in right now (start and end of the title flight) */
+    axes(row, j) { const l = row._L[j]; return l._w != null ? [l._w, l._g] : [row._w, row._g]; },
+    layout() {
+      const desk = env.desk, rows = this.rows;
+      this.list.style.removeProperty('--rt-fs');
+      rows.forEach(r => { $('.r-title', r).style.fontSize = ''; });
+      if (this.kin.L.length) this.kin.L.forEach(l => { l.style.fontVariationSettings = `'wdth' 125, 'wght' 700`; });
+      const base = parseFloat(getComputedStyle($('.r-title', rows[0])).fontSize) || 60;
+      if (desk) {
+        /* one size for all five voices: the widest title must leave the dot leaders their 24px */
+        const rem = parseFloat(getComputedStyle(root).fontSize) || 16, fixed = rem * (3.4 + 15 + 3.4 + 6.4) + 5 * 16 + 24;
+        let k = 1;
+        rows.forEach(r => { const avail = r.clientWidth - fixed, w = r._btn.offsetWidth; if (w > avail && avail > 0) k = Math.min(k, avail / w); });
+        if (k < 1) this.list.style.setProperty('--rt-fs', (base * k).toFixed(2) + 'px');
+      } else {
+        /* phones: every voice fitted to the measure, capped so compressed names stay in proportion */
+        rows.forEach(r => {
+          const t = $('.r-title', r), w = r._btn.offsetWidth, cw = t.clientWidth;
+          if (w) t.style.fontSize = Math.min(base * cw / w * .98, innerWidth * .15).toFixed(2) + 'px';
+        });
+      }
+      rows.forEach(r => { const rb = r.getBoundingClientRect(); r._te = r._btn.getBoundingClientRect().right - rb.left; r._fs = parseFloat(getComputedStyle(r._btn).fontSize) || base; });
+      this.kin.str.fill('');
+      this.kinWrite(performance.now() / 1000);
+      /* preview card (fine pointers) and inline plates (phones) */
+      if (env.fine) {
+        const d = DPR(1.5);
+        this.cc = fitCanvas(this.cv, CARD.w + 2 * CARD.px, CARD.h + 2 * CARD.py, d);
+        this.pl.size(CARD.w, CARD.h, d);
+        this.drawn = -1;
+      }
+      const ic = this.inl;
+      if (!desk) {
+        const cw = ic.cvs[0].offsetWidth, ch = ic.cvs[0].offsetHeight, d = DPR(1.5);
+        ic.pl.size(cw, ch, d);
+        ic.cs = ic.cvs.map(cv => fitCanvas(cv, cw, ch, d));
+        ic.cvs.forEach((cv, i) => this.inlineDraw(i, 1.5 + i, 0));
+      }
+    },
+    inlineDraw(i, T, my) {
+      const ic = this.inl, c = ic.cs[i];
+      if (!c) return;
+      ic.pl.draw(i, T);
+      c.clearRect(0, 0, ic.pl.w, ic.pl.h);
+      print(c, ic.pl, 0, 0, 1, .5 + my, null);
+    },
+    read() {
+      const r = this.rr, row = this.hov || this.kb;
+      r.ok = false;
+      if (!row || Case.isOpen) return;
+      const b = row.getBoundingClientRect();
+      r.l = b.left; r.t = b.top; r.r = b.right; r.b = b.bottom; r.ok = true;
+    },
+    tick(t, dt) {
+      const T = t / 1000;
+      let busy = false;
+      if (this.kin.L.length && !this.frozen && !env.reduce) { this.kinWrite(T); busy = true; }
+      /* the page scrolled the hovered row out from under a still pointer */
+      const r = this.rr;
+      if (this.hov && r.ok && (!P.inside || P.x < r.l || P.x > r.r || P.y < r.t || P.y > r.b)) { this.leave(this.hov); r.ok = false; }
+      if (env.fine) busy = this.cardTick(t, dt) || busy;
+      if (!env.desk && this.inl.on && !env.reduce && !Case.isOpen) {
+        busy = true;
+        if (t - this.inl.last > 32) {
+          this.inl.last = t;
+          const my = clamp(F.vel * .012, -14, 14);
+          for (let i = 0; i < 5; i++) if (this.inl.vis[i]) this.inlineDraw(i, T + i, my);
+        }
+      }
+      return busy;
+    },
+    cardTick(t, dt) {
+      const row = this.hov || this.kb, r = this.rr;
+      const show = !!row && r.ok && env.desk && !Case.isOpen && !Case.busy && r.b > 0 && r.t < F.vh;
+      if (show && row._i !== this.act) this.activate(row._i);
+      if (!show && !this.shown) { if (this.vis) { this.card.style.visibility = 'hidden'; this.vis = false; } return false; }
+      const goal = show ? 1 : 0;
+      this.shown = env.reduce ? goal : this.shown + (goal - this.shown) * (1 - Math.exp(-dt * 16));
+      if (Math.abs(this.shown - goal) < .01) this.shown = goal;
+      if (show) {
+        /* park beside the title, never on it; clamp inside the viewport */
+        const titleR = r.l + row._te + 30;
+        let tx = row === this.hov ? Math.max(P.x + 34, titleR) : titleR;
+        let ty = row === this.hov ? P.y - CARD.h / 2 : (r.t + r.b) / 2 - CARD.h / 2;
+        tx = clamp(tx, 24, F.vw - CARD.w - 24); ty = clamp(ty, 84, F.vh - CARD.h - 44);
+        if (!this.placed) { this.x = tx; this.y = ty; this.placed = true; this.hist(t, true); }
+        const f = env.reduce ? 1 : 1 - Math.exp(-dt * 11);
+        this.x += (tx - this.x) * f; this.y += (ty - this.y) * f;
+      }
+      if (!this.shown) this.placed = false;
+      this.hist(t, false);
+      /* misregistration: ~1px at rest, slipping with cursor speed (a damped spring) */
+      let moving = false;
+      if (!env.reduce) {
+        const gx = 1 + clamp(P.vx * .006, -14, 14), gy = .5 + clamp(P.vy * .004, -9, 9);
+        this.mvx += ((gx - this.mx) * 260 - this.mvx * 18) * dt; this.mx += this.mvx * dt;
+        this.mvy += ((gy - this.my) * 260 - this.mvy * 18) * dt; this.my += this.mvy * dt;
+        moving = Math.abs(this.mvx) + Math.abs(this.mvy) > .5 || Math.abs(gx - this.mx) + Math.abs(gy - this.my) > .05;
+      } else { this.mx = 1; this.my = .5; }
+      const tf = `translate3d(${this.x.toFixed(1)}px,${this.y.toFixed(1)}px,0) scale(${(.96 + .04 * this.shown).toFixed(3)})`;
+      if (tf !== this.tf) { this.card.style.transform = tf; this.tf = tf; }
+      const op = this.shown.toFixed(3);
+      if (op !== this.op) { this.card.style.opacity = op; this.op = op; }
+      if (!this.vis) { this.card.style.visibility = 'visible'; this.vis = true; }
+      if (this.act >= 0 && (!env.reduce || this.drawn !== this.act)) {
+        const torn = this.tear(t), c = this.cc;
+        this.pl.draw(this.act, env.reduce ? 1.5 : t / 1000);
+        c.clearRect(0, 0, CARD.w + 2 * CARD.px, CARD.h + 2 * CARD.py);
+        print(c, this.pl, CARD.px, CARD.py, this.mx, this.my, torn ? this.lag : null);
+        this.drawn = this.act;
+      }
+      return !env.reduce && (this.shown > 0 || moving);
+    },
+    /* ring buffer of card positions, for the slit-scan */
+    hist(t, fill) {
+      if (fill) { this.hx.fill(this.x); this.hy.fill(this.y); this.ht.fill(t); return; }
+      this.head = (this.head + 1) % HIST;
+      this.hx[this.head] = this.x; this.hy[this.head] = this.y; this.ht[this.head] = t;
+    },
+    /* each strip shows the card where it was j·4.5ms ago: a fast flick tears the plate in time */
+    tear(t) {
+      if (env.reduce) return false;
+      const L = this.lag;
+      let p = this.head, walked = 0, torn = false;
+      for (let j = 0; j < L.n; j++) {
+        const tt = t - j * CARD.lagMs;
+        while (walked < HIST - 2 && this.ht[(p - 1 + HIST) % HIST] >= tt) { p = (p - 1 + HIST) % HIST; walked++; }
+        const q = (p - 1 + HIST) % HIST, t0 = this.ht[q], t1 = this.ht[p], f = t1 > t0 ? clamp((tt - t0) / (t1 - t0), 0, 1) : 1;
+        const x = lerp(this.hx[q], this.hx[p], f), y = lerp(this.hy[q], this.hy[p], f);
+        L.x[j] = clamp(x - this.x, -CARD.px, CARD.px); L.y[j] = clamp(y - this.y, -CARD.py, CARD.py);
+        if (Math.abs(L.x[j]) + Math.abs(L.y[j]) > .6) torn = true;
+      }
+      return torn;
+    }
+  };
+
+  /* ── 17 · B4 Case sheet + TITLE FLIGHT ───────────────────────────────────────
+     The IKB sheet grows from the row band (clip-path, as in v1) while the
+     row title's own letters fly into the case header, widening and
+     thickening on the way: one object, no cross-fade. Close reverses it.
+     Esc closes; focus is trapped; phones can also swipe the sheet down.   */
+  const FLY_MS = 760, FLY_STAG = 14;
+  function cubicBezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx, cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    return x => {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      let lo = 0, hi = 1, s = x;
+      for (let i = 0; i < 18; i++) { const v = ((ax * s + bx) * s + cx) * s; if (Math.abs(v - x) < 1e-5) break; if (v < x) lo = s; else hi = s; s = (lo + hi) / 2; }
+      return ((ay * s + by) * s + cy) * s;
+    };
+  }
+  const easeFly = cubicBezier(.76, 0, .24, 1);
+  const Case = {
+    name: 'case', active: true,
+    el: $('#case'), sc: $('.case-scroll'), title: $('#case-title'), count: $('#case-count'), inst: $('#case-inst'),
+    copy: $$('#case-copy p'), year: $('#case-year'), ins: $('#case-ins'), role: $('#case-role'), stack: $('#case-stack'),
+    nn: $('#case-nn'), closeBtn: $('#case-close'), nextBtn: $('#case-next'), fig: $('.case-fig'), figCap: $('#case-cap'),
+    plate: $('.case-plate'), cv: $('.case-plate canvas'), cc: null, pl: new Plates(), flight: $('.flight'),
+    isOpen: false, busy: false, pendingClose: false, i: 0, fly: null, L: [], words: [], fs: 100, rb: null, ct: 0, cb: 0, cs: '',
+    art: false, sy: 0, ly: null, vy: 0, my: .5,
+    init() {
+      this.closeBtn.addEventListener('click', () => this.close());
+      this.nextBtn.addEventListener('click', () => this.next());
+      document.addEventListener('keydown', e => {
+        if (!this.isOpen) return;
+        if (e.key === 'Escape') { e.preventDefault(); this.close(); return; }
+        if (e.key === 'Tab') {
+          const f = focusables(this.el), a = f[0], z = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+          else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+        }
+      });
+      this.swipe();
+    },
+    fill(i) {
+      this.i = i;
+      const row = Work.rows[i], p = PROJECTS[i], n = String(i + 1).padStart(2, '0'), nx = Work.rows[(i + 1) % 5];
+      this.count.textContent = `Plate ${n} / 05`;
+      this.inst.textContent = `Set in ${row._inst}`;
+      this.year.textContent = row._year; this.ins.textContent = row._inst; this.role.textContent = p.role; this.stack.textContent = p.stack;
+      p.body.forEach((s, j) => { this.copy[j].textContent = s; });
+      this.nn.textContent = `${String(nx._i + 1).padStart(2, '0')} ${nx._name}`;
+      this.figCap.textContent = `Plate ${n} — ${row._name} · ${p.mode} · 2 plates, ink + IKB`;
+      const kin = i === 4;
+      this.el.classList.toggle('kp-on', kin); this.fig.hidden = kin; Play.el.hidden = !kin;
+      this.title.classList.toggle('it', row._it);
+      this.title.textContent = ''; this.L = []; this.words = [];
+      row._name.split(' ').forEach((word, j) => {
+        if (j) this.title.appendChild(document.createTextNode(' '));
+        const w = mk('span', 'cw');
+        for (const ch of word) { const l = mk('span', 'cl', ch); w.appendChild(l); this.L.push(l); }
+        this.title.appendChild(w); this.words.push(w);
+      });
+    },
+    /* widest word fits the measure at 150/900 (v1's fit), capped by the viewport */
+    fitTitle() {
+      const el = this.title;
+      el.style.fontSize = '100px';
+      let mw = 1;
+      for (const w of this.words) mw = Math.max(mw, w.offsetWidth);
+      this.fs = Math.min(innerWidth * .15, 100 * el.clientWidth / mw * .97, innerHeight * .26);
+      el.style.fontSize = this.fs.toFixed(2) + 'px';
+    },
+    /* the sheet's clip: the row band at e = 0, the full screen at e = 1 */
+    band(r) {
+      const vh = innerHeight, top = clamp(r.top, 0, vh);
+      this.ct = top; this.cb = clamp(vh - r.bottom, 0, vh - top);
+      this.clip(0);
+    },
+    clip(e) {
+      const s = `inset(${(this.ct * (1 - e)).toFixed(1)}px 0 ${(this.cb * (1 - e)).toFixed(1)}px 0)`;
+      if (s !== this.cs) { this.el.style.setProperty('--ct', (this.ct * (1 - e)).toFixed(1) + 'px'); this.el.style.setProperty('--cb', (this.cb * (1 - e)).toFixed(1) + 'px'); this.cs = s; }
+    },
+    open(i) {
+      if (this.isOpen || this.busy) return;
+      const row = Work.rows[i];
+      Intro.skip();
+      /* reads: the row band and its letters */
+      const rb = row.getBoundingClientRect(), ra = row._L.map(l => l.getBoundingClientRect()), axA = row._L.map((l, j) => Work.axes(row, j));
+      /* writes: lock the page and lay the sheet out at its final state, clipped to the row band */
+      this.isOpen = true;
+      K2.lockScroll(true); root.classList.add('case-open'); Work.freeze(true);
+      Work.rows.forEach(r => r.classList.remove('is-kb'));
+      this.band(rb);
+      this.el.style.transform = '';
+      this.el.classList.remove('open');
+      this.el.hidden = false;
+      this.sc.scrollTop = 0;
+      this.fill(i);
+      this.fitTitle();
+      if (i === 4) Play.layout();
+      page.inert = true; nav.inert = true;
+      this.closeBtn.focus({ preventScroll: true });
+      if (env.reduce) { this.el.classList.add('open'); this.startArt(); return; }
+      const rc = this.L.map(l => l.getBoundingClientRect());
+      this.el.classList.add('rise');
+      this.startFly(row, ra, rc, axA, true);
+      Sound.whoosh();
+    },
+    close() {
+      if (!this.isOpen) return;
+      if (this.busy) { this.pendingClose = true; return; }
+      const row = Work.rows[this.i];
+      /* the sheet still covers the page: bring the row into view under it, invisibly */
+      let rb = row.getBoundingClientRect();
+      if (rb.top < 70 || rb.bottom > innerHeight - 20) {
+        K2.scrollTo(clamp(rb.top + window.scrollY - innerHeight * .42, 0, root.scrollHeight), { immediate: true });
+        rb = row.getBoundingClientRect();
+      }
+      const rc = this.L.map(l => l.getBoundingClientRect()), ra = row._L.map(l => l.getBoundingClientRect()), axB = row._L.map((l, j) => Work.axes(row, j));
+      this.isOpen = false; this.art = false; this.rb = rb;
+      page.inert = false; nav.inert = false;
+      root.classList.remove('case-open');
+      row.classList.add('is-on');
+      this.el.classList.remove('open', 'rise', 'drag');
+      this.band(rb); this.clip(1);
+      this.el.style.transform = '';
+      if (env.reduce) { this.finishClose(row); return; }
+      this.startFly(row, rc, ra, axB, false);
+      Sound.whoosh();
+    },
+    finishClose(row) {
+      this.el.hidden = true; this.el.classList.remove('kp-on');
+      K2.lockScroll(false); Work.freeze(false);
+      const r = this.rb, over = P.inside && P.x >= r.left && P.x <= r.right && P.y >= r.top && P.y <= r.bottom;
+      Work.rows.forEach(x => { if (x !== row || !over) x.classList.remove('is-on'); });
+      if (over) { Work.hov = row; Work.activate(row._i); }
+      row._btn.focus({ preventScroll: true });
+      S.wake();
+    },
+    next() {
+      if (!this.isOpen || this.busy) return;
+      const i = (this.i + 1) % 5;
+      this.sc.scrollTop = 0;
+      this.fill(i); this.fitTitle();
+      if (i === 4) Play.layout();
+      if (!env.reduce) {
+        this.L.forEach((l, j) => {
+          l.animate([{ transform: 'perspective(600px) rotateX(-90deg)', opacity: .2 }, { transform: 'none', opacity: 1 }], { duration: 380, delay: j * 30, easing: 'cubic-bezier(.2,1.4,.5,1)', fill: 'backwards' });
+          setTimeout(() => Sound.tick(.8), j * 30);
+        });
+      }
+      this.startArt();
+    },
+    /* clones take over from the source letters; rects A → B, axes from the row instance to 150/900 */
+    startFly(row, ra, rb, axRow, opening) {
+      const fsRow = row._fs, fa = opening ? fsRow : this.fs, fb = opening ? this.fs : fsRow, La = opening ? .9 : .84, Lb = opening ? .84 : .9;
+      const items = [];
+      this.flight.textContent = '';
+      this.flight.classList.toggle('it', row._it);
+      for (let j = 0; j < ra.length; j++) {
+        const el = mk('span', 'fl-l', row._L[j].textContent), A = ra[j], B = rb[j];
+        const r0 = opening ? axRow[j] : [150, 900], r1 = opening ? [150, 900] : axRow[j];
+        const it = {
+          el, e: -1,
+          x0: A.left, y0: A.top + (La - 1) * fa / 2, x1: B.left, y1: B.top + (Lb - 1) * fb / 2, f0: fa, f1: fb,
+          w0: r0[0], w1: r1[0], g0: r0[1], g1: r1[1], t0: opening ? row._tr : 0, t1: opening ? 0 : row._tr
+        };
+        this.flyWrite(it, 0);
+        items.push(it); this.flight.appendChild(el);
+      }
+      row.classList.add('fly-src'); this.title.classList.add('fly-dst');
+      this.fly = { items, t0: performance.now(), opening, row };
+      this.busy = true;
+      S.wake();
+    },
+    flyWrite(it, e) {
+      if (e === it.e) return;
+      it.e = e;
+      const s = it.el.style;
+      s.transform = `translate3d(${lerp(it.x0, it.x1, e).toFixed(1)}px,${lerp(it.y0, it.y1, e).toFixed(1)}px,0)`;
+      s.fontSize = lerp(it.f0, it.f1, e).toFixed(2) + 'px';
+      s.fontVariationSettings = `'wdth' ${lerp(it.w0, it.w1, e).toFixed(1)}, 'wght' ${Math.round(lerp(it.g0, it.g1, e))}`;
+      if (it.t0 || it.t1) s.letterSpacing = lerp(it.t0, it.t1, e).toFixed(3) + 'em';
+    },
+    land() {
+      const f = this.fly;
+      this.fly = null; this.busy = false;
+      f.row.classList.remove('fly-src'); this.title.classList.remove('fly-dst');
+      this.flight.textContent = '';
+      if (f.opening) {
+        this.el.classList.add('open');
+        this.startArt();
+        if (this.pendingClose) { this.pendingClose = false; this.close(); }
+      } else this.finishClose(f.row);
+    },
+    startArt() {
+      this.art = this.i !== 4;
+      if (!this.art) return;
+      const w = this.plate.clientWidth, h = this.plate.clientHeight, d = DPR(1.5);
+      this.ly = null; this.vy = 0; this.my = .5;
+      this.cc = fitCanvas(this.cv, w, h, d);
+      this.pl.size(w, h, d);
+      this.drawArt(1.5);
+      if (env.reduce) this.art = false;
+      S.wake();
+    },
+    drawArt(T) {
+      this.pl.draw(this.i, T);
+      this.cc.clearRect(0, 0, this.pl.w, this.pl.h);
+      print(this.cc, this.pl, 0, 0, 1, this.my, null);
+    },
+    read() { if (this.art) this.sy = this.sc.scrollTop; },
+    tick(t, dt) {
+      const f = this.fly;
+      if (f) {
+        const el = t - f.t0;
+        let done = true;
+        for (let j = 0; j < f.items.length; j++) {
+          const q = clamp((el - j * FLY_STAG) / FLY_MS, 0, 1);
+          if (q < 1) done = false;
+          this.flyWrite(f.items[j], easeFly(q));
+        }
+        const ce = easeFly(clamp(el / FLY_MS, 0, 1));
+        this.clip(f.opening ? ce : 1 - ce);
+        if (done) this.land();
+        return true;
+      }
+      if (!this.art) return false;
+      /* the IKB plate slips with the sheet's own scroll speed */
+      const v = (this.sy - (this.ly == null ? this.sy : this.ly)) / dt;
+      this.ly = this.sy;
+      this.vy += (v - this.vy) * (1 - Math.exp(-dt / .08));
+      this.my = .5 + clamp(this.vy * .01, -12, 12);
+      this.drawArt(t / 1000);
+      return true;
+    },
+    layout() {
+      if (!this.isOpen || this.busy) return;
+      this.fitTitle();
+      if (this.i === 4) Play.layout(); else this.startArt();
+    },
+    /* phones: drag the sheet down from the top of its scroll to dismiss */
+    swipe() {
+      const el = this.el;
+      let y0 = 0, x0 = 0, d = 0, ly = 0, lt = 0, v = 0, armed = false, on = false;
+      el.addEventListener('touchstart', e => {
+        armed = this.isOpen && !this.busy && e.touches.length === 1 && this.sc.scrollTop <= 0 && !e.target.closest('input, .kp-pad');
+        if (!armed) return;
+        const p = e.touches[0];
+        y0 = ly = p.clientY; x0 = p.clientX; lt = e.timeStamp; d = 0; v = 0; on = false;
+      }, { passive: true });
+      el.addEventListener('touchmove', e => {
+        if (!armed) return;
+        const p = e.touches[0], dy = p.clientY - y0, dx = p.clientX - x0;
+        if (!on) {
+          if (dy > 8 && dy > Math.abs(dx) * 1.2) { on = true; el.classList.add('drag'); }
+          else { if (dy < -4 || Math.abs(dx) > 10) armed = false; return; }
+        }
+        e.preventDefault();
+        d = Math.max(0, dy);
+        const dtm = Math.max(1, e.timeStamp - lt);
+        v = v * .5 + ((p.clientY - ly) / dtm) * .5; ly = p.clientY; lt = e.timeStamp;
+        const lim = innerHeight * .4, vis = d < lim ? d : lim + (d - lim) * .35;
+        el.style.transform = `translate3d(0,${vis.toFixed(1)}px,0)`;
+      }, { passive: false });
+      const end = () => {
+        if (!on) { armed = false; return; }
+        on = armed = false;
+        el.classList.remove('drag');
+        if (d > 120 || v > .6) this.close();
+        else el.style.transform = '';
+      };
+      el.addEventListener('touchend', end);
+      el.addEventListener('touchcancel', end);
+    }
+  };
+  K2.work = { open: i => Case.open(i), close: () => Case.close(), get isOpen() { return Case.isOpen; } };
+
+  /* ── 18 · Case 05 KINETIK: the product, live ─────────────────────────────────
+     An editable line, a 2D axis pad (x = wdth, y = wght), an ital toggle and
+     the exact CSS to copy. The native ranges are the keyboard path. The line
+     is sized once per text so even 150/900 fits: no per-frame measuring.  */
+  const Play = {
+    el: $('#kp'), input: $('#kp-in'), pad: $('.kp-pad'), hd: $('.kp-h'), gx: $('.kp-gx'), gy: $('.kp-gy'),
+    rw: $('#kp-w'), rg: $('#kp-g'), ow: $('#kp-wo'), og: $('#kp-go'), it: $('#kp-it'), code: $('#kp-css code'), cp: $('#kp-copy'),
+    mw: mk('span', 'kp-mw'), mir: mk('span', 'kp-mir'), w: 132, g: 812, ital: false, size: 1, pr: null, drag: -1,
+    init() {
+      this.mw.setAttribute('aria-hidden', 'true');
+      this.mw.appendChild(this.mir); this.el.appendChild(this.mw);
+      this.input.addEventListener('input', () => this.fit());
+      this.rw.addEventListener('input', () => this.set(+this.rw.value, this.g));
+      this.rg.addEventListener('input', () => this.set(this.w, +this.rg.value));
+      this.it.addEventListener('click', () => {
+        this.ital = !this.ital;
+        this.it.setAttribute('aria-pressed', String(this.ital));
+        this.input.classList.toggle('it', this.ital); this.mir.classList.toggle('it', this.ital);
+        this.fit(); this.css();
+      });
+      this.cp.addEventListener('click', () => K2.copy(this.text(), this.code));
+      const at = e => {
+        const r = this.pr, x = clamp((e.clientX - r.left) / r.width, 0, 1), y = clamp((e.clientY - r.top) / r.height, 0, 1);
+        this.set(50 + 100 * x, 900 - 800 * y);
+      };
+      this.pad.addEventListener('pointerdown', e => {
+        if (e.button > 0) return;
+        this.pr = this.pad.getBoundingClientRect(); this.drag = e.pointerId;
+        try { this.pad.setPointerCapture(e.pointerId); } catch (x) { /* capture unsupported */ }
+        at(e);
+      });
+      this.pad.addEventListener('pointermove', e => { if (e.pointerId === this.drag) at(e); });
+      const up = e => { if (e.pointerId === this.drag) this.drag = -1; };
+      this.pad.addEventListener('pointerup', up);
+      this.pad.addEventListener('pointercancel', up);
+      this.set(this.w, this.g);
+    },
+    set(w, g) {
+      this.w = Math.round(clamp(w, 50, 150)); this.g = Math.round(clamp(g, 100, 900));
+      this.input.style.fontVariationSettings = `'wdth' ${this.w}, 'wght' ${this.g}`;
+      if (+this.rw.value !== this.w) this.rw.value = this.w;
+      if (+this.rg.value !== this.g) this.rg.value = this.g;
+      this.ow.textContent = this.w; this.og.textContent = this.g;
+      const x = (this.w - 50) / 100 * this.size, y = (900 - this.g) / 800 * this.size;
+      this.hd.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+      this.gx.style.transform = `translate3d(0,${y.toFixed(1)}px,0)`;
+      this.gy.style.transform = `translate3d(${x.toFixed(1)}px,0,0)`;
+      this.css();
+    },
+    text() { return `font-variation-settings: "wdth" ${this.w}, "wght" ${this.g};` + (this.ital ? '\nfont-style: italic;' : ''); },
+    css() { const s = this.text(); if (this.code.textContent !== s) this.code.textContent = s; },
+    fit() {
+      this.mir.textContent = this.input.value || 'Kinetik';
+      const mw = this.mir.offsetWidth || 1, cw = this.input.clientWidth || 1;
+      this.input.style.fontSize = Math.min(100 * cw / mw * .96, innerWidth * .2, 240).toFixed(1) + 'px';
+    },
+    layout() { this.size = this.pad.clientWidth || 1; this.fit(); this.set(this.w, this.g); }
+  };
+
+  /* ── 19 · B5 Threshold: into the O ────────────────────────────────────────────
+     A CSS sticky pin (160svh). 0–30%: hold. 30–90%: scale into the O's thick
+     stroke (1 → 70, p³) while its neighbours are sucked thin (wdth → 50) and
+     drift out; the ink overlay takes over before the raster gets huge. Fully
+     scrubbed, so it reverses for free. Reduced motion: a static heading.  */
+  const Thresh = {
+    name: 'thresh', active: false,
+    sec: $('#process'), pin: $('.thr-pin'), a: $('.thr-a'), at: $('.thr-a .thr-t'), b: $('.thr-b'), bt: $('.thr-b .thr-t'), ink: $('.thr-ink'),
+    G: [], O: 1, live: false, top: 0, run: 1, p: -1, w0: [], w1: [], gs: [], os: '', as: '', ks: '', loud: false, ox: 0, oy: 0, pw: 1, ph: 1,
+    init() {
+      const word = this.bt.textContent.trim();
+      this.bt.textContent = '';
+      for (const ch of word) { const s = mk('span', 'fl', ch); this.bt.appendChild(s); this.G.push(s); }
+      this.O = Math.max(0, word.toUpperCase().indexOf('O'));
+      this.gs = this.G.map(() => ['', '', '']);
+    },
+    layout() {
+      this.live = !env.reduce;
+      const sec = this.sec;
+      sec.classList.remove('abs');
+      sec.classList.toggle('live', this.live);
+      this.G.forEach(g => { g.style.cssText = ''; });
+      this.bt.style.cssText = ''; this.at.style.cssText = ''; this.ink.style.opacity = '';
+      this.gs = this.G.map(() => ['', '', '']); this.os = this.as = this.ks = '';
+      K2.fit(this.bt, this.b); K2.fit(this.at, this.a);
+      /* MOVES fills the measure; the hairline (Anybody 50/100 is very narrow) takes the height that is left */
+      const room = (this.live ? this.pin.clientHeight : innerHeight) * .62, scale = (el, k) => { el.style.fontSize = (parseFloat(el.style.fontSize) * k).toFixed(2) + 'px'; };
+      if (this.b.offsetHeight > room * .6) scale(this.b, room * .6 / this.b.offsetHeight);
+      const left = room - this.b.offsetHeight, ha = this.a.offsetHeight;
+      if (ha > left) scale(this.a, left / ha);
+      if (!this.live) return;
+      /* measure each glyph at 150 and at 50, then set them absolutely so thinning one never moves another */
+      const n = this.G.length, x = [], l0 = this.bt.getBoundingClientRect().left;
+      for (let j = 0; j < n; j++) { x[j] = this.G[j].getBoundingClientRect().left - l0; this.w0[j] = this.G[j].offsetWidth; }
+      this.bt.classList.add('thin');
+      for (let j = 0; j < n; j++) this.w1[j] = this.G[j].offsetWidth;
+      this.bt.classList.remove('thin');
+      const lw = this.bt.offsetWidth, lh = this.bt.offsetHeight;
+      this.bt.style.width = lw + 'px'; this.bt.style.height = lh + 'px';
+      this.G.forEach((g, j) => { g.style.left = x[j] + 'px'; });
+      sec.classList.add('abs');
+      /* zoom origin: inside the O's thick left stroke; the zoom pans it to the centre of the pin so the stroke covers both sides */
+      const O = this.G[this.O], ox = this.w0[this.O] * .14, oy = lh * .5, pr = this.pin.getBoundingClientRect(), or = O.getBoundingClientRect();
+      O.style.transformOrigin = `${ox.toFixed(1)}px ${oy.toFixed(1)}px`;
+      this.ox = or.left - pr.left + ox; this.oy = or.top - pr.top + oy; this.pw = this.pin.clientWidth; this.ph = this.pin.clientHeight;
+      this.measure();
+    },
+    measure() {
+      if (!this.live) return;
+      this.top = this.sec.getBoundingClientRect().top + window.scrollY;
+      this.run = Math.max(1, this.sec.offsetHeight - this.pin.offsetHeight);
+      this.p = -1;
+    },
+    tick() {
+      if (!this.live) return false;
+      const p = clamp((F.y - this.top) / this.run, 0, 1);
+      if (p === this.p) return false;
+      this.p = p;
+      const q = smooth(.3, .9, p), s = Math.min(1 + 69 * q * q * q, 45), k = smooth(18, 38, s), c = smooth(.3, .72, p), vw = F.vw;
+      const os = s > 1.0005 ? `translate3d(${((this.pw / 2 - this.ox) * c).toFixed(1)}px,${((this.ph / 2 - this.oy) * c).toFixed(1)}px,0) scale(${s.toFixed(3)})` : '';
+      if (os !== this.os) { this.G[this.O].style.transform = os; this.os = os; }
+      for (let j = 0; j < this.G.length; j++) {
+        if (j === this.O) continue;
+        const g = this.G[j], c = this.gs[j], dir = j < this.O ? -1 : 1, w = lerp(this.w0[j], this.w1[j], q);
+        const fv = q > 0 ? `'wdth' ${(150 - 100 * q).toFixed(1)}, 'wght' 900` : '';
+        const tf = q > 0 ? `translate3d(${((this.w0[j] - w) / 2 + dir * q * vw * .2).toFixed(1)}px,0,0)` : '';
+        const op = q > 0 ? (1 - q).toFixed(3) : '';
+        if (fv !== c[0]) { g.style.fontVariationSettings = fv; c[0] = fv; }
+        if (tf !== c[1]) { g.style.transform = tf; c[1] = tf; }
+        if (op !== c[2]) { g.style.opacity = op; c[2] = op; }
+      }
+      const as = q > 0 ? `translate3d(0,${(-q * F.vh * .3).toFixed(1)}px,0)` : '';
+      if (as !== this.as) { this.at.style.transform = as; this.at.style.opacity = q > 0 ? clamp(1 - q * 1.6, 0, 1).toFixed(3) : ''; this.as = as; }
+      const ks = k.toFixed(3);
+      if (ks !== this.ks) { this.ink.style.opacity = ks; this.ks = ks; }
+      if ((s >= 8) !== this.loud) { this.loud = s >= 8; if (this.loud) Sound.whoosh(); }
+      return false;
+    }
+  };
+
+  /* ── 20 · B6/B7 Instances: Solari board, designspace plot, flood to IKB ──────
+     Pinned on ink. Each 60svh of scroll is one stage, a named instance of the
+     family; a change runs a ~0.5s left-to-right flap cascade with the glyph
+     instance stepping up, so the project gets louder. The last 70svh: tiles
+     flip to blank IKB, a diagonal wave of flaps floods the screen, and the
+     pin releases into the identical blue band.                           */
+  const STAGE_SVH = 60, FLOOD_SVH = 70, FLAP0 = 90, FLAP = 70, FLAP_STAG = 30;
+  const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', BLANK = { ch: ' ', w: 150, g: 900, bl: false, fv: '' };
+  const face = (ch, w, g, bl) => ({ ch, w, g, bl, fv: `'wdth' ${Math.round(w)}, 'wght' ${Math.round(g)}` });
+  class Tile {
+    constructor() {
+      this.el = mk('span', 'tile');
+      this.lv = ['t', 'b', 'ft', 'fb'].map(c => {
+        const l = mk('span', 'lf ' + c), g = mk('b'), sh = mk('i');
+        l.append(g, sh); this.el.appendChild(l);
+        return { l, g, sh, ch: null, fv: null, bl: null, tf: '', so: '', on: c === 't' || c === 'b' };
+      });
+      this.cur = BLANK; this.q = []; this.t0 = 0; this.first = true; this.started = false;
+      this.paint(0, BLANK); this.paint(1, BLANK);
+    }
+    paint(k, s) {
+      const v = this.lv[k];
+      if (v.ch !== s.ch) { v.g.textContent = s.ch; v.ch = s.ch; }
+      if (v.fv !== s.fv) { v.g.style.fontVariationSettings = s.fv; v.fv = s.fv; }
+      if (v.bl !== s.bl) { v.l.classList.toggle('blue', s.bl); v.bl = s.bl; }
+    }
+    show(k, on) { const v = this.lv[k]; if (v.on !== on) { v.l.style.visibility = on ? 'visible' : 'hidden'; v.on = on; } }
+    rot(k, deg, shade) {
+      const v = this.lv[k], tf = `rotateX(${deg.toFixed(1)}deg)`, so = shade.toFixed(2);
+      if (tf !== v.tf) { v.l.style.transform = tf; v.tf = tf; }
+      if (so !== v.so) { v.sh.style.opacity = so; v.so = so; }
+    }
+    set(s) { this.q.length = 0; this.cur = s; this.started = false; this.paint(0, s); this.paint(1, s); this.show(2, false); this.show(3, false); }
+    start(q, t0) { if (this.started) { this.started = false; this.paint(0, this.cur); this.paint(1, this.cur); this.show(2, false); this.show(3, false); } this.q = q; this.t0 = t0; this.first = true; }
+    /* one flap: the old top leaf falls 0 → -90°, then the new bottom leaf falls 90 → 0° */
+    step(t) {
+      while (this.q.length) {
+        if (t < this.t0) return true;
+        const dur = this.first ? FLAP0 : FLAP, to = this.q[0], f = (t - this.t0) / dur;
+        if (!this.started) {
+          this.started = true;
+          this.paint(0, to); this.paint(2, this.cur); this.paint(3, to); this.paint(1, this.cur);
+          Sound.tick(.55);
+        }
+        if (f < 1) {
+          if (f < .5) { this.show(2, true); this.show(3, false); this.rot(2, -180 * f, f * .9); }
+          else { this.show(2, false); this.show(3, true); this.rot(3, 180 * (1 - f), (1 - f) * .7); }
+          return true;
+        }
+        this.cur = to; this.q.shift(); this.started = false; this.first = false; this.t0 += dur;
+        this.paint(1, to); this.show(2, false); this.show(3, false);
+      }
+      return false;
+    }
+  }
+  const Board = {
+    name: 'board', active: false,
+    sec: $('#instances'), pin: $('.inst-pin'), boardEl: $('.board'), flood: $('.flood'), fc: null,
+    nEl: $('#inst-n'), iEl: $('#inst-i'), rail: $$('.inst-bar .rail i'), dEl: $('#inst-d'), lEl: $('#inst-l'), copyEl: $('.inst-copy'),
+    ds: $('.ds'), dsP: $('.ds-p'), dsD: $('.ds-d'), dsX: $('.ds-x'), dsY: $('.ds-y'), dsN: $$('.ds-n'), dsR: $('#ds-r'),
+    stages: [], tiles: [], live: false, top: 0, svh: 1, stage: -1, fp: -1, u: -1, size: 1, busy: false,
+    fw: 0, fh: 0, cols: 16, rows: 10, prev: null, ink: [], blue: [], dS: ['', '', '', '', ''],
+    NODES: [[0, 1], [.25, .625], [.62, .25], [1, 0]],
+    init() {
+      this.stages = $$('.stage', this.sec).map(li => ({
+        word: $('.st-w', li).textContent.trim().toUpperCase(), w: +li.style.getPropertyValue('--w'), g: +li.style.getPropertyValue('--g'),
+        inst: $('.st-i', li).textContent, desc: $('p', li).textContent, del: $$('.st-l li', li).map(x => x.textContent).join(' · ')
+      }));
+      for (let i = 0; i < 8; i++) { const tl = new Tile(); this.tiles.push(tl); this.boardEl.appendChild(tl.el); }
+      this.fc = this.flood.getContext('2d');
+      /* flap shades, precomputed: no colour strings are built per frame */
+      for (let i = 0; i <= 16; i++) {
+        const k = i / 16;
+        this.ink.push(`rgb(${Math.round(14 + 30 * k)},${Math.round(14 + 30 * k)},${Math.round(16 + 34 * k)})`);
+        this.blue.push(`rgb(${Math.round(29 * (1 - .55 * k))},${Math.round(44 * (1 - .55 * k))},${Math.round(243 * (1 - .55 * k))})`);
+      }
+    },
+    /* the faces for a stage: words centred on one row of 8, or wrapped 4 + 4 on phones; stage 4 = blank IKB */
+    slots(s) {
+      const out = new Array(8).fill(BLANK);
+      if (s >= 4) return out.map(() => ({ ch: ' ', w: 150, g: 900, bl: true, fv: BLANK.fv }));
+      const st = this.stages[s], wd = st.word, n = wd.length, off = env.desk ? (8 - n) >> 1 : 0;
+      for (let j = 0; j < n; j++) out[off + j] = face(wd[j], st.w, st.g, false);
+      return out;
+    },
+    go(s, instant) {
+      const prev = this.stage;
+      this.stage = s;
+      const tg = this.slots(s), now = performance.now();
+      for (let i = 0; i < 8; i++) {
+        const tl = this.tiles[i], to = tg[i], from = tl.cur;
+        if (instant || env.reduce) { tl.set(to); continue; }
+        if (from.ch === to.ch && from.fv === to.fv && from.bl === to.bl && !tl.q.length) continue;
+        const n = s >= 4 ? 1 : (from.ch === ' ' && to.ch === ' ' ? 0 : 2 + ((3 * i + s) % 4)), q = [];
+        const fw = from.ch === ' ' ? to.w : from.w, fg = from.ch === ' ' ? to.g : from.g;
+        for (let k = 1; k <= n; k++) { const e = k / (n + 1); q.push(face(AZ[(Math.random() * 26) | 0], lerp(fw, to.w, e), lerp(fg, to.g, e), false)); }
+        q.push(to);
+        tl.start(q, now + i * FLAP_STAG);
+      }
+      const si = Math.min(s, 3), st = this.stages[si];
+      this.nEl.textContent = `Stage ${String(si + 1).padStart(2, '0')} / 04`;
+      this.iEl.textContent = st.inst;
+      this.rail.forEach((r, j) => r.classList.toggle('on', j <= si));
+      this.dsN.forEach((nd, j) => nd.classList.toggle('on', j <= si));
+      if (this.dEl.textContent !== st.desc) {
+        this.dEl.textContent = st.desc; this.lEl.textContent = st.del;
+        if (!instant && !env.reduce && prev >= 0) this.copyEl.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.16,1,.3,1)' });
+      }
+      this.busy = true;
+      S.wake();
+    },
+    layout() {
+      this.live = !env.reduce && innerHeight >= 520;
+      this.sec.classList.toggle('live', this.live);
+      if (!this.live) return;
+      /* glyph size: the widest instance (M at 150/900) must fit a tile */
+      const t0 = this.tiles[0].el, tw = t0.clientWidth, th = t0.clientHeight, pr = mk('span');
+      pr.style.cssText = "position:absolute;left:0;top:0;visibility:hidden;white-space:nowrap;font-size:100px;line-height:1;font-variation-settings:'wdth' 150,'wght' 900";
+      pr.textContent = 'M'; t0.appendChild(pr);
+      const mw = pr.offsetWidth || 110;
+      pr.remove();
+      this.boardEl.style.setProperty('--tfs', Math.min(tw * .9 / mw * 100, th * .74).toFixed(1) + 'px');
+      this.svh = this.pin.offsetHeight;
+      this.size = this.ds.clientWidth || 1;
+      this.dsP.style.strokeWidth = (150 / this.size).toFixed(3); /* 1.5px at any plot size */
+      const d = DPR(1.5);
+      this.fw = Math.round(this.pin.clientWidth * d); this.fh = Math.round(this.pin.clientHeight * d);
+      this.flood.width = this.fw; this.flood.height = this.fh;
+      this.cols = env.desk ? 16 : 6; this.rows = env.desk ? 10 : 12;
+      this.prev = new Float32Array(this.cols * this.rows);
+      this.measure();
+      this.stage = -1; this.fp = -1; this.u = -1;
+    },
+    measure() {
+      if (!this.live) return;
+      this.top = this.sec.getBoundingClientRect().top + window.scrollY;
+      this.u = -1; this.fp = -1;
+    },
+    tick(t) {
+      if (!this.live) return false;
+      const run = F.y - this.top, sh = this.svh * STAGE_SVH / 100, u = run / sh;
+      const fp = clamp((run - 4 * sh) / (this.svh * FLOOD_SVH / 100), 0, 1);
+      /* stage with hysteresis; the flood stage (4) blanks the tiles to IKB */
+      let s = this.stage;
+      if (s < 0) s = fp > .03 ? 4 : clamp(Math.floor(u), 0, 3);
+      else if (s === 4) { if (fp < .01) s = clamp(Math.floor(u), 0, 3); }
+      else if (fp > .03) s = 4;
+      else if (u > s + 1.04 || u < s - .04) s = clamp(Math.floor(u), 0, 3);
+      if (s !== this.stage) this.go(s, this.stage < 0);
+      let busy = false;
+      if (this.busy) {
+        for (let i = 0; i < 8; i++) if (this.tiles[i].step(t)) busy = true;
+        this.busy = busy;
+      }
+      if (u !== this.u) { this.u = u; this.plot(u); }
+      if (fp !== this.fp) { this.drawFlood(fp, this.fp); this.fp = fp; }
+      return busy;
+    },
+    /* the dot travels the designspace with a dwell at each instance */
+    plot(u) {
+      const seg = clamp(u - .5, 0, 3), k = Math.min(2, seg | 0), e = smooth(.2, .8, seg - k), A = this.NODES[k], B = this.NODES[k + 1];
+      const x = lerp(A[0], B[0], e), y = lerp(A[1], B[1], e), S2 = this.size, ds = this.dS;
+      const dt = `translate3d(${(x * S2).toFixed(1)}px,${(y * S2).toFixed(1)}px,0)`;
+      if (dt !== ds[0]) { this.dsD.style.transform = dt; ds[0] = dt; }
+      const xt = `translate3d(0,${(y * S2).toFixed(1)}px,0)`;
+      if (xt !== ds[1]) { this.dsX.style.transform = xt; ds[1] = xt; }
+      const yt = `translate3d(${(x * S2).toFixed(1)}px,0,0)`;
+      if (yt !== ds[2]) { this.dsY.style.transform = yt; ds[2] = yt; }
+      const off = (1 - (k + e) / 3).toFixed(4);
+      if (off !== ds[3]) { this.dsP.style.strokeDashoffset = off; ds[3] = off; }
+      const r = `wdth ${(50 + 100 * x).toFixed(1).padStart(5, '0')} · wght ${pad3(900 - 800 * y)}`;
+      if (r !== ds[4]) { this.dsR.textContent = r; ds[4] = r; }
+    },
+    /* B7: each cell flips ink → IKB around its hinge; cell delay runs diagonally */
+    drawFlood(fp, last) {
+      const c = this.fc, W = this.fw, H = this.fh, cols = this.cols, rows = this.rows;
+      if (fp <= 0) { if (last > 0 || last < 0) { c.clearRect(0, 0, W, H); this.flood.classList.remove('on'); } return; }
+      this.flood.classList.add('on');
+      if (fp >= 1) { c.fillStyle = C.blue; c.fillRect(0, 0, W, H); return; }
+      c.clearRect(0, 0, W, H);
+      let clicks = 0;
+      for (let j = 0; j < rows; j++) {
+        const y = Math.round(j * H / rows), y1 = Math.round((j + 1) * H / rows), h = y1 - y, hh = Math.round(h / 2);
+        for (let i = 0; i < cols; i++) {
+          const d = .1 + (i + j) / (cols + rows - 2) * .65, q = clamp((fp - d) / .25, 0, 1), id = j * cols + i;
+          if ((this.prev[id] < .5) !== (q < .5)) clicks++;
+          this.prev[id] = q;
+          if (q <= 0) continue;
+          const x = Math.round(i * W / cols), w = Math.round((i + 1) * W / cols) - x;
+          if (q >= 1) { c.fillStyle = C.blue; c.fillRect(x, y, w, h); continue; }
+          const e = q * q * (3 - 2 * q), cs = Math.cos(e * Math.PI);
+          c.fillStyle = C.blue; c.fillRect(x, y, w, hh);
+          c.fillStyle = C.ink; c.fillRect(x, y + hh, w, h - hh);
+          if (cs > 0) { c.fillStyle = this.ink[Math.round((1 - cs) * 16)]; const lh = Math.round(hh * cs); c.fillRect(x, y + hh - lh, w, lh); }
+          else { c.fillStyle = this.blue[Math.round((1 + cs) * 16)]; c.fillRect(x, y + hh, w, Math.round((h - hh) * -cs)); }
+          c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(x, y + hh - 1, w, 2);
+        }
+      }
+      if (clicks) Sound.tick(Math.min(1, .3 + clicks * .1));
+    }
+  };
+
+  /* ── 21 · B8 Colophon: the typeset headline and MAKE ___ LOUD ────────────────
+     LET'S MAKE / SOMETHING / LOUD. as three fitted lines in paper, real text
+     at rest (stage C hangs the physics on .lg glyphs and .ld-shelf lines).
+     K2.loud.setWord(word) is the single entry point for the word swap; its
+     static version re-sets the middle line in the DOM.                    */
+  const Loud = {
+    el: $('#loud'), lines: [], word: 'SOMETHING', h: $('#loud-h'), live: $('#loud-live'), mail: $('#mailto'),
+    form: $('#mk'), input: $('#mk-in'), chips: $$('#mk .chip'), typeT: 0,
+    init() {
+      this.lines = $$('.ld', this.el).map(ld => {
+        const t = $('.ld-t', ld), ln = { el: ld, t, shelf: $('.ld-shelf', ld), probe: mk('i', 'probe'), glyphs: [], w: +ld.style.getPropertyValue('--w'), g: +ld.style.getPropertyValue('--g'), fs: 0, base: 0 };
+        this.split(ln, t.textContent);
+        return ln;
+      });
+      this.chips.forEach(c => c.addEventListener('click', () => { this.input.value = ''; K2.loud.setWord(c.textContent); }));
+      this.form.addEventListener('submit', e => { e.preventDefault(); clearTimeout(this.typeT); this.submit(); });
+      this.input.addEventListener('input', () => {
+        const v = this.input.value, s = v.replace(/[^A-Za-z0-9 ]+/g, '');
+        if (s !== v) this.input.value = s;
+        clearTimeout(this.typeT);
+        this.typeT = setTimeout(() => this.submit(), 650);
+      });
+    },
+    submit() { const w = this.sanitize(this.input.value); if (w && w !== this.word) K2.loud.setWord(w); },
+    split(ln, text) {
+      ln.t.textContent = '';
+      ln.glyphs = [];
+      for (const ch of text) { const g = mk('span', 'lg', ch); ln.t.appendChild(g); ln.glyphs.push(g); }
+      ln.t.appendChild(ln.probe);
+    },
+    sanitize: w => String(w || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 12),
+    fitLine(ln, fs) {
+      ln.fs = fs || K2.fit(ln.t, ln.el);
+      ln.base = ln.probe.getBoundingClientRect().top - ln.el.getBoundingClientRect().top;
+      ln.shelf.style.top = ln.base.toFixed(1) + 'px';
+    },
+    /* every line fitted to the measure, except the whisper: LET'S MAKE never sets larger than SOMETHING */
+    layout() {
+      this.lines.forEach(ln => this.fitLine(ln));
+      const a = this.lines[0], b = this.lines[1];
+      if (a.fs > b.fs) { a.el.style.fontSize = b.fs.toFixed(2) + 'px'; this.fitLine(a, b.fs); }
+    },
+    /* the static swap: re-set the middle line, then tell everyone */
+    typeset(word) {
+      const w = this.sanitize(word);
+      if (!w) return false;
+      this.word = w;
+      this.split(this.lines[1], w);
+      this.layout();
+      const phrase = `Let’s make ${w.toLowerCase()} loud.`;
+      this.h.textContent = phrase; this.live.textContent = phrase;
+      this.mail.href = `mailto:hello@4booser.dev?subject=${encodeURIComponent(`Let’s make ${w.toLowerCase()} loud`)}`;
+      this.mail.textContent = `Write: make ${w.toLowerCase()} loud ↗`;
+      this.chips.forEach(c => c.setAttribute('aria-pressed', String(this.sanitize(c.textContent) === w)));
+      this.input.placeholder = w;
+      Sound.tick(1);
+      return true;
+    },
+    /* static kick: every sort hops once, left to right (the physics stage replaces it) */
+    kick() {
+      if (env.reduce) return;
+      let j = 0;
+      this.lines.forEach(ln => ln.glyphs.forEach(g => {
+        g.animate([{ transform: 'none' }, { transform: 'translateY(-.28em) rotate(-4deg)', offset: .35 }, { transform: 'none' }], { duration: 620, delay: j++ * 14, easing: 'cubic-bezier(.3,1.4,.5,1)' });
+      }));
+    }
+  };
+  K2.loud = {
+    get word() { return Loud.word; },
+    get lines() { return Loud.lines; },   /* [{ el, t, shelf, glyphs[], w, g, fs, base }] — base = baseline y in the line box */
+    sanitize: w => Loud.sanitize(w),
+    typeset: w => Loud.typeset(w),
+    setWord: w => Loud.typeset(w),        /* stage C: replace with the physics swap (kick old letters, drop new ones) */
+    kick: () => Loud.kick(),              /* stage C: replace with the physics kick used by REWIND */
+    layout: () => Loud.layout()
+  };
+
+  /* contact: the email copies from the click (selectable text; fallback selects it) and ripples its wdth */
+  const Mail = {
+    name: 'mail', active: true,
+    el: $('#email'), L: [], str: [], t0: -1, text: '',
+    init() {
+      this.text = this.el.textContent.trim();
+      this.el.textContent = '';
+      for (const ch of this.text) { const s = mk('span', 'em', ch); this.el.appendChild(s); this.L.push(s); }
+      this.str = this.L.map(() => '');
+      const copy = () => { this.ripple(); K2.copy(this.text, this.el); };
+      $('#copy').addEventListener('click', copy);
+      this.el.addEventListener('click', () => { const s = getSelection(); if (!s || s.isCollapsed) copy(); });
+    },
+    fit() {
+      const box = this.el.parentElement, cs = this.el.style;
+      cs.fontSize = '';
+      const max = parseFloat(getComputedStyle(this.el).fontSize), w = this.el.offsetWidth, cw = box.clientWidth;
+      if (w > cw * .9) cs.fontSize = (max * cw * .9 / w).toFixed(2) + 'px';
+    },
+    ripple() { if (env.reduce) return; this.t0 = performance.now(); S.wake(); },
+    tick(t) {
+      if (this.t0 < 0) return false;
+      const n = this.L.length, q = (t - this.t0) / 520, c = -2 + q * (n + 4), done = q >= 1;
+      for (let i = 0; i < n; i++) {
+        const a = done ? 0 : Math.exp(-((i - c) * (i - c)) / 2.4);
+        const fv = a < .01 ? '' : `'wdth' ${(96 + 54 * a).toFixed(1)}, 'wght' ${Math.round(640 + 220 * a)}`;
+        if (fv !== this.str[i]) { this.L[i].style.fontVariationSettings = fv; this.str[i] = fv; }
+      }
+      if (done) this.t0 = -1;
+      return !done;
+    }
+  };
+
+  /* Your Anthropometry: the frame, number, signature and live duration. Stage B renders the strokes
+     into K2.plate.canvas and reports K2.plate.setStats({ px, drops }) / setEmpty(false). */
+  const Ant = {
+    name: 'plate', active: false,
+    el: $('#ant'), cv: $('.ant-cv'), no: $('#ant-no'), dur: $('#ant-dur'), px: $('#ant-px'), drops: $('#ant-drops'), sig: $('#ant-sig'), input: $('#ant-in'), ds: '',
+    init() {
+      let v = +session.get('k2:visit');
+      if (!v) { v = Date.now(); session.set('k2:visit', String(v)); }
+      let h = 2166136261;
+      for (const ch of String(v)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+      this.no.textContent = String((h >>> 0) % 10000).padStart(4, '0');
+      this.input.addEventListener('input', () => {
+        const s = this.input.value.replace(/\s+/g, ' ').trim().slice(0, 24);
+        this.sig.textContent = s || 'Unsigned'; this.sig.classList.toggle('blank', !s);
+      });
+      setInterval(() => this.clock(), 1000);
+    },
+    clock() {
+      if (!this.active || document.hidden) return;
+      const s = Math.floor(performance.now() / 1000), txt = `${String(Math.floor(s / 60)).padStart(2, '0')} min ${String(s % 60).padStart(2, '0')} s`;
+      if (txt !== this.ds) { this.dur.textContent = txt; this.ds = txt; }
+    },
+    onVis(v) { if (v) this.clock(); },
+    setStats(o) {
+      if (o.px != null) this.px.textContent = Math.round(o.px).toLocaleString('en-US');
+      if (o.drops != null) this.drops.textContent = String(o.drops);
+    },
+    setEmpty(b) { this.el.classList.toggle('empty', !!b); }
+  };
+  K2.plate = {
+    el: Ant.el, canvas: Ant.cv,
+    setStats: o => Ant.setStats(o), setEmpty: b => Ant.setEmpty(b),
+    get number() { return 'ANT 4B–' + Ant.no.textContent; },
+    get signature() { return Ant.input.value.trim(); },
+    get visible() { return Ant.active; }
+  };
+
+  /* REWIND ↑ PLAY IT AGAIN: kick, a 2.4s run to the top (every scrubbed system plays backwards), calibration replay */
+  const Rewind = {
+    init() {
+      $('#fns').append(...K2.footnotes.map(([m, s]) => { const li = mk('li'); li.append(mk('b', '', m), mk('span', '', s)); return li; }));
+      $('#rewind').addEventListener('click', () => this.run());
+    },
+    run() {
+      const top = $('#top');
+      K2.loud.kick();
+      if (env.reduce) { K2.scrollTo(0, { immediate: true, focus: top }); return; }
+      Sound.whoosh();
+      setTimeout(() => K2.scrollTo(0, {
+        duration: 2.4, easing: x => (x < .5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2), lock: true, focus: top,
+        onComplete: () => K2.intro.play({ short: true })
+      }), 260);
+    }
+  };
+  K2.rewind = { run: () => Rewind.run() };
+
+  /* ── 22 · Layout + boot ─────────────────────────────────────────────────── */
   let lastW = innerWidth;
   function layout() {
     env.desk = DESK.matches; env.fine = FINE.matches;
@@ -1878,6 +3712,12 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
     Hero.fit();
     Strings.layout();
     Text.layout();
+    Work.layout();
+    Thresh.layout();
+    Board.layout();
+    Loud.layout();
+    Mail.fit();
+    Case.layout();
     navMid = nav.offsetHeight / 2;
     Zones.measure();
     K2.hooks.forEach(fn => fn());
@@ -1886,18 +3726,20 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
     S.wake();
   }
   K2.layout = layout;
+  /* pinned sections cache their document offsets: refresh when content above them changes height */
+  function measurePins() { Thresh.measure(); Board.measure(); }
   let rT = 0;
   addEventListener('resize', () => {
     clearTimeout(rT);
     rT = setTimeout(() => {
       if (innerWidth !== lastW || DESK.matches !== env.desk) { lastW = innerWidth; layout(); }
-      else { Zones.measure(); Hero.measure(); Strings.layout(); }
+      else { Zones.measure(); Hero.measure(); Strings.layout(); measurePins(); }
       S.wake();
     }, 140);
   });
   /* page height changes (fonts, later stages): re-measure zones on the next frame */
   let roT = 0;
-  if (typeof ResizeObserver === 'function') new ResizeObserver(() => { cancelAnimationFrame(roT); roT = requestAnimationFrame(() => { Zones.measure(); Hero.measure(); Strings.layout(); }); }).observe(page);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(() => { cancelAnimationFrame(roT); roT = requestAnimationFrame(() => { Zones.measure(); Hero.measure(); Strings.layout(); measurePins(); }); }).observe(page);
   RM.addEventListener?.('change', () => {
     env.reduce = RM.matches;
     if (env.reduce) { Intro.skip(); killLenis(); Text.clear(); } else initLenis();
@@ -1917,10 +3759,20 @@ html.calib .fig-t { opacity: 0; transform: translateY(60%); transition: none; }
   Strings.init();
   Text.split();
   Hero.bind();
+  Work.init();
+  Case.init();
+  Play.init();
+  Thresh.init();
+  Board.init();
+  Loud.init();
+  Mail.init();
+  Ant.init();
+  Rewind.init();
   syncSound();
-  [LenisSys, PointerSys, Intro, Hero, Strings, Text, Chrome, Arrive, Rig].forEach(s => S.add(s));
+  [LenisSys, PointerSys, Intro, Hero, Strings, Text, Work, Case, Thresh, Board, Mail, Chrome, Arrive, Rig].forEach(s => S.add(s));
   layout();
   watch($('.hero'), Hero); watch(Strings.field, Strings); watch(Text.sec, Text);
+  watch(Work.sec, Work); watch(Thresh.sec, Thresh); watch(Board.sec, Board); watch(Ant.el, Ant);
 
   if (!env.reduce && window.scrollY < innerHeight * .5) Intro.play({ short: session.get('k2:cal') === '1' });
   else { root.classList.remove('cal'); Hero.rest(); }
