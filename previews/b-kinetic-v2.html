@@ -9995,7 +9995,8 @@ void main () {
     mirror() {
       const raw = this.input.value.toUpperCase(), v = raw.replace(/[^A-Z0-9 ]/g, '').slice(0, STICK_MAX);
       if (v !== this.input.value) this.input.value = v;
-      if (this.spent) this.wipe();
+      /* editing after a printed word starts a fresh word from what the field now holds */
+      if (this.spent) { this.wipe(); this.input.value = v; }
       const cur = this.sorts.map(o => o.ch).join('');
       if (v === cur) return;
       let k = 0;
