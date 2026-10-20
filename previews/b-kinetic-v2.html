@@ -307,6 +307,12 @@ html.has-rig .rig.on-blue, .ghost.on-blue { mix-blend-mode: normal; }
 .rig.on-blue .c { border-color: var(--paper); }
 .rig.on-blue .d { background: var(--paper); }
 .rig.on-blue .chip { background: var(--paper); color: var(--blue); }
+/* the chip is a layer of its own: while pigment is wet a difference chip would print the dye under it (a strike's
+   halo below the letter) as gold specks, so it prints solid in token colours, the same ink-on-paper / paper-on-ink
+   tones the difference chip shows on clean ground */
+html.has-rig .rig-tag.solid { mix-blend-mode: normal; }
+.rig-tag.solid .chip { background: var(--ink); color: var(--paper); }
+.rig-tag.solid.ink .chip { background: var(--paper); color: var(--ink); }
 .ghost.on-blue .c, .ghost.on-blue .d { border-color: var(--paper); }
 .ghost.on-blue .chip { color: var(--paper); box-shadow: inset 0 0 0 1px var(--paper); }
 .rig i { position: absolute; left: 0; top: 0; display: block; will-change: transform; }
@@ -1666,7 +1672,7 @@ html.has-rig .ant-cv { cursor: none; }
 <canvas class="pigment" aria-hidden="true"></canvas>
 <div class="klein-x" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
-<div class="rig" aria-hidden="true"><i class="c c0"></i><i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="d"></i><span class="chip"></span></div>
+<div class="rig" aria-hidden="true"><i class="c c0"></i><i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="d"></i></div><div class="rig rig-tag" aria-hidden="true"><span class="chip"></span></div>
 
 <nav class="nav wrap mono" aria-label="Primary" data-tone="paper">
   <a class="brand" href="#top" data-cursor-label="Top"><span class="m4b" aria-hidden="true"><span>4</span><span>B</span></span><span class="brand-t">Specimen No. 02</span><span class="sr">4booser, home</span></a>
@@ -2275,14 +2281,20 @@ html.has-rig .ant-cv { cursor: none; }
       for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].read) list[i].read(t, dt);
       /* refit: the few fits that must measure what they set (a display line re-fitted while the VOL spring moves)
          run here, after every pure read and before any tick writes, so no tick ever reads layout */
-      for (let i = 0; i < list.length; i++) if (list[i].active !== false && list[i].refit) list[i].refit(t, dt);
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i];
+        if (s.active === false || !s.refit) continue;
+        if (!tr) { s.refit(t, dt); continue; }
+        const a = performance.now(); s.refit(t, dt); s.rms = performance.now() - a;   /* traced: counted in the system's ms */
+      }
       let busy = F.vel !== 0;
       for (let i = 0; i < list.length; i++) {
         const s = list[i];
         if (s.active === false || !s.tick) continue;
         if (!tr) { if (s.tick(t, dt)) busy = true; continue; }
-        const a = performance.now(), b = s.tick(t, dt);
-        s.ms = (s.ms || 0) + (performance.now() - a - (s.ms || 0)) * .15;
+        const a = performance.now(), b = s.tick(t, dt), m = performance.now() - a + (s.rms || 0);
+        s.rms = 0;
+        s.ms = (s.ms || 0) + (m - (s.ms || 0)) * .15;
         if (b) { busy = true; stat.awake.push(s.name); }
       }
       /* a system may already have woken the loop during this frame (Lenis emits scroll from pre):
@@ -2844,10 +2856,10 @@ html.has-rig .ant-cv { cursor: none; }
   const RIG_SEL = '[data-cursor], a[href], button, input, textarea, select, label, summary, [role="button"], [role="slider"], [contenteditable]';
   /* the ground under a rig: paper (the sheets, the stick, the plate's print and the errata slip) wins, then the case
      and the band (IKB), a row's blue band, the ink sections */
-  const GROUND = '.ks, .pop, .stick, .ant-print, .errata, .case, .band, .row, .inst';
+  const GROUND = '.ks, .pop, .stick, .ant-print, .errata, .case, .band, .row, .inst', PAPER_GND = '.ks, .pop, .stick, .ant-print, .errata';
   function onBlue(g, x, y) {
     if (g) {
-      if (g.matches('.ks, .pop, .stick, .ant-print, .errata')) return false;
+      if (g.matches(PAPER_GND)) return false;
       if (g.matches('.case, .band')) return true;
       if (g.matches('.row')) return g.classList.contains('is-on') || g.classList.contains('is-kb');
     }
@@ -2858,7 +2870,7 @@ html.has-rig .ant-cv { cursor: none; }
   }
   const Rig = {
     name: 'rig', active: false,
-    el: $('.rig'), cs: $$('.rig .c'), dot: $('.rig .d'), chip: $('.rig .chip'),
+    el: $('.rig'), tag: $('.rig-tag'), cs: $$('.rig .c'), dot: $('.rig .d'), chip: $('.rig .chip'), solid: false, inkG: false, gPaper: false,
     x: new Float32Array(4), y: new Float32Array(4), vx: new Float32Array(4), vy: new Float32Array(4),
     tx: new Float32Array(4), ty: new Float32Array(4), tf: ['', '', '', ''], dtf: '', ctf: '',
     K: [640, 560, 490, 430],
@@ -2892,6 +2904,7 @@ html.has-rig .ant-cv { cursor: none; }
     set(node, isFocus) {
       if (this.focus && !isFocus) return;
       this.gnd = node && node.closest ? node.closest(GROUND) : null;   /* what the rig sits on: paper overlays, IKB, ink */
+      this.gPaper = !!this.gnd && this.gnd.matches(PAPER_GND);
       const t = node && node.closest ? node.closest(RIG_SEL) : null, was = this.src;
       this.src = t; this.kind = 'base'; this.label = ''; this.paint = false;
       if (!t) return;
@@ -2922,11 +2935,11 @@ html.has-rig .ant-cv { cursor: none; }
     },
     tick(t, dt) {
       const vis = this.focus || (P.seen && P.inside && P.type !== 'touch' && this.kind !== 'hide');
-      if (vis !== this.live) { this.el.classList.toggle('live', vis); this.live = vis; }
+      if (vis !== this.live) { this.el.classList.toggle('live', vis); this.tag.classList.toggle('live', vis); this.live = vis; }
       if (!vis) { this.placed = false; return false; }
       const r = this.rect, boxed = r.ok;
       const blue = onBlue(this.gnd, boxed ? (r.l + r.r) / 2 : P.x, boxed ? (r.t + r.b) / 2 : P.y);
-      if (blue !== this.blue) { this.el.classList.toggle('on-blue', blue); this.blue = blue; }
+      if (blue !== this.blue) { this.el.classList.toggle('on-blue', blue); this.tag.classList.toggle('on-blue', blue); this.blue = blue; }
       let L, T, R, B;
       if (boxed) { const pad = this.kind === 'glyph' ? 3 : 6; L = r.l - pad; T = r.t - pad; R = r.r + pad; B = r.b + pad; }
       else { const h = Events.hush ? 6 : 9; L = P.x - h; T = P.y - h; R = P.x + h; B = P.y + h; }
@@ -2967,6 +2980,13 @@ html.has-rig .ant-cv { cursor: none; }
         const cs = `translate3d(${Math.max(4, Math.min(this.x[2], F.vw - Math.max(this.cw, 0) - 8)).toFixed(1)}px,${(this.y[2] + 6).toFixed(1)}px,0)`;
         if (cs !== this.ctf) { this.chip.style.transform = cs; this.ctf = cs; }
       }
+      /* wet pigment on screen: the chip prints solid, ink on paper ground, paper on ink */
+      const solid = on && !blue && Pigment.awake;
+      if (solid !== this.solid) { this.tag.classList.toggle('solid', solid); this.solid = solid; }
+      if (solid) {
+        const ink = !this.gPaper && Zones.toneAt(F.y + this.y[2] + 12) === 'ink';
+        if (ink !== this.inkG) { this.tag.classList.toggle('ink', ink); this.inkG = ink; }
+      }
       return busy;
     },
     axes(el) {
@@ -3005,7 +3025,7 @@ html.has-rig .ant-cv { cursor: none; }
     tw: [], mt: { cap: .7, xh: .52, asc: .74, desc: .2, oT: .712, oB: .012 }, scrub: null,
     adv: new Float32Array(N * 9), kap: new Float32Array(N).fill(1),   /* advance per px of font size on a 3×3 designspace grid */
     wd: new Float32Array(N), wg: new Float32Array(N), gx: new Float32Array(N), gw: new Float32Array(N), xc: new Float32Array(N), rx: new Float32Array(N),
-    str: [], tf: [], acc: 0, still: false, pending: true, fn: 0, vv: -1, trueUp: 0,
+    str: [], tf: [], acc: 0, still: false, pending: true, fn: 0, vv: -1, trueUp: 0, gOK: false,
     touch: new Track(), hits: new Float64Array(N).fill(-1e9),
     /* DOM per breakpoint: one fitted line on desktop, 4BOO / SER on phones (one chain across the break) */
     build() {
@@ -3105,12 +3125,16 @@ html.has-rig .ant-cv { cursor: none; }
         const hr = ln.hl.getBoundingClientRect(), kr = ln.kin.getBoundingClientRect(), pr = ln.probe.getBoundingClientRect();
         ln.kh = kr.height; ln.topDoc = kr.top + y; ln.left = kr.left;
         ln.base = pr.top - hr.top; ln.capY = ln.base - this.cap * ln.fs;
+        /* a glyph's box against the baseline, from layout (transform-free): a strike derives its rect from this
+           and the last write's advances, so a performance striking from tick never reads layout */
+        const k0 = this.L[ln.i0];
+        ln.gH = k0.offsetHeight; ln.gC = k0.offsetTop + ln.gH / 2 - ln.probe.offsetTop;
         const t1 = ln.ro[0].t1, keep = t1.textContent;
         t1.textContent = 'W 150';
         ln.roW = ln.ro[0].el.offsetWidth;
         t1.textContent = keep;
       });
-      this.pxc.fill(NaN);
+      this.pxc.fill(NaN); this.gOK = false;
       /* the tagline's words fatten under wet pigment too: their centres in document px */
       for (const w of this.tw) { const r = w.el.getBoundingClientRect(); w.x = r.left + r.width / 2; w.y = r.top + r.height / 2 + y; }
       this.lines.forEach(ln => {
@@ -3176,17 +3200,32 @@ html.has-rig .ant-cv { cursor: none; }
       if (P.seen && P.inside && P.type !== 'touch' && t - P.last < 2600) return P;
       return null;
     },
+    /* glyph i's box in viewport px from cached geometry (no layout read): the last write's advance and offset,
+       scaled with the line; before the first write since a measure, predicted from the instances it is set in */
+    glyphBox(i, o) {
+      const ln = this.lines[this.li[i]], sx = ln.scale * ln.v, y0 = ln.topDoc - F.y;
+      let x = this.gx[i], w = this.gw[i];
+      if (!this.gOK) {
+        x = 0;
+        for (let j = ln.i0; j <= i; j++) {
+          const a = this.advance(j, this.wd[j] || this.rW(j), this.wg[j] || this.rG(j)) * ln.fs * ln.kv;
+          if (j < i) x += a + ln.trk; else w = a;
+        }
+      }
+      o.l = ln.left + x * sx; o.r = o.l + w * sx;
+      o.t = y0 + ln.capY; o.b = y0 + ln.base;            /* the cap band, as printed now */
+      o.cy = y0 + ln.base + (ln.gC || 0) * ln.v; o.h = (ln.gH || ln.kh) * ln.v;
+      return o;
+    },
     /* ghost: a performance's strike, its burst never logged to the visitor's plate */
     strike(i, x, y, ghost) {
       if (!(i >= 0 && i < N)) return;
       Intro.skip();
-      const k = this.L[i], r = k.getBoundingClientRect();
-      const cx = x == null ? r.left + r.width / 2 : x, cy = y == null ? r.top + r.height / 2 : y;
+      const k = this.L[i], box = this.glyphBox(i, {});
+      const cx = x == null ? (box.l + box.r) / 2 : x, cy = y == null ? box.cy : y;
       Sound.pluck(i, 1, panOf(cx));
-      /* the glyph's cap band (cap line to baseline, as printed now): the burst's halo is thrown from just outside it */
-      const ln = this.lines[this.li[i]], y0 = ln.topDoc - F.y;
-      const box = { l: r.left, r: r.right, t: y0 + ln.capY, b: y0 + ln.base };
-      K2.pigment.burst(cx, cy, { strength: 1, letter: i, size: r.height, ghost: !!ghost, box: box.b - box.t > 8 ? box : null });
+      /* the burst's halo is thrown from just outside the glyph's cap band */
+      K2.pigment.burst(cx, cy, { strength: 1, letter: i, size: box.h, ghost: !!ghost, box: box.b - box.t > 8 ? box : null });
       Chrono.watch(() => this.echo(i), 300);
       if (env.reduce) {
         k.style.fontVariationSettings = Vol.fv(150, 900); this.str[i] = '';
@@ -3359,6 +3398,7 @@ html.has-rig .ant-cv { cursor: none; }
           if (bg !== r.bg) { r.f2.style.transform = bg; r.bg = bg; }
         }
       }
+      this.gOK = true;   /* gx / gw / xc now describe the line as laid out (glyphBox reads them) */
     },
     /* back to the exact rest ramp (when scrolled away or on reduced motion) */
     rest() {
